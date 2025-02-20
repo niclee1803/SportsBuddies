@@ -38,15 +38,19 @@ const styles = StyleSheet.create({
     marginTop: 0
   },
   buttonContainer: {
-    marginTop: 700,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    marginTop: 600,
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignItems: 'center',
     padding: 20,
-    width: '80%',
+    width: '100%',
+    gap: 20,
   },
   buttonWrapper: {
-    flex: 0.45,
+    width: '80%',
+    height: 50,
     backgroundColor: '#FFFFFF',
-    borderRadius: 20
+    borderRadius: 20,
+    justifyContent: 'center',
   }
 });

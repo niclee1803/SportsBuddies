@@ -14,6 +14,6 @@ const styles = StyleSheet.create({
   background: {
     flex: 1,
     resizeMode: 'cover',
-    marginBottom: 80
+    marginBottom: 80,
   }
 });
