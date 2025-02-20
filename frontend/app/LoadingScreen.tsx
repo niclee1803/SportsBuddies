@@ -5,7 +5,7 @@ export default function HomeScreen() {
     <ImageBackground
       source={require('@/assets/images/loadingpage.png')}
       style={styles.background}
-    > 
+    >
     </ImageBackground>
   );
 }
