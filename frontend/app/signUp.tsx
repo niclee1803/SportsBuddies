@@ -74,12 +74,10 @@ export default function SignUp() {
 
             {/* Have an account? Login? */}
             <View style={styles.loginContainer}>
-              <Text>
-                <Text style={styles.haveAnAccountText}>Have an account? </Text>
-                <TouchableOpacity onPress={() => router.push("/Login")}>
-                  <Text style={styles.loginButtonText}>Log In</Text>
-                </TouchableOpacity>
-              </Text>
+              <Text style={styles.haveAnAccountText}>Have an account? </Text>
+              <TouchableOpacity onPress={() => router.push("/Login")}>
+                <Text style={styles.loginButtonText}>Log In</Text>
+              </TouchableOpacity>
             </View>
 
             {/* Navigation Buttons for Step 1 */}
