@@ -1,8 +1,13 @@
 # Get started
-CLone the project
-```bash
-git clone https://github.com/niclee1803/SportsBuddies.git
-```
+1. Clone the project
+   ```bash
+   git clone https://github.com/niclee1803/SportsBuddies.git
+   ```
+
+2. Install necessary packages
+   ```bash
+   npm install
+   ```
 
 ## Frontend
 Requirements: Expo Go app on your mobile
