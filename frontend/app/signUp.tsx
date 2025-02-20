@@ -21,8 +21,7 @@ export default function SignUp() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
-  const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] =
-    useState(false);
+  const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState(false);
   const [isChecked, setIsChecked] = useState(false);
 
   return (
@@ -72,8 +71,7 @@ export default function SignUp() {
 
             {/* Navigation Buttons for Step 1 */}
             <View style={styles.buttonContainer}>
-              <View style={{ flex: 1 }} />{" "}
-              {/* Empty space to push the button to the right */}
+              <View style={{ flex: 1 }} />
               <TouchableOpacity
                 style={styles.navButton}
                 onPress={() => setStep(step + 1)}
@@ -230,7 +228,6 @@ export default function SignUp() {
     </View>
   );
 }
-
 const styles = StyleSheet.create({
   view: { marginTop: 100, justifyContent: "center", alignItems: "center" },
   headingContainer: { alignItems: "center", marginBottom: 50 },
