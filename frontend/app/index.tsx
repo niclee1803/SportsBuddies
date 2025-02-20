@@ -1,6 +1,10 @@
 import { View, Button, StyleSheet, ImageBackground } from 'react-native';
+import 'expo-router/entry';
+import { useRouter } from 'expo-router'
 
 export default function HomeScreen() {
+const router = useRouter();
+
   return (
     <ImageBackground
       source={require('@/assets/images/landingpage.png')}
@@ -10,7 +14,7 @@ export default function HomeScreen() {
         <View style={styles.buttonWrapper}>
           <Button 
             title="Sign Up" 
-            onPress={() => {}} 
+            onPress={() => router.push('/signUp')}
             color="#000000" 
           />
         </View>
@@ -30,11 +34,11 @@ const styles = StyleSheet.create({
   background: {
     flex: 1,
     resizeMode: 'cover',
-    marginTop: 50,
     alignItems: 'center',
+    marginTop: 0
   },
   buttonContainer: {
-    marginTop: 600,
+    marginTop: 700,
     flexDirection: 'row',
     justifyContent: 'space-between',
     padding: 20,
