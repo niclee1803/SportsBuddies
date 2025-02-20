@@ -27,7 +27,10 @@ export default function SignUp() {
 
   return (
     <View style={styles.view}>
-      <Text style={styles.heading}>Sign Up</Text>
+      <View style={styles.headingContainer}>
+        <Text style={styles.heading}>Sign Up</Text>
+        <Text style={styles.heading2}>It's free and takes one minute!</Text>
+      </View>
 
       <View style={styles.formContainer}>
         {/* Step 1: First & Last Name */}
@@ -59,10 +62,12 @@ export default function SignUp() {
 
             {/* Back to Login? */}
             <View style={styles.loginContainer}>
-              <Text>Have an account? </Text>
-              <TouchableOpacity onPress={() => router.push("/Login")}>
-                <Text style={styles.loginButtonText}>Login</Text>
-              </TouchableOpacity>
+              <Text>
+                <Text style={styles.haveAnAccountText}>Have an account? </Text>
+                <TouchableOpacity onPress={() => router.push("/Login")}>
+                  <Text style={styles.loginButtonText}>Log In</Text>
+                </TouchableOpacity>
+              </Text>
             </View>
 
             {/* Navigation Buttons for Step 1 */}
@@ -228,7 +233,9 @@ export default function SignUp() {
 
 const styles = StyleSheet.create({
   view: { marginTop: 100, justifyContent: "center", alignItems: "center" },
-  heading: { fontSize: 28, fontWeight: "bold", marginBottom: 80 },
+  headingContainer: { alignItems: "center", marginBottom: 50 },
+  heading: { fontSize: 28, fontWeight: "bold", marginBottom: 20 },
+  heading2: { fontSize: 16, marginBottom: 20 },
   subheading: { fontSize: 16, marginBottom: 20 },
   formContainer: {
     width: 400,
@@ -255,6 +262,7 @@ const styles = StyleSheet.create({
     borderColor: "#ddd",
     borderRadius: 5,
   },
+  haveAnAccountText: { fontSize: 14 },
   loginButtonText: {
     color: "#42c8f5",
     fontSize: 14,
