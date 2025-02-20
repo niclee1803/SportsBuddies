@@ -1,7 +1,7 @@
 # Get started
 CLone the project
 ```bash
-git clone 
+git clone https://github.com/niclee1803/SportsBuddies.git
 ```
 
 ## Frontend
