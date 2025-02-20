@@ -23,9 +23,22 @@ export default function SignUp() {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState(false);
   const [isChecked, setIsChecked] = useState(false);
+  const totalSteps = 5;
 
   return (
     <View style={styles.view}>
+      <View style={styles.statusBarContainer}>
+        {Array.from({ length: totalSteps }, (_, index) => (
+          <View
+            key={index}
+            style={[
+              styles.statusBarStep,
+              { backgroundColor: step > index ? "#42c8f5" : "#ddd" },
+            ]}
+          />
+        ))}
+      </View>
+
       <View style={styles.headingContainer}>
         <Text style={styles.heading}>Sign Up</Text>
         <Text style={styles.heading2}>It's free and takes one minute!</Text>
@@ -59,7 +72,7 @@ export default function SignUp() {
               </View>
             </View>
 
-            {/* Back to Login? */}
+            {/* Have an account? Login? */}
             <View style={styles.loginContainer}>
               <Text>
                 <Text style={styles.haveAnAccountText}>Have an account? </Text>
@@ -230,6 +243,18 @@ export default function SignUp() {
 }
 const styles = StyleSheet.create({
   view: { marginTop: 100, justifyContent: "center", alignItems: "center" },
+  statusBarContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "80%",
+    marginBottom: 20,
+  },
+  statusBarStep: {
+    flex: 1,
+    height: 5,
+    marginHorizontal: 3,
+    borderRadius: 5,
+  },
   headingContainer: { alignItems: "center", marginBottom: 50 },
   heading: { fontSize: 28, fontWeight: "bold", marginBottom: 20 },
   heading2: { fontSize: 16, marginBottom: 20 },
