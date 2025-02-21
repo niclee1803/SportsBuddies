@@ -1,262 +1,217 @@
-import {
-  Text,
-  TextInput,
-  StyleSheet,
-  View,
-  TouchableOpacity,
-} from "react-native";
-import Icon from "react-native-vector-icons/MaterialIcons";
 import React, { useState } from "react";
-import Checkbox from "expo-checkbox";
+import { View, Text, Alert, StyleSheet, Platform } from "react-native";
 import { useRouter } from "expo-router";
+import { StepIndicator } from "../components/signup/StepIndicator";
+import { Step1 } from "../components/signup/steps/Step1";
+import { Step2 } from "../components/signup/steps/Step2";
+import { Step3 } from "../components/signup/steps/Step3";
+import { Step4 } from "../components/signup/steps/Step4";
+import { Step5 } from "../components/signup/steps/Step5";
+import {
+  validateEmail,
+  validatePhone,
+  validateUsername,
+  validatePassword,
+} from "../components/signup/ValidationUtils";
 
-export default function SignUp() {
+interface SignUpProps {}
+
+export default function SignUp(props: SignUpProps) {
   const router = useRouter();
-  const [step, setStep] = useState(1);
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
-  const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState(false);
-  const [isChecked, setIsChecked] = useState(false);
+  const [step, setStep] = useState<number>(1);
   const totalSteps = 5;
+
+  // Form state
+  const [firstName, setFirstName] = useState<string>("");
+  const [lastName, setLastName] = useState<string>("");
+  const [email, setEmail] = useState<string>("");
+  const [phone, setPhone] = useState<string>("");
+  const [username, setUsername] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
+  const [confirmPassword, setConfirmPassword] = useState<string>("");
+  const [isChecked, setIsChecked] = useState<boolean>(false);
+
+  // Password visibility
+  const [isPasswordVisible, setIsPasswordVisible] = useState<boolean>(false);
+  const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] =
+    useState<boolean>(false);
+
+  // Error states
+  const [firstNameError, setFirstNameError] = useState<string>("");
+  const [lastNameError, setLastNameError] = useState<string>("");
+  const [emailError, setEmailError] = useState<string>("");
+  const [phoneError, setPhoneError] = useState<string>("");
+  const [usernameError, setUsernameError] = useState<string>("");
+  const [passwordError, setPasswordError] = useState<string>("");
+  const [confirmPasswordError, setConfirmPasswordError] = useState<string>("");
+
+  const handleBack = () => {
+    setStep(step - 1);
+  };
+
+  const handleNext = async () => {
+    let isValid = true;
+
+    switch (step) {
+      case 2:
+        isValid =
+          validateEmail(email, setEmailError) &&
+          validatePhone(phone, setPhoneError);
+        break;
+      case 3:
+        isValid = await validateUsername(username, setUsernameError);
+        break;
+      case 4:
+        isValid = validatePassword(password, setPasswordError);
+        if (isValid && password !== confirmPassword) {
+          setConfirmPasswordError("Passwords do not match");
+          isValid = false;
+        }
+        break;
+    }
+
+    if (isValid) {
+      setStep(step + 1);
+    }
+  };
+
+  const handleSubmit = async () => {
+    try {
+      const userData = {
+        firstName,
+        lastName,
+        email,
+        phone,
+        username,
+        password,
+      };
+
+      console.log("User Data:", userData);
+
+      if (Platform.OS === "web") {
+        // For browser testing and debugging
+        window.alert("Success! Your account has been created successfully!");
+        router.push("/Login");
+      } else {
+        Alert.alert("Success!", "Your account has been created successfully!", [
+          {
+            text: "OK",
+            onPress: () => router.push("/Login"),
+          },
+        ]);
+      }
+    } catch (error) {
+      if (Platform.OS === "web") {
+        window.alert(
+          "There was an error creating your account. Please try again."
+        );
+      } else {
+        Alert.alert(
+          "Error",
+          "There was an error creating your account. Please try again.",
+          [{ text: "OK" }]
+        );
+      }
+    }
+  };
+
+  const renderStep = () => {
+    switch (step) {
+      case 1:
+        return (
+          <Step1
+            firstName={firstName}
+            setFirstName={setFirstName}
+            lastName={lastName}
+            setLastName={setLastName}
+            firstNameError={firstNameError}
+            setFirstNameError={setFirstNameError}
+            lastNameError={lastNameError}
+            setLastNameError={setLastNameError}
+            onNext={handleNext}
+            onLogin={() => router.push("/Login")}
+          />
+        );
+      case 2:
+        return (
+          <Step2
+            email={email}
+            setEmail={setEmail}
+            phone={phone}
+            setPhone={setPhone}
+            emailError={emailError}
+            setEmailError={(error) => setEmailError(error || "")}
+            phoneError={phoneError}
+            setPhoneError={(error) => setPhoneError(error || "")}
+            onBack={handleBack}
+            onNext={handleNext}
+          />
+        );
+      case 3:
+        return (
+          <Step3
+            username={username}
+            setUsername={setUsername}
+            usernameError={usernameError}
+            setUsernameError={(error) => setUsernameError(error || "")}
+            onBack={handleBack}
+            onNext={handleNext}
+          />
+        );
+      case 4:
+        return (
+          <Step4
+            password={password}
+            setPassword={setPassword}
+            confirmPassword={confirmPassword}
+            setConfirmPassword={setConfirmPassword}
+            passwordError={passwordError}
+            setPasswordError={(error) => setPasswordError(error || "")}
+            confirmPasswordError={confirmPasswordError}
+            setConfirmPasswordError={(error) =>
+              setConfirmPasswordError(error || "")
+            }
+            isPasswordVisible={isPasswordVisible}
+            setIsPasswordVisible={setIsPasswordVisible}
+            isConfirmPasswordVisible={isConfirmPasswordVisible}
+            setIsConfirmPasswordVisible={setIsConfirmPasswordVisible}
+            onBack={handleBack}
+            onNext={handleNext}
+          />
+        );
+      case 5:
+        return (
+          <Step5
+            isChecked={isChecked}
+            setIsChecked={setIsChecked}
+            onBack={handleBack}
+            onSubmit={handleSubmit}
+          />
+        );
+      default:
+        return null;
+    }
+  };
 
   return (
     <View style={styles.view}>
-      <View style={styles.statusBarContainer}>
-        {Array.from({ length: totalSteps }, (_, index) => (
-          <View
-            key={index}
-            style={[
-              styles.statusBarStep,
-              { backgroundColor: step > index ? "#42c8f5" : "#ddd" },
-            ]}
-          />
-        ))}
-      </View>
+      <StepIndicator currentStep={step} totalSteps={totalSteps} />
 
       <View style={styles.headingContainer}>
         <Text style={styles.heading}>Sign Up</Text>
         <Text style={styles.heading2}>It's free and takes one minute!</Text>
       </View>
 
-      <View style={styles.formContainer}>
-        {/* Step 1: First & Last Name */}
-        {step === 1 && (
-          <>
-            <Text style={styles.subheading}>Step 1: Tell us your name</Text>
-            <View style={styles.rowContainer}>
-              <View style={styles.halfInputContainer}>
-                <Text style={styles.label}>First Name</Text>
-                <TextInput
-                  style={styles.input}
-                  value={firstName}
-                  placeholder="John"
-                  placeholderTextColor="#888"
-                  onChangeText={setFirstName}
-                />
-              </View>
-              <View style={styles.halfInputContainer}>
-                <Text style={styles.label}>Last Name</Text>
-                <TextInput
-                  style={styles.input}
-                  value={lastName}
-                  placeholder="Doe"
-                  placeholderTextColor="#888"
-                  onChangeText={setLastName}
-                />
-              </View>
-            </View>
-
-            {/* Have an account? Login? */}
-            <View style={styles.loginContainer}>
-              <Text style={styles.haveAnAccountText}>Have an account? </Text>
-              <TouchableOpacity onPress={() => router.push("/Login")}>
-                <Text style={styles.loginButtonText}>Log In</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Navigation Buttons for Step 1 */}
-            <View style={styles.buttonContainer}>
-              <View style={{ flex: 1 }} />
-              <TouchableOpacity
-                style={styles.navButton}
-                onPress={() => setStep(step + 1)}
-              >
-                <Text style={styles.navButtonText}>Next</Text>
-              </TouchableOpacity>
-            </View>
-          </>
-        )}
-
-        {/* Step 2: Email & Phone */}
-        {step === 2 && (
-          <>
-            <Text style={styles.subheading}>Step 2: Contact Information</Text>
-            <Text style={styles.label}>Email</Text>
-            <TextInput
-              style={styles.input}
-              value={email}
-              placeholder="hello@example.com"
-              placeholderTextColor="#888"
-              onChangeText={setEmail}
-              autoCapitalize="none"
-            />
-            <Text style={styles.label}>Phone Number</Text>
-            <TextInput
-              style={styles.input}
-              value={phone}
-              placeholder="+65 1234 5678"
-              placeholderTextColor="#888"
-              onChangeText={setPhone}
-              keyboardType="phone-pad"
-            />
-          </>
-        )}
-
-        {/* Step 3: Username */}
-        {step === 3 && (
-          <>
-            <Text style={styles.subheading}>Step 3: Create a Username</Text>
-            <Text style={styles.label}>Username</Text>
-            <TextInput
-              style={styles.input}
-              value={username}
-              placeholder="yourusername"
-              placeholderTextColor="#888"
-              onChangeText={setUsername}
-              autoCapitalize="none"
-            />
-          </>
-        )}
-
-        {/* Step 4: Password & Confirm Password */}
-        {step === 4 && (
-          <>
-            <Text style={styles.subheading}>Step 4: Secure Your Account</Text>
-            <Text style={styles.label}>Password</Text>
-            <View style={styles.passwordContainer}>
-              <TextInput
-                style={styles.input}
-                value={password}
-                placeholder="Enter your password"
-                placeholderTextColor="#888"
-                secureTextEntry={!isPasswordVisible}
-                onChangeText={setPassword}
-              />
-              <TouchableOpacity
-                style={styles.eyeIcon}
-                onPress={() => setIsPasswordVisible(!isPasswordVisible)}
-              >
-                <Icon
-                  name={isPasswordVisible ? "visibility-off" : "visibility"}
-                  size={24}
-                  color="#888"
-                />
-              </TouchableOpacity>
-            </View>
-            <Text style={styles.label}>Confirm Password</Text>
-            <View style={styles.passwordContainer}>
-              <TextInput
-                style={styles.input}
-                value={confirmPassword}
-                placeholder="Confirm your password"
-                placeholderTextColor="#888"
-                secureTextEntry={!isConfirmPasswordVisible}
-                onChangeText={setConfirmPassword}
-              />
-              <TouchableOpacity
-                style={styles.eyeIcon}
-                onPress={() =>
-                  setIsConfirmPasswordVisible(!isConfirmPasswordVisible)
-                }
-              >
-                <Icon
-                  name={
-                    isConfirmPasswordVisible ? "visibility-off" : "visibility"
-                  }
-                  size={24}
-                  color="#888"
-                />
-              </TouchableOpacity>
-            </View>
-          </>
-        )}
-
-        {/* Step 5: Terms & Conditions */}
-        {step === 5 && (
-          <>
-            <Text style={styles.subheading}>Step 5: Accept Terms</Text>
-            <View style={styles.termsContainer}>
-              <Checkbox
-                value={isChecked}
-                onValueChange={setIsChecked}
-                color={isChecked ? "#42c8f5" : undefined}
-              />
-              <Text style={styles.termsText}> I accept the </Text>
-              <TouchableOpacity
-                onPress={() => alert("Open Terms & Conditions")}
-              >
-                <Text style={styles.termsLink}>Terms & Conditions</Text>
-              </TouchableOpacity>
-            </View>
-          </>
-        )}
-
-        {/* Navigation Buttons */}
-        {step !== 1 && (
-          <View style={styles.buttonContainer}>
-            {step > 1 && (
-              <TouchableOpacity
-                style={styles.navButton}
-                onPress={() => setStep(step - 1)}
-              >
-                <Text style={styles.navButtonText}>Back</Text>
-              </TouchableOpacity>
-            )}
-            {step < 5 ? (
-              <TouchableOpacity
-                style={styles.navButton}
-                onPress={() => setStep(step + 1)}
-              >
-                <Text style={styles.navButtonText}>Next</Text>
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity
-                style={styles.signupButton}
-                onPress={() => alert("Signed Up!")}
-              >
-                <Text style={styles.signupButtonText}>Sign Up</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        )}
-      </View>
+      <View style={styles.formContainer}>{renderStep()}</View>
     </View>
   );
 }
+
 const styles = StyleSheet.create({
   view: { marginTop: 100, justifyContent: "center", alignItems: "center" },
-  statusBarContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    width: "80%",
-    marginBottom: 20,
-  },
-  statusBarStep: {
-    flex: 1,
-    height: 5,
-    marginHorizontal: 3,
-    borderRadius: 5,
-  },
-  headingContainer: { alignItems: "center", marginBottom: 50 },
+  headingContainer: { alignItems: "center", marginBottom: 10 },
   heading: { fontSize: 28, fontWeight: "bold", marginBottom: 20 },
   heading2: { fontSize: 16, marginBottom: 20 },
-  subheading: { fontSize: 16, marginBottom: 20 },
   formContainer: {
     width: 400,
     padding: 20,
@@ -265,58 +220,4 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     backgroundColor: "#f9f9f9",
   },
-  rowContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    width: "100%",
-  },
-  halfInputContainer: { width: "48%" },
-  label: { fontSize: 14, fontWeight: "bold", marginBottom: 5 },
-  input: {
-    height: 40,
-    marginBottom: 15,
-    backgroundColor: "#fff",
-    width: "100%",
-    paddingHorizontal: 10,
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 5,
-  },
-  haveAnAccountText: { fontSize: 14 },
-  loginButtonText: {
-    color: "#42c8f5",
-    fontSize: 14,
-    fontWeight: "normal",
-  },
-  loginContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  passwordContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    position: "relative",
-  },
-  eyeIcon: { position: "absolute", right: 10, top: 10 },
-  termsContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginVertical: 10,
-  },
-  termsText: { fontSize: 14 },
-  termsLink: {
-    fontSize: 14,
-    color: "#42c8f5",
-    textDecorationLine: "underline",
-  },
-  buttonContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    width: "100%",
-    marginTop: 20,
-  },
-  navButton: { padding: 10, backgroundColor: "#ddd", borderRadius: 5 },
-  navButtonText: { fontSize: 16 },
-  signupButton: { backgroundColor: "#42c8f5", padding: 10, borderRadius: 5 },
-  signupButtonText: { color: "#fff", fontWeight: "bold" },
 });
