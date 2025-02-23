@@ -66,7 +66,7 @@ export const validateEmail = (email: string, setError: (error: string) => void):
 export const validatePhone = (phone: string, setError: (error: string) => void): boolean => {
   const phoneRegex = /^[89][0-9]{7}$/; // Starts with 8 or 9 and followed by 7 digits
   if (!phoneRegex.test(phone)) {
-    setError("Please enter a valid Singapore Phone Number (8/9xxxxxxx)");
+    setError("Please enter a valid Singapore mobile number");
     return false;
   }
   setError("");

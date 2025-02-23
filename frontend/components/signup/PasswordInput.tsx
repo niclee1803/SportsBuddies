@@ -37,7 +37,7 @@ interface PasswordInputProps {
         onPress={() => setIsVisible(!isVisible)}
       >
         <Icon
-          name={isVisible ? "visibility" : "visibility-off"}
+          name={isVisible ? "visibility-off" : "visibility"}
           size={24}
           color="#888"
         />
