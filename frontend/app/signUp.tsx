@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, Alert, StyleSheet, Platform } from "react-native";
+import { View, Text, Alert, Platform } from "react-native";
 import { useRouter } from "expo-router";
 import { StepIndicator } from "../components/signup/StepIndicator";
 import { Step1 } from "../components/signup/steps/Step1";
@@ -13,6 +13,7 @@ import {
   validateUsername,
   validatePassword,
 } from "../components/signup/ValidationUtils";
+import styles from "../components/signup/styles";
 
 interface SignUpProps {}
 
@@ -206,18 +207,3 @@ export default function SignUp(props: SignUpProps) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  view: { marginTop: 100, justifyContent: "center", alignItems: "center" },
-  headingContainer: { alignItems: "center", marginBottom: 10 },
-  heading: { fontSize: 28, fontWeight: "bold", marginBottom: 20 },
-  heading2: { fontSize: 16, marginBottom: 20 },
-  formContainer: {
-    width: 400,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 10,
-    backgroundColor: "#f9f9f9",
-  },
-});

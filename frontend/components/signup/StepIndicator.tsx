@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View } from 'react-native';
+import styles from './styles';
 
 interface StepIndicatorProps {
   currentStep: number;
@@ -19,18 +20,3 @@ export const StepIndicator: React.FC<StepIndicatorProps> = ({ currentStep, total
     ))}
   </View>
 );
-
-const styles = StyleSheet.create({
-    statusBarContainer: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      width: "80%",
-      marginBottom: 20,
-    },
-    statusBarStep: {
-      flex: 1,
-      height: 5,
-      marginHorizontal: 3,
-      borderRadius: 5,
-    },
-  });

@@ -1,8 +1,9 @@
 import React from 'react';
-import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, Text } from 'react-native';
 import { FormInput } from '../FormInput';
 import { NavigationButtons } from '../NavigationButtons';
 import { validateName } from '../ValidationUtils';
+import styles from '../styles';
 
 interface Step1Props {
   firstName: string;
@@ -75,35 +76,3 @@ export const Step1: React.FC<Step1Props> = ({
     </>
   );
 };
-
-
-const styles = StyleSheet.create({
-  subheading: { fontSize: 16, marginBottom: 20 },
-  rowContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    width: "100%",
-  },
-  halfInputContainer: { width: "48%" },
-  label: { fontSize: 14, fontWeight: "bold", marginBottom: 5 },
-  input: {
-    height: 40,
-    marginBottom: 15,
-    backgroundColor: "#fff",
-    width: "100%",
-    paddingHorizontal: 10,
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 5,
-  },
-  haveAnAccountText: { fontSize: 14 },
-  loginButtonText: {
-    color: "#42c8f5",
-    fontSize: 14,
-    fontWeight: "normal",
-  },
-  loginContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-});

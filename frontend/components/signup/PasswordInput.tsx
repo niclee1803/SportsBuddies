@@ -1,7 +1,8 @@
 import React from 'react';
-import { View, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, TouchableOpacity } from 'react-native';
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { FormInput } from './FormInput';
+import styles from './styles';
 
 interface PasswordInputProps {
     value: string;
@@ -44,11 +45,3 @@ interface PasswordInputProps {
       </TouchableOpacity>
     </View>
   );
-  
-
-const styles = StyleSheet.create({
-    inputContainer: {
-        marginBottom: 15,
-      },
-      eyeIcon: { position: "absolute", right: 10, top: 30 }
-});

@@ -1,7 +1,8 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import Checkbox from "expo-checkbox";
 import { NavigationButtons } from '../NavigationButtons';
+import styles from '../styles';
 
 interface Step5Props {
   isChecked: boolean;
@@ -40,19 +41,3 @@ export const Step5: React.FC<Step5Props> = ({
     />
   </>
 );
-
-const styles = StyleSheet.create({
-    subheading: { fontSize: 16, marginBottom: 20 },
-    termsContainer: {
-      flexDirection: "row",
-      alignItems: "center",
-      marginVertical: 10,
-    },
-    termsText: { fontSize: 14 },
-    termsLink: {
-      fontSize: 14,
-      color: "#42c8f5",
-      textDecorationLine: "underline",
-    },
-  });
-  

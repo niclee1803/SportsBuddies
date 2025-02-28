@@ -1,8 +1,9 @@
 import React from 'react';
-import { Text, StyleSheet } from 'react-native';
+import { Text } from 'react-native';
 import { FormInput } from '../FormInput';
 import { NavigationButtons } from '../NavigationButtons';
 import { validateEmail, validatePhone } from '../ValidationUtils';
+import styles from '../styles';
 
 interface Step2Props {
   email: string;
@@ -65,19 +66,3 @@ export const Step2: React.FC<Step2Props> = ({
     </>
   );
 };
-
-
-const styles = StyleSheet.create({
-  subheading: { fontSize: 16, marginBottom: 20 },
-  label: { fontSize: 14, fontWeight: "bold", marginBottom: 5 },
-  input: {
-    height: 40,
-    marginBottom: 15,
-    backgroundColor: "#fff",
-    width: "100%",
-    paddingHorizontal: 10,
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 5,
-  },
-});

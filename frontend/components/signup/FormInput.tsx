@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, TextInput, TextInputProps, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TextInputProps } from 'react-native';
+import styles from './styles';
 
 interface FormInputProps extends TextInputProps {
   label: string;
@@ -29,32 +30,3 @@ export const FormInput: React.FC<FormInputProps> = ({
     {error ? <Text style={styles.errorText}>{error}</Text> : null}
   </View>
 );
-
-const styles = StyleSheet.create({
-    inputContainer: {
-      marginBottom: 15,
-    },
-    label: {
-      fontSize: 14,
-      fontWeight: "bold",
-      marginBottom: 5,
-    },
-    input: {
-      height: 40,
-      backgroundColor: "#fff",
-      width: "100%",
-      paddingHorizontal: 10,
-      borderWidth: 1,
-      borderColor: "#ddd",
-      borderRadius: 5,
-    },
-    inputError: {
-      borderColor: 'red',
-      borderWidth: 1,
-    },
-    errorText: {
-      color: 'red',
-      fontSize: 12,
-      marginTop: 5,
-    },
-  });

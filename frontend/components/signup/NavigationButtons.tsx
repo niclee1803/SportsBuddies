@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, Text } from 'react-native';
+import styles from './styles';
 
 interface NavigationButtonsProps {
   step: number;
@@ -39,18 +40,4 @@ export const NavigationButtons: React.FC<NavigationButtonsProps> = ({
     </TouchableOpacity>
   </View>
 );
-
-const styles = StyleSheet.create({
-    disabledButton: { backgroundColor: "#ccc" },
-    buttonContainer: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      width: "100%",
-      marginTop: 20,
-    },
-    navButton: { padding: 10, backgroundColor: "#ddd", borderRadius: 5 },
-    navButtonText: { fontSize: 16 },
-    signupButton: { backgroundColor: "#42c8f5", padding: 10, borderRadius: 5 },
-    signupButtonText: { color: "#fff", fontWeight: "bold" },
-  });
   

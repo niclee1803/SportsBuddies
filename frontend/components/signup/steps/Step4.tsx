@@ -1,8 +1,9 @@
 import React from "react";
-import { Text, StyleSheet } from "react-native";
+import { Text } from "react-native";
 import { PasswordInput } from "../PasswordInput";
 import { NavigationButtons } from "../NavigationButtons";
 import { validatePassword } from "../ValidationUtils";
+import styles from "../styles";
 
 interface Step4Props {
   password: string;
@@ -81,7 +82,3 @@ export const Step4: React.FC<Step4Props> = ({
     </>
   );
 };
-
-const styles = StyleSheet.create({
-  subheading: { fontSize: 16, marginBottom: 20 },
-});
