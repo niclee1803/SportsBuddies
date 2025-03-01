@@ -37,7 +37,7 @@ export default function Login() {
   return (
     <View style={styles.view}>
       <Text style={styles.heading}>Login</Text>
-
+      <Text style={styles.heading2}>Welcome back!</Text>
       <View style={styles.formContainer}>
         {/* Email Label and Input */}
         <Text style={styles.label}>Email</Text>
@@ -105,7 +105,11 @@ const styles = StyleSheet.create({
   heading: {
     fontSize: 28,
     fontWeight: "bold",
-    marginBottom: 80,
+    marginBottom: 20,
+  },
+  heading2: { 
+    fontSize: 16, 
+    marginBottom: 60 
   },
   formContainer: {
     width: 400,
