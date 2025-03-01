@@ -1,6 +1,6 @@
-import { View, Button, StyleSheet, ImageBackground } from "react-native";
+import { View, Button, StyleSheet, ImageBackground, Text } from "react-native";
 import "expo-router/entry";
-import { useRouter } from "expo-router";
+import { Link, useRouter } from "expo-router";
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -10,20 +10,20 @@ export default function HomeScreen() {
       source={require("@/assets/images/landingpage.png")}
       style={styles.background}
     >
-      <View style={styles.buttonContainer}>
+      <View style={styles.container}>
+        <Text style={styles.welcomeText}>Connect with other sports enthusiasts!</Text>
         <View style={styles.buttonWrapper}>
           <Button
-            title="Sign Up"
+            title="Get started"
             onPress={() => router.push("/SignUp")}
-            color="#000000"
+            color="#ffffff"
           />
         </View>
-        <View style={styles.buttonWrapper}>
-          <Button
-            title="Log In"
-            onPress={() => router.push("/Login")}
-            color="#000000"
-          />
+        <View style={styles.text}>
+          <Text>Already have an account?</Text>
+          <Link href="/Login">
+            <Text style={{ color: "#0000ff" }}>Login</Text>
+          </Link>
         </View>
       </View>
     </ImageBackground>
@@ -37,8 +37,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 0,
   },
-  buttonContainer: {
-    marginTop: 600,
+  container: {
+    marginTop: 450,
     flexDirection: "column",
     justifyContent: "center",
     alignItems: "center",
@@ -46,11 +46,23 @@ const styles = StyleSheet.create({
     width: "100%",
     gap: 20,
   },
+  welcomeText: {
+    fontFamily: "San Francisco",
+    fontSize: 25,
+    marginBottom: 100,
+    textAlign: "center",
+  },
   buttonWrapper: {
-    width: "80%",
+    width: "70%",
     height: 50,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#000000",
     borderRadius: 20,
     justifyContent: "center",
   },
+  text: {
+    flexDirection: "column",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 5,
+  }
 });
