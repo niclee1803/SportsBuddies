@@ -5,16 +5,34 @@ import {
   StyleSheet,
   View,
   TouchableOpacity,
+  Alert,
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import React, { useState } from "react";
 import { useRouter } from "expo-router";
+import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
+import { app } from '../constants/firebaseConfig';  // Adjust path if needed
+
 
 export default function Login() {
+  const auth = getAuth(app);
   const router = useRouter();
   const [email, setemail] = useState("");
   const [password, setPassword] = useState("");
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+
+  const handleLogin = async () => {
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      // You can now do something with `user` if needed (e.g., save to context, navigate, etc.)
+      Alert.alert('Welcome!', `Logged in as ${user.email}`);
+      //router.push('/home');  // Adjust to wherever you want to send them after login.
+    } catch (error: any) {
+      Alert.alert('Login Failed', error.message);
+    }
+  };
 
   return (
     <View style={styles.view}>
@@ -64,13 +82,13 @@ export default function Login() {
         {/* Don't have an account? */}
         <View style={styles.signUpContainer}>
           <Text style={styles.signUpText}>Don't have an account? </Text>
-          <TouchableOpacity onPress={() => router.push("/SignUp")}>
+          <TouchableOpacity onPress={() => router.push("/signUp")}>
             <Text style={styles.linkButtonText}>Sign Up</Text>
           </TouchableOpacity>
         </View>
 
         {/* Login Button */}
-        <TouchableOpacity style={styles.loginButton} onPress={() => {}}>
+        <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
           <Text style={styles.loginButtonText}>Login</Text>
         </TouchableOpacity>
       </View>
