@@ -88,7 +88,7 @@ const styles = StyleSheet.create({
   loginButtonText: {
     color: "#42c8f5",
     fontSize: 14,
-    fontWeight: "normal",
+    fontWeight: "bold",
   },
   loginContainer: {
     flexDirection: "row",

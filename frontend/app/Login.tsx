@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
   linkButtonText: {
     color: "#42c8f5",
     fontSize: 14,
-    fontWeight: "normal",
+    fontWeight: "bold",
   },
   signUpContainer: {
     flexDirection: "row",
