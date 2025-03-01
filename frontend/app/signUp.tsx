@@ -14,6 +14,10 @@ import {
   validatePassword,
 } from "../components/signup/ValidationUtils";
 import styles from "../components/signup/styles";
+import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
+import { app } from '../constants/firebaseConfig';  // This is your firebaseConfig file
+import { getFirestore } from 'firebase/firestore';
 
 interface SignUpProps {}
 
@@ -21,6 +25,8 @@ export default function SignUp(props: SignUpProps) {
   const router = useRouter();
   const [step, setStep] = useState<number>(1);
   const totalSteps = 5;
+  const auth = getAuth(app);
+  const db = getFirestore(app); 
 
   // Form state
   const [firstName, setFirstName] = useState<string>("");
@@ -78,40 +84,31 @@ export default function SignUp(props: SignUpProps) {
 
   const handleSubmit = async () => {
     try {
-      const userData = {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      await setDoc(doc(db, 'users', user.uid), {
         firstName,
         lastName,
         email,
         phone,
         username,
-        password,
-      };
-
-      console.log("User Data:", userData);
+        createdAt: new Date().toISOString()
+      });
 
       if (Platform.OS === "web") {
-        // For browser testing and debugging
         window.alert("Success! Your account has been created successfully!");
         router.push("/Login");
       } else {
         Alert.alert("Success!", "Your account has been created successfully!", [
-          {
-            text: "OK",
-            onPress: () => router.push("/Login"),
-          },
+          { text: "OK", onPress: () => router.push("/Login") }
         ]);
       }
-    } catch (error) {
+    } catch (error: any) {
       if (Platform.OS === "web") {
-        window.alert(
-          "There was an error creating your account. Please try again."
-        );
+        window.alert(`Error: ${error.message}`);
       } else {
-        Alert.alert(
-          "Error",
-          "There was an error creating your account. Please try again.",
-          [{ text: "OK" }]
-        );
+        Alert.alert("Error", error.message, [{ text: "OK" }]);
       }
     }
   };
