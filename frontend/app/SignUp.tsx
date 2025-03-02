@@ -8,25 +8,23 @@ import { Step3 } from "../components/signup/steps/Step3";
 import { Step4 } from "../components/signup/steps/Step4";
 import { Step5 } from "../components/signup/steps/Step5";
 import {
-  validateEmail,
   validatePhone,
-  validateUsername,
-  validatePassword,
+  validatePassword
 } from "../components/signup/ValidationUtils";
 import styles from "../components/signup/styles";
-import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
-import { app } from '../constants/firebaseConfig';  // This is your firebaseConfig file
-import { getFirestore } from 'firebase/firestore';
+import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
+import { doc, setDoc } from "firebase/firestore";
+import { app } from "../constants/firebaseConfig"; // Exports { app, db }
+import { getFirestore } from "firebase/firestore";
 
-interface SignUpProps {}
+interface SignUpProps { }
 
 export default function SignUp(props: SignUpProps) {
   const router = useRouter();
   const [step, setStep] = useState<number>(1);
   const totalSteps = 5;
   const auth = getAuth(app);
-  const db = getFirestore(app); 
+  const db = getFirestore(app);
 
   // Form state
   const [firstName, setFirstName] = useState<string>("");
@@ -40,33 +38,40 @@ export default function SignUp(props: SignUpProps) {
 
   // Password visibility
   const [isPasswordVisible, setIsPasswordVisible] = useState<boolean>(false);
-  const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] =
-    useState<boolean>(false);
+  const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState<boolean>(false);
 
-  // Error states
+  // Error states (allow null)
   const [firstNameError, setFirstNameError] = useState<string>("");
   const [lastNameError, setLastNameError] = useState<string>("");
-  const [emailError, setEmailError] = useState<string>("");
-  const [phoneError, setPhoneError] = useState<string>("");
-  const [usernameError, setUsernameError] = useState<string>("");
-  const [passwordError, setPasswordError] = useState<string>("");
-  const [confirmPasswordError, setConfirmPasswordError] = useState<string>("");
+  const [emailError, setEmailError] = useState<string | null>("");
+  const [phoneError, setPhoneError] = useState<string | null>("");
+  const [usernameError, setUsernameError] = useState<string | null>("");
+  const [passwordError, setPasswordError] = useState<string | null>("");
+  const [confirmPasswordError, setConfirmPasswordError] = useState<string | null>("");
 
   const handleBack = () => {
     setStep(step - 1);
   };
 
+  // Updated handleNext: assumes duplicate validations (for email, username, phone) have been performed in their respective steps.
   const handleNext = async () => {
     let isValid = true;
 
     switch (step) {
       case 2:
-        isValid =
-          validateEmail(email, setEmailError) &&
-          validatePhone(phone, setPhoneError);
+        // In Step2, duplicate email check is done onBlur.
+        // Here, we re-run the phone duplicate check as a fallback.
+        if (emailError) {
+          isValid = false;
+        } else {
+          isValid = await validatePhone(phone, setPhoneError);
+        }
         break;
       case 3:
-        isValid = await validateUsername(username, setUsernameError);
+        // In Step3, duplicate username check is assumed to have run onBlur.
+        if (usernameError || !username) {
+          isValid = false;
+        }
         break;
       case 4:
         isValid = validatePassword(password, setPasswordError);
@@ -75,6 +80,8 @@ export default function SignUp(props: SignUpProps) {
           isValid = false;
         }
         break;
+      default:
+        isValid = true;
     }
 
     if (isValid) {
@@ -84,16 +91,17 @@ export default function SignUp(props: SignUpProps) {
 
   const handleSubmit = async () => {
     try {
+      // Final submission assumes all validations are done.
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      await setDoc(doc(db, 'users', user.uid), {
+      await setDoc(doc(db, "users", user.uid), {
         firstName,
         lastName,
         email,
         phone,
         username,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
       });
 
       if (Platform.OS === "web") {
@@ -101,7 +109,7 @@ export default function SignUp(props: SignUpProps) {
         router.push("/Login");
       } else {
         Alert.alert("Success!", "Your account has been created successfully!", [
-          { text: "OK", onPress: () => router.push("/Login") }
+          { text: "OK", onPress: () => router.push("/Login") },
         ]);
       }
     } catch (error: any) {
@@ -138,9 +146,9 @@ export default function SignUp(props: SignUpProps) {
             phone={phone}
             setPhone={setPhone}
             emailError={emailError}
-            setEmailError={(error) => setEmailError(error || "")}
+            setEmailError={setEmailError}
             phoneError={phoneError}
-            setPhoneError={(error) => setPhoneError(error || "")}
+            setPhoneError={setPhoneError}
             onBack={handleBack}
             onNext={handleNext}
           />
@@ -151,7 +159,7 @@ export default function SignUp(props: SignUpProps) {
             username={username}
             setUsername={setUsername}
             usernameError={usernameError}
-            setUsernameError={(error) => setUsernameError(error || "")}
+            setUsernameError={setUsernameError}
             onBack={handleBack}
             onNext={handleNext}
           />
@@ -164,11 +172,9 @@ export default function SignUp(props: SignUpProps) {
             confirmPassword={confirmPassword}
             setConfirmPassword={setConfirmPassword}
             passwordError={passwordError}
-            setPasswordError={(error) => setPasswordError(error || "")}
+            setPasswordError={setPasswordError}
             confirmPasswordError={confirmPasswordError}
-            setConfirmPasswordError={(error) =>
-              setConfirmPasswordError(error || "")
-            }
+            setConfirmPasswordError={setConfirmPasswordError}
             isPasswordVisible={isPasswordVisible}
             setIsPasswordVisible={setIsPasswordVisible}
             isConfirmPasswordVisible={isConfirmPasswordVisible}
@@ -194,12 +200,10 @@ export default function SignUp(props: SignUpProps) {
   return (
     <View style={styles.view}>
       <StepIndicator currentStep={step} totalSteps={totalSteps} />
-
       <View style={styles.headingContainer}>
         <Text style={styles.heading}>Sign Up</Text>
         <Text style={styles.heading2}>It's free and takes one minute!</Text>
       </View>
-
       <View style={styles.formContainer}>{renderStep()}</View>
     </View>
   );
