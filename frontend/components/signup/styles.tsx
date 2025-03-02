@@ -134,6 +134,23 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     backgroundColor: "#f9f9f9",
   },
+  loadingOverlay: {
+    flex: 1,
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+  },
+  loadingText: {
+    marginTop: 10,
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "bold",
+  },
 });
 
 export default styles;

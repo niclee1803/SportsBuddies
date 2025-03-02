@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, Alert, Platform } from "react-native";
+import { View, Text, Alert, Platform, ActivityIndicator, Modal } from "react-native";
 import { useRouter } from "expo-router";
 import { StepIndicator } from "../components/signup/StepIndicator";
 import { Step1 } from "../components/signup/steps/Step1";
@@ -14,14 +14,14 @@ import {
 import styles from "../components/signup/styles";
 import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
-import { app } from "../constants/firebaseConfig"; // Exports { app, db }
+import { app } from "../constants/firebaseConfig";
 import { getFirestore } from "firebase/firestore";
 
-interface SignUpProps { }
-
-export default function SignUp(props: SignUpProps) {
+export default function SignUp() {
   const router = useRouter();
   const [step, setStep] = useState<number>(1);
+  const [loading, setLoading] = useState<boolean>(false); // New loading state
+
   const totalSteps = 5;
   const auth = getAuth(app);
   const db = getFirestore(app);
@@ -40,7 +40,7 @@ export default function SignUp(props: SignUpProps) {
   const [isPasswordVisible, setIsPasswordVisible] = useState<boolean>(false);
   const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState<boolean>(false);
 
-  // Error states (allow null)
+  // Error states
   const [firstNameError, setFirstNameError] = useState<string>("");
   const [lastNameError, setLastNameError] = useState<string>("");
   const [emailError, setEmailError] = useState<string | null>("");
@@ -90,8 +90,9 @@ export default function SignUp(props: SignUpProps) {
   };
 
   const handleSubmit = async () => {
+    setLoading(true); // Show loading overlay
+
     try {
-      // Final submission assumes all validations are done.
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
@@ -104,6 +105,8 @@ export default function SignUp(props: SignUpProps) {
         createdAt: new Date().toISOString(),
       });
 
+      setLoading(false); // Hide loading overlay before alert
+
       if (Platform.OS === "web") {
         window.alert("Success! Your account has been created successfully!");
         router.push("/Login");
@@ -113,6 +116,8 @@ export default function SignUp(props: SignUpProps) {
         ]);
       }
     } catch (error: any) {
+      setLoading(false); // Hide loading overlay on error
+
       if (Platform.OS === "web") {
         window.alert(`Error: ${error.message}`);
       } else {
@@ -205,6 +210,16 @@ export default function SignUp(props: SignUpProps) {
         <Text style={styles.heading2}>It's free and takes one minute!</Text>
       </View>
       <View style={styles.formContainer}>{renderStep()}</View>
+      
+      {/* Loading Overlay */}
+      {loading && (
+        <Modal transparent={true} animationType="fade">
+          <View style={styles.loadingOverlay}>
+            <ActivityIndicator size="large" color="#fff" />
+            <Text style={styles.loadingText}>Creating Account...</Text>
+          </View>
+        </Modal>
+      )}
     </View>
   );
 }

@@ -1,11 +1,12 @@
 import {
   Text,
-  Button,
   TextInput,
   StyleSheet,
   View,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
+  Modal,
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import React, { useState } from "react";
@@ -13,24 +14,25 @@ import { useRouter } from "expo-router";
 import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
 import { app } from '../constants/firebaseConfig';  // Adjust path if needed
 
-
 export default function Login() {
   const auth = getAuth(app);
   const router = useRouter();
-  const [email, setemail] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = async () => {
+    setIsLoading(true);
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
-
-      // You can now do something with `user` if needed (e.g., save to context, navigate, etc.)
       Alert.alert('Welcome!', `Logged in as ${user.email}`);
-      //router.push('/home');  // Adjust to wherever you want to send them after login.
+      // router.push('/home');  // Navigate after login
     } catch (error: any) {
       Alert.alert('Login Failed', error.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -39,18 +41,18 @@ export default function Login() {
       <Text style={styles.heading}>Login</Text>
       <Text style={styles.heading2}>Welcome back!</Text>
       <View style={styles.formContainer}>
-        {/* Email Label and Input */}
         <Text style={styles.label}>Email</Text>
         <TextInput
           style={styles.input}
           value={email}
           placeholder="hello@example.com"
           placeholderTextColor="#888"
-          onChangeText={(text) => setemail(text)}
+          onChangeText={setEmail}
           autoCapitalize="none"
+          keyboardType="email-address"
+          textContentType='emailAddress'
         />
 
-        {/* Password Label and Input */}
         <Text style={styles.label}>Password</Text>
         <View style={styles.passwordContainer}>
           <TextInput
@@ -59,9 +61,8 @@ export default function Login() {
             placeholder="Enter your password"
             placeholderTextColor="#888"
             secureTextEntry={!isPasswordVisible}
-            onChangeText={(text) => setPassword(text)}
+            onChangeText={setPassword}
           />
-          {/* Eye Icon for Password Visibility Toggle */}
           <TouchableOpacity
             style={styles.eyeIcon}
             onPress={() => setIsPasswordVisible(!isPasswordVisible)}
@@ -74,12 +75,10 @@ export default function Login() {
           </TouchableOpacity>
         </View>
 
-        {/* Forgot Password Button */}
         <TouchableOpacity style={styles.linkButton} onPress={() => router.push("/ForgetPassword")}>
           <Text style={styles.linkButtonText}>Forgot Password?</Text>
         </TouchableOpacity>
 
-        {/* Don't have an account? */}
         <View style={styles.signUpContainer}>
           <Text style={styles.signUpText}>Don't have an account? </Text>
           <TouchableOpacity onPress={() => router.push("/SignUp")}>
@@ -87,11 +86,24 @@ export default function Login() {
           </TouchableOpacity>
         </View>
 
-        {/* Login Button */}
-        <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
+        <TouchableOpacity
+          style={[styles.loginButton, isLoading && { backgroundColor: "#aaa" }]}
+          onPress={handleLogin}
+          disabled={isLoading}
+        >
           <Text style={styles.loginButtonText}>Login</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Loading Overlay */}
+      {isLoading && (
+        <Modal transparent={true} animationType="fade">
+          <View style={styles.loadingOverlay}>
+            <ActivityIndicator size="large" color="#fff" />
+            <Text style={styles.loadingText}>Logging in...</Text>
+          </View>
+        </Modal>
+      )}
     </View>
   );
 }
@@ -177,5 +189,21 @@ const styles = StyleSheet.create({
     color: "#ffffff",
     fontSize: 16,
     fontWeight: "bold",
+  },
+  loadingOverlay: {
+    flex: 1,
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    color: "#fff",
+    fontSize: 18,
+    marginTop: 10,
   },
 });
