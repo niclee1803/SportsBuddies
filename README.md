@@ -4,7 +4,7 @@ Clone the project
 git clone https://github.com/niclee1803/SportsBuddies.git
 ```
 
-## Frontend
+## How to run the frontend development server
 Requirements: Expo Go app on your mobile
 1. Navigate to frontend directory
    ```bash
