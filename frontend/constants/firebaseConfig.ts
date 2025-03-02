@@ -1,11 +1,9 @@
-// Import the functions you need from the SDKs you need
+// firebaseConfig.ts
 import { initializeApp } from "firebase/app";
+import { getFirestore } from "firebase/firestore";
+// Optionally, if you need Analytics (you can remove if not)
 import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
 
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
   apiKey: "AIzaSyCMTFU99XqI5jolSXdK7j3gHejLttEyQwc",
   authDomain: "sportbuddies-data-821a9.firebaseapp.com",
@@ -16,7 +14,10 @@ const firebaseConfig = {
   measurementId: "G-74VLHGQSF0"
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
+// Optional: Initialize Analytics if you want to use it
+// const analytics = getAnalytics(app);
 
-export { app };
+const db = getFirestore(app);
+
+export { app, db };
