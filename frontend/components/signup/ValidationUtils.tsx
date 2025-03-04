@@ -7,14 +7,18 @@ export const validateName = (
   name: string,
   setNameError: (error: string) => void
 ): boolean => {
-  const nameRegex = /^[A-Za-z]+$/;
+  const nameRegex = /^[A-Za-z\s]{1,20}$/;
 
   if (!name) {
     setNameError("Name is required.");
     return false;
   }
+  if (name.length > 20) {
+    setNameError("Name must be less than 20 characters.");
+    return false;
+  }
   if (!nameRegex.test(name)) {
-    setNameError("Name can only contain alphabets.");
+    setNameError("Name can only contain alphabets and spaces.");
     return false;
   }
   setNameError("");
