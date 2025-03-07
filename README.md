@@ -5,7 +5,7 @@ git clone https://github.com/niclee1803/SportsBuddies.git
 ```
 
 ## How to run the frontend development server
-Requirements: Expo Go app on your mobile
+Requirements: Expo Go app on your mobile, Node.js on PC
 1. Navigate to frontend directory
    ```bash
    cd SportsBuddies/frontend
