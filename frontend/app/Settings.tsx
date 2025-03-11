@@ -40,19 +40,19 @@ const Settings = () => {
     }
   };
 
-  return (
+  return ( // profile pic part is not working, need to connect to firebase storage
     <Template>
       <View style={styles.container}>
         {user && (
           <View style={styles.profileContainer}>
-            <Image source={{ uri: user.profilePicture || 'https://via.placeholder.com/150' }} style={styles.profileImage} />
-            <Text style={styles.name}>{user.displayName || 'User Name'}</Text>
-            <Text style={styles.username}>{user.username || '@username'}</Text>
+            <Image source={{ uri: user.profilePicture || 'image.url' }} style={styles.profileImage} /> 
+            <Text style={styles.name}>{user.firstName} {user.lastName}</Text>
+            <Text style={styles.username}>@{user.username}</Text>
           </View>
         )}
 
         <TouchableOpacity style={styles.settingItem}>
-          <Text style={styles.settingText}>Edit Profile</Text>
+          <Text style={[styles.settingText,{fontWeight:'bold'}]}>Edit Profile</Text>
         </TouchableOpacity>
 
         <View style={styles.settingItem}>
