@@ -40,12 +40,12 @@ const Settings = () => {
     }
   };
 
-  return ( // profile pic part is not working, need to connect to firebase storage
+  return ( // profile pic part is not working, need to connect to firebase storage, added placeholder to see how it looks like
     <Template>
       <View style={styles.container}>
         {user && (
           <View style={styles.profileContainer}>
-            <Image source={{ uri: user.profilePicture || 'image.url' }} style={styles.profileImage} /> 
+            <Image source={{ uri: "https://cdn.nba.com/headshots/nba/latest/1040x760/1642355.png" }} style={styles.profileImage} /> 
             <Text style={styles.name}>{user.firstName} {user.lastName}</Text>
             <Text style={styles.username}>@{user.username}</Text>
           </View>
@@ -93,6 +93,8 @@ const styles = StyleSheet.create({
     height: 100,
     borderRadius: 50,
     marginBottom: 10,
+    borderWidth: 1,
+    borderColor: 'black'
   },
   name: {
     fontSize: 20,

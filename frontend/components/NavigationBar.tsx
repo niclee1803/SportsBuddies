@@ -50,7 +50,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
     alignItems: 'center',
     backgroundColor: '#5E83C6',
-    height: 80,
+    height: 90,
     paddingBottom: 20,
   },
   item: {
