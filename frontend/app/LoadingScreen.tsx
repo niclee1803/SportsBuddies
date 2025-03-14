@@ -1,6 +1,6 @@
 import { StyleSheet, ImageBackground } from 'react-native';
 
-export default function LoadingScreen() {
+export default function HomeScreen() {
   return (
     <ImageBackground
       source={require('@/assets/images/loadingpage.png')}

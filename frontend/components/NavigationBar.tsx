@@ -10,7 +10,7 @@ const NavigationBar: React.FC = () => {
   const router = useRouter();
 
   const handleNavigation = (route: Route) => {
-    router.push(route as any); // Explicitly cast to bypass Expo Router's strict typing
+    router.push(route as any); 
   };
 
   return (

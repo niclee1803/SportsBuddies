@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Switch, Image, Alert, Platform } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Switch, Image, Alert, Platform} from 'react-native';
 import { getAuth, signOut } from 'firebase/auth';
 import { getFirestore, doc, getDoc } from 'firebase/firestore';
 import { app } from '../constants/firebaseConfig';  
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import Template from '../components/Template'; 
 
 const Settings = () => {
@@ -13,23 +13,24 @@ const Settings = () => {
   const auth = getAuth(app);
   const db = getFirestore(app);
   const router = useRouter();
+  const fetchUserData = async () => {
+    if (auth.currentUser) {
+      const userRef = doc(db, 'users', auth.currentUser.uid); 
+      const userSnap = await getDoc(userRef);
 
-  useEffect(() => {
-    const fetchUserData = async () => {
-      if (auth.currentUser) {
-        const userRef = doc(db, 'users', auth.currentUser.uid); 
-        const userSnap = await getDoc(userRef);
-
-        if (userSnap.exists()) {
-          setUser(userSnap.data());
-        } else {
-          console.log('No such document!');
-        }
+      if (userSnap.exists()) {
+        setUser(userSnap.data());
+      } else {
+        console.log('No such document!');
       }
-    };
+    }
+  };
 
-    fetchUserData();
-  }, [auth.currentUser, db]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchUserData();
+    }, [auth.currentUser])
+  );
 
   const handleLogoutConfirmation = () => {
     //alert dont work for web so we have a diff logout confirmation for web view
@@ -114,16 +115,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: '#D9D9D9',
   },
   profileContainer: {
     alignItems: 'center',
     marginBottom: 20,
   },
   profileImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 150,
+    height: 150,
+    borderRadius: 100,
     marginBottom: 10,
     borderWidth: 1,
     borderColor: 'black'
@@ -150,14 +150,14 @@ const styles = StyleSheet.create({
   logoutButton: {
     backgroundColor: '#42c8f5',
     borderRadius: 5,
-    paddingVertical: 12,
+    paddingVertical: 10,
     alignItems: 'center',
     marginTop: 20,
   },
   editProfileButton: {
     backgroundColor: '#42c8f5',
     borderRadius: 5,
-    paddingVertical: 12,
+    paddingVertical: 10,
     paddingHorizontal: 20,
     marginTop: 20,
     alignItems: 'center',
