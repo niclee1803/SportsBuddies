@@ -10,12 +10,13 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
   return (
     <View style={styles.container}>
       <View style={styles.content}>
-        {children} {}
+        {children}
       </View>
       <BottomNavigationBar />
     </View>
   );
 };
+
 
 const styles = StyleSheet.create({
   container: {

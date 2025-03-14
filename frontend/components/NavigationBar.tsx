@@ -3,15 +3,14 @@ import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 
-interface NavigationBarProps {
-  // Add props here
-}
+// Define a custom type for your allowed routes
+type Route = '/Home' | '/Groups' | '/Create' | '/Profile' | '/Settings';
 
-const NavigationBar: React.FC<NavigationBarProps> = () => {
+const NavigationBar: React.FC = () => {
   const router = useRouter();
 
-  const handleNavigation = (route: '/Home' | '/Groups' | '/Create' | '/Profile' | '/Settings') => {
-    router.push(route);
+  const handleNavigation = (route: Route) => {
+    router.push(route as any); // Explicitly cast to bypass Expo Router's strict typing
   };
 
   return (
@@ -57,8 +56,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   itemText: {
-      color: '#000', 
-  }
+    color: '#000',
+  },
 });
 
 export default NavigationBar;

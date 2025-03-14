@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Switch, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Switch, Image, Alert, Platform } from 'react-native';
 import { getAuth, signOut } from 'firebase/auth';
 import { getFirestore, doc, getDoc } from 'firebase/firestore';
 import { app } from '../constants/firebaseConfig';  
@@ -30,6 +30,34 @@ const Settings = () => {
 
     fetchUserData();
   }, [auth.currentUser, db]);
+
+  const handleLogoutConfirmation = () => {
+    //alert dont work for web so we have a diff logout confirmation for web view
+    if (Platform.OS === 'web') {
+      const confirmLogout = window.confirm('Are you sure you want to logout?');
+      if (confirmLogout) {
+        handleLogout();
+      }
+    }
+      else{
+
+    Alert.alert(
+      "Confirm Logout",
+      "Are you sure you want to logout?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel"
+        },
+        { 
+          text: "Logout", 
+          onPress: handleLogout 
+        }
+      ]
+    );
+    }
+  };
+  
 
   const handleLogout = async () => {
     try {
@@ -70,7 +98,7 @@ const Settings = () => {
           <Switch value={notificationsEnabled} onValueChange={setNotificationsEnabled} />
         </View>
 
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogoutConfirmation}>
           <Text style={styles.logoutButtonText}>Logout</Text>
         </TouchableOpacity>
       </View>
@@ -127,6 +155,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
+  
 });
 
 export default Settings;
