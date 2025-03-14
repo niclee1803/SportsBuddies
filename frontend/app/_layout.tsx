@@ -46,6 +46,7 @@ export default function Layout() {
       <Stack.Screen name="ForgetPassword" options={{ title: 'Forget Password', headerShown: false }} />
       <Stack.Screen name="Home" options={{ title: 'Home', headerShown: false }} />
       <Stack.Screen name="Settings" options={{ title: 'Settings', headerShown: false }} />
+      <Stack.Screen name="ProfileSettings" options={{ title: 'Profile Settings', headerShown: true }} />
       <Stack.Screen name="Profile" options={{ title: 'Profile', headerShown: false }} />
       <Stack.Screen name="Create" options={{ title: 'Create', headerShown: false }} />
       <Stack.Screen name="Groups" options={{ title: 'Groups', headerShown: false }} />

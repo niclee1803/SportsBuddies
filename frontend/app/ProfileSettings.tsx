@@ -2,11 +2,11 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Template from '../components/Template'; 
 
-const Groups = () => {
+const ProfileSettings = () => {
   return (
     <Template>
       <View style={styles.container}>
-        <Text style={styles.text}>Groups Page</Text>
+        <Text style={styles.text}>Profile Page</Text>
       </View>
     </Template>
   );
@@ -23,4 +23,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default Groups;
+export default ProfileSettings;

@@ -68,6 +68,10 @@ const Settings = () => {
     }
   };
 
+  const gotoProfileSettings = () => {
+    router.push('/ProfileSettings');
+  };
+
   return ( // profile pic part is not working, need to connect to firebase storage, added placeholder to see how it looks like
     <Template>
       <View style={styles.container}>
@@ -80,7 +84,7 @@ const Settings = () => {
         )}
 
         <TouchableOpacity style={styles.settingItem}>
-          <Text style={[styles.settingText,{fontWeight:'bold'}]}>Edit Profile</Text>
+          <Text style={[styles.editProfileButton, {fontWeight: 'bold'}, {fontSize: 16}]} onPress={gotoProfileSettings} >Edit Profile</Text>
         </TouchableOpacity>
 
         <View style={styles.settingItem}>
@@ -149,6 +153,14 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     alignItems: 'center',
     marginTop: 20,
+  },
+  editProfileButton: {
+    backgroundColor: '#42c8f5',
+    borderRadius: 5,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    marginTop: 20,
+    alignItems: 'center',
   },
   logoutButtonText: {
     color: '#000',
