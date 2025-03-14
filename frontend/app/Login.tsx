@@ -28,7 +28,7 @@ export default function Login() {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
       Alert.alert('Welcome!', `Logged in as ${user.email}`);
-      // router.push('/home');  // Navigate after login
+      router.push('/Home');  // Navigate after login
     } catch (error: any) {
       Alert.alert('Login Failed', error.message);
     } finally {
