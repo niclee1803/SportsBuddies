@@ -24,7 +24,7 @@ Requirements: Expo Go app on your mobile, Node.js on PC
 4. Scan QR Code on mobile
 
 
-## How to run the frontend development server
+## How to run the backend server
 1. Navigate to backend directory
    ```bash
    cd SportsBuddies/backend
