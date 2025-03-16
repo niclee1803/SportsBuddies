@@ -50,7 +50,7 @@ const Template: React.FC<TemplateProps> = ({ children }) => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: 'lightgray',
+    backgroundColor: 'f9f9f9',
   },
   container: {
     flex: 1,
