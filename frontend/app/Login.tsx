@@ -11,11 +11,8 @@ import {
 import Icon from "react-native-vector-icons/MaterialIcons";
 import React, { useState } from "react";
 import { useRouter } from "expo-router";
-import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
-import { app } from '../constants/firebaseConfig';  // Adjust path if needed
 
 export default function Login() {
-  const auth = getAuth(app);
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -25,14 +22,30 @@ export default function Login() {
   const handleLogin = async () => {
     setIsLoading(true);
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
-      Alert.alert('Welcome!', `Logged in as ${user.email}`);
-      router.push('/Home');  // Navigate after login
+      const response = await fetch("http://127.0.0.1:8000/users/login/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          password,
+        }),
+      });
+
+      const data = await response.json();
+
+      setIsLoading(false); // Hide loading overlay before alert
+
+      if (response.ok) {
+        Alert.alert('Welcome!', `Logged in as ${data.email}`);
+        router.push('/Home');  // Navigate after login
+      } else {
+        Alert.alert('Login Failed', data.error);
+      }
     } catch (error: any) {
+      setIsLoading(false); // Hide loading overlay on error
       Alert.alert('Login Failed', error.message);
-    } finally {
-      setIsLoading(false);
     }
   };
 
