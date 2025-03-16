@@ -23,6 +23,25 @@ Requirements: Expo Go app on your mobile, Node.js on PC
 
 4. Scan QR Code on mobile
 
+
+## How to run the frontend development server
+1. Navigate to backend directory
+   ```bash
+   cd SportsBuddies/backend
+   ```
+
+2. If you havent already, create a virtual environment and install the requirements
+   (more on this later)
+   
+
+3. Run the development server
+   ```bash
+   python manage.py runserver
+   ```
+
+4. API endpoints will be hosted on localhost:8000
+
+
 ## Github Procedure for Cloning and Updating 
 1. Clone the Main Repository to your Desktop 
 2. git checkout -b feature/feature-name (Write this line of code in your terminal to create a new branch with the title feature/feature-name and switch to it automatically)
