@@ -67,6 +67,8 @@ Requirements: Expo Go app on your mobile, Node.js on PC
 6. API endpoints will be hosted on localhost:8000
 
 
+
+
 ## Github Procedure for Cloning and Updating 
 1. Clone the Main Repository to your Desktop 
 2. git checkout -b feature/feature-name (Write this line of code in your terminal to create a new branch with the title feature/feature-name and switch to it automatically)
