@@ -30,16 +30,41 @@ Requirements: Expo Go app on your mobile, Node.js on PC
    cd SportsBuddies/backend
    ```
 
-2. If you havent already, create a virtual environment and install the requirements
-   (more on this later)
-   
+2. If you havent already, create a virtual environment.
+   ```bash
+   python -m venv venv
+   ```
 
-3. Run the development server
+3. Activate the virtual environment
+   ```bash
+   # For Windows users
+   venv\Scripts\activate
+
+   # For macOS/Linux users
+   source venv/bin/activate
+   ```
+
+   If you get an error about not running scripts in the system being disabled, you can enable it for the current terminal process
+   ```bash
+   Set-ExecutionPolicy Unrestricted -Scope Process
+   ```
+
+3. If you haven't already, install the dependencies
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. Apply any database migrations to ensure your database schema is up to date
+   ```bash
+   python manage.py migrate
+   ```
+
+5. Run the backend development server
    ```bash
    python manage.py runserver
    ```
 
-4. API endpoints will be hosted on localhost:8000
+6. API endpoints will be hosted on localhost:8000
 
 
 ## Github Procedure for Cloning and Updating 
