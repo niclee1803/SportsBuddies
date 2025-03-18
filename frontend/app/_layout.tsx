@@ -1,55 +1,62 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
-import 'react-native-reanimated';
+import React, { useEffect, useState } from "react";
+import { Stack } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-import { useColorScheme } from '@/hooks/useColorScheme';
+export default function RootLayout() {
+  const [isSignedIn, setIsSignedIn] = useState<boolean | null>(null);
 
-// // Prevent the splash screen from auto-hiding before asset loading is complete.
-// SplashScreen.preventAutoHideAsync();
+  useEffect(() => {
+    const checkAuthStatus = async () => {
+      const token = await AsyncStorage.getItem("token");
+      setIsSignedIn(!!token); // If token exists, user is signed in
+    };
 
-// export default function RootLayout() {
-//   const colorScheme = useColorScheme();
-//   const [loaded] = useFonts({
-//     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
-//   });
+    checkAuthStatus();
+  }, []);
 
-//   useEffect(() => {
-//     if (loaded) {
-//       SplashScreen.hideAsync();
-//     }
-//   }, [loaded]);
+  if (isSignedIn === null) {
+    // Show a loading screen while checking auth status
+    return null;
+  }
 
-//   if (!loaded) {
-//     return null;
-//   }
+  return isSignedIn ? <AppStack /> : <AuthStack />;
+}
 
-//   return (
-//     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-//       <Stack>
-//         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-//         <Stack.Screen name="+not-found" />
-//       </Stack>
-//       <StatusBar style="auto" />
-//     </ThemeProvider>
-//   );
-// }
-export default function Layout() {
+function AuthStack() {
   return (
-    <Stack>
-      <Stack.Screen name="index" options={{ headerShown: false }} />
-      <Stack.Screen name="SignUp" options={{ title: 'Sign Up', headerShown: false }} />
-      <Stack.Screen name="Login" options={{ title: 'Log In', headerShown: false }} />
-      <Stack.Screen name="ForgetPassword" options={{ title: 'Forget Password', headerShown: false }} />
-      <Stack.Screen name="Home" options={{ title: 'Home', headerShown: false }} />
-      <Stack.Screen name="Settings" options={{ title: 'Settings', headerShown: false }} />
-      <Stack.Screen name="ProfileSettings" options={{ title: 'Profile Settings', headerShown: true }} />
-      <Stack.Screen name="Profile" options={{ title: 'Profile', headerShown: false }} />
-      <Stack.Screen name="Create" options={{ title: 'Create', headerShown: false }} />
-      <Stack.Screen name="Groups" options={{ title: 'Groups', headerShown: false }} />
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        gestureEnabled: false,
+      }}
+    >
+      <Stack.Screen name="index" />
+      <Stack.Screen name="Login" />
+      <Stack.Screen name="SignUp" />
+    </Stack>
+  );
+}
+
+function AppStack() {
+  return (
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        gestureEnabled: false, // Disable swipe-back gesture
+      }}
+    >
+      <Stack.Screen
+        name="SetPreferences"
+        options={{
+          title: "Set Preferences",
+        }}
+      />
+      <Stack.Screen
+        name="Home"
+        options={{
+          title: "Home",
+        }}
+      />
     </Stack>
   );
 }

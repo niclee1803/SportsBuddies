@@ -1,18 +1,12 @@
-import {
-  Text,
-  TextInput,
-  StyleSheet,
-  View,
-  TouchableOpacity,
-  Alert,
-  ActivityIndicator,
-  Modal,
-} from "react-native";
-import Icon from "react-native-vector-icons/MaterialIcons";
 import React, { useState } from "react";
+import { View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator, Modal, StyleSheet } from "react-native";
+import Icon from "react-native-vector-icons/MaterialIcons";
+import { signInWithEmailAndPassword, getAuth } from "firebase/auth";
 import { useRouter } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function Login() {
+  const auth = getAuth();
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -21,31 +15,50 @@ export default function Login() {
 
   const handleLogin = async () => {
     setIsLoading(true);
+
     try {
-      const response = await fetch("http://127.0.0.1:8000/users/login/", {
-        method: "POST",
+      // Authenticate with Firebase
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const firebaseUser = userCredential.user;
+
+      if (!firebaseUser.email) {
+        throw new Error("No email found for user");
+      }
+
+      // Get the ID token
+      const idToken = await firebaseUser.getIdToken();
+
+      // Store the token in AsyncStorage
+      await AsyncStorage.setItem("token", idToken);
+
+      // Fetch user preferences from the backend
+      const response = await fetch("http://192.168.0.101:8000/auth/current_user", {
+        method: "GET",
         headers: {
-          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
         },
-        body: JSON.stringify({
-          email,
-          password,
-        }),
       });
 
       const data = await response.json();
+      console.log(data);
 
-      setIsLoading(false); // Hide loading overlay before alert
+      if (!response.ok) {
+        throw new Error(data.detail || "Failed to fetch user data");
+      }
 
-      if (response.ok) {
-        Alert.alert('Welcome!', `Logged in as ${data.email}`);
-        router.push('/Home');  // Navigate after login
+      Alert.alert("Welcome!", `Logged in as ${firebaseUser.email}`);
+
+      // Navigate based on whether preferences are set
+      if (data.preferences_set) {
+        router.replace("/Home");
       } else {
-        Alert.alert('Login Failed', data.error);
+        router.replace("/SetPreferences");
       }
     } catch (error: any) {
-      setIsLoading(false); // Hide loading overlay on error
-      Alert.alert('Login Failed', error.message);
+      console.error("Login error:", error);
+      Alert.alert("Login Failed", error.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -63,7 +76,7 @@ export default function Login() {
           onChangeText={setEmail}
           autoCapitalize="none"
           keyboardType="email-address"
-          textContentType='emailAddress'
+          textContentType="emailAddress"
         />
 
         <Text style={styles.label}>Password</Text>
@@ -80,11 +93,7 @@ export default function Login() {
             style={styles.eyeIcon}
             onPress={() => setIsPasswordVisible(!isPasswordVisible)}
           >
-            <Icon
-              name={isPasswordVisible ? "visibility-off" : "visibility"}
-              size={24}
-              color="#888"
-            />
+            <Icon name={isPasswordVisible ? "visibility-off" : "visibility"} size={24} color="#888" />
           </TouchableOpacity>
         </View>
 
