@@ -4,25 +4,8 @@ Clone the project
 git clone https://github.com/niclee1803/SportsBuddies.git
 ```
 
-## How to run the frontend development server
-Requirements: Expo Go app on your mobile, Node.js on PC
-1. Navigate to frontend directory
-   ```bash
-   cd SportsBuddies/frontend
-   ```
-
-2. Install required node modules
-   ```
-   npm install
-   ```
-   
-3. Start development server with backend API calls directed to your IP address
-   ```bash
-   npm start
-   ```
-
-4. Scan QR Code on mobile
-
+1. Run the backend development server
+2. Run the frontend development server using npm start (not npx expo start)
 
 ## How to run the backend server
 1. Navigate to backend directory
@@ -64,6 +47,24 @@ Requirements: Expo Go app on your mobile, Node.js on PC
 6. API endpoints will be hosted on port 8000 of your IP address.
 
 
+## How to run the frontend development server
+Requirements: Expo Go app on your mobile, Node.js on PC
+1. Navigate to frontend directory
+   ```bash
+   cd SportsBuddies/frontend
+   ```
+
+2. Install required node modules
+   ```
+   npm install
+   ```
+   
+3. Start development server with backend API calls directed to your IP address
+   ```bash
+   npm start
+   ```
+
+4. Scan QR Code on mobile
 
 
 ## Github Procedure for Cloning and Updating 
