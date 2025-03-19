@@ -16,9 +16,9 @@ Requirements: Expo Go app on your mobile, Node.js on PC
    npm install
    ```
    
-3. Start development server
+3. Start development server with backend API calls directed to your IP address
    ```bash
-   npx expo start
+   npm start
    ```
 
 4. Scan QR Code on mobile
@@ -39,9 +39,6 @@ Requirements: Expo Go app on your mobile, Node.js on PC
    ```bash
    # For Windows users
    venv\Scripts\activate
-
-   # For macOS/Linux users
-   source venv/bin/activate
    ```
 
    If you get an error about not running scripts in the system being disabled, you can enable it for the current terminal process
@@ -61,10 +58,10 @@ Requirements: Expo Go app on your mobile, Node.js on PC
 
 5. Run the backend development server
    ```bash
-   python manage.py runserver
+   uvicorn main:app --host 0.0.0.0 --port 8000
    ```
 
-6. API endpoints will be hosted on localhost:8000
+6. API endpoints will be hosted on port 8000 of your IP address.
 
 
 
