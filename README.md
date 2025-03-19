@@ -33,12 +33,7 @@ Run the backend and frontend servers on different terminals.
    pip install -r requirements.txt
    ```
 
-4. Apply any database migrations to ensure your database schema is up to date
-   ```bash
-   python manage.py migrate
-   ```
-
-5. Run the backend development server
+4. Run the backend development server
    ```bash
    uvicorn main:app --host 0.0.0.0 --port 8000
    ```
