@@ -28,7 +28,7 @@ const Home = () => {
         <Text style={styles.buttonText}>Notifications</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.button} onPress={() => router.push('/GroupActivities')}>
+      <TouchableOpacity style={styles.button} onPress={() => router.push('/Groups')}>
         <FontAwesome5 name="users" size={20} color="black" />
         <Text style={styles.buttonText}>Group Activities</Text>
       </TouchableOpacity>
