@@ -11,7 +11,7 @@ export const fetchCurrentUser = async () => {
     }
 
     // Make the API request
-    const response = await fetch(`${API_URL}/auth/current_user`, {
+    const response = await fetch(`${API_URL}/user/current_user`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${token}`,

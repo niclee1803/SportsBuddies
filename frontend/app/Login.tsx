@@ -16,39 +16,29 @@ export default function Login() {
 
   const handleLogin = async () => {
     setIsLoading(true);
-
+  
     try {
-      // Authenticate with Firebase
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const firebaseUser = userCredential.user;
-
-      if (!firebaseUser.email) {
-        throw new Error("No email found for user");
-      }
-
-      // Get the ID token
-      const idToken = await firebaseUser.getIdToken();
-
-      // Store the token in AsyncStorage
-      await AsyncStorage.setItem("token", idToken);
-
-      // Fetch user preferences from the backend
-      const response = await fetch(`${API_URL}/auth/current_user`, {
-        method: "GET",
+      // Send email and password to the backend
+      const response = await fetch(`${API_URL}/auth/login`, {
+        method: "POST",
         headers: {
-          Authorization: `Bearer ${idToken}`,
+          "Content-Type": "application/json",
         },
+        body: JSON.stringify({ email, password }),
       });
-
+  
       const data = await response.json();
-      console.log(data);
-
+  
       if (!response.ok) {
-        throw new Error(data.detail || "Failed to fetch user data");
+        throw new Error(data.detail || "Login failed");
       }
-
-      Alert.alert("Welcome!", `Logged in as ${firebaseUser.email}`);
-
+  
+      // Store the custom token in AsyncStorage
+      await AsyncStorage.setItem("token", data.id_token);
+  
+      Alert.alert("Welcome!", `Logged in as ${data.email}`);
+      console.log(data.id_token)
+  
       // Navigate based on whether preferences are set
       if (data.preferences_set) {
         router.replace("/Home");

@@ -1,54 +1,18 @@
 ### API ENDPOINTS FOR AUTHENTICATION ###
-from fastapi import APIRouter, HTTPException, Depends
-from fastapi.security import HTTPBearer
+from fastapi import APIRouter, HTTPException
 from firebase_admin import auth, firestore
-from firebase_admin.auth import InvalidIdTokenError
-from .models import UserCreate, LoginRequest, UserPreferences
+from .models import UserCreate, LoginRequest
+from dotenv import load_dotenv
+import os
+import requests
+import json
+
+load_dotenv()
+firebase_api_key = os.getenv("FIREBASE_API_KEY")
 
 router = APIRouter()
 db = firestore.client()
 
-# HTTPBearer for token authentication
-auth_scheme = HTTPBearer()
-
-# Dependency to get the current user
-def get_current_user(token: str = Depends(auth_scheme)):
-    try:
-        # Extract the token from the Authorization header
-        decoded_token = auth.verify_id_token(token.credentials)
-        uid = decoded_token["uid"]
-        email = decoded_token.get("email")
-        return {"uid": uid, "email": email}
-    except InvalidIdTokenError:
-        raise HTTPException(status_code=401, detail="Invalid or expired token")
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-# Endpoint to get the current user
-@router.get("/current_user")
-async def get_current_user_data(current_user: dict = Depends(get_current_user)):
-    try:
-        # Fetch additional user data from Firestore
-        user_ref = db.collection("users").document(current_user["uid"])
-        user_doc = user_ref.get()
-
-        if user_doc.exists:
-            user_data = user_doc.to_dict()
-            print("User data from Firestore:", user_data)  # Debug log
-            return {
-                "uid": current_user["uid"],
-                "email": current_user["email"],
-                "preferences_set": user_data.get("preferences_set", False),
-                "firstName": user_data.get("firstName"),
-                "lastName": user_data.get("lastName"),
-                "username": user_data.get("username"),
-            }
-        else:
-            raise HTTPException(status_code=404, detail="User not found")
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-# Endpoint to sign up a new user
 @router.post("/signup")
 async def signup(user: UserCreate):
     try:
@@ -75,76 +39,55 @@ async def signup(user: UserCreate):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-# Endpoint to log in a user
 @router.post("/login")
 async def login(request: LoginRequest):
     try:
-        id_token = request.idToken
+        # Step 1: Verify the email exists in Firebase
+        try:
+            user = auth.get_user_by_email(request.email)
+        except:
+            raise HTTPException(status_code=401, detail="Invalid email or password")
+        
+        # Step 2: Verify password using Firebase Auth REST API
+        auth_url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={firebase_api_key}"
+        payload = {
+            "email": request.email,
+            "password": request.password,
+            "returnSecureToken": True
+        }
+        
+        # Use proper headers for JSON content
+        headers = {"Content-Type": "application/json"}
+        response = requests.post(auth_url, headers=headers, data=json.dumps(payload))
+        auth_data = response.json()
+        
+        if response.status_code != 200:
+            # Log error details for debugging
+            print(f"Firebase auth error: {auth_data.get('error', {}).get('message')}")
+            raise HTTPException(status_code=401, detail="Invalid email or password")
+        
+        # Get the ID token from the response
+        id_token = auth_data.get("idToken")
         
         if not id_token:
-            raise HTTPException(status_code=400, detail="ID token is required")
-            
-        # Verify the ID token with Firebase Admin SDK
-        decoded_token = auth.verify_id_token(id_token)
-        uid = decoded_token['uid']
-        email = decoded_token.get('email')
+            raise HTTPException(status_code=500, detail="Failed to obtain authentication token")
         
-        # Check if user exists in Firestore
-        user_ref = db.collection('users').document(uid)
-        user_doc = user_ref.get()
-        
-        if user_doc.exists:
-            user_data = user_doc.to_dict()
-            preferences_set = user_data.get('preferences_set', False)  # Retrieve preferences_set from Firestore
-        else:
-            # Create a new user document if they don't exist
-            db.collection('users').document(uid).set({
-                'email': email,
-                'preferences_set': False,
-                'createdAt': firestore.SERVER_TIMESTAMP
-            })
-            preferences_set = False  # Default to False for new users
+        # Check if user has preferences set
+        user_doc = db.collection('users').document(user.uid).get()
+        user_data = user_doc.to_dict() if user_doc.exists else {}
+        preferences_set = user_data.get('preferences_set', False)
         
         return {
             "message": "Login successful",
-            "uid": uid,
-            "email": email,
+            "uid": user.uid,
+            "email": user.email,
+            "id_token": id_token,
             "preferences_set": preferences_set
         }
         
-    except auth.InvalidIdTokenError:
-        raise HTTPException(status_code=401, detail="Invalid ID token")
+    except HTTPException as he:
+        raise he
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-# Endpoint to set user preferences
-@router.post("/set_preferences")
-async def set_preferences(preferences: UserPreferences):
-    try:
-        # Get user by email
-        users_ref = db.collection('users').where('email', '==', preferences.email).limit(1)
-        users = users_ref.stream()
-        
-        user_found = False
-        for user in users:
-            user_ref = db.collection('users').document(user.id)
-            
-            # Create a dictionary of sports and their skill levels
-            sports_skills_dict = {sport_skill.sport: sport_skill.skill_level for sport_skill in preferences.sports_skills}
-            
-            # Update user preferences
-            user_ref.update({
-                'preferences': {
-                    'sports_skills': sports_skills_dict
-                },
-                'preferences_set': True
-            })
-            user_found = True
-            break
-            
-        if not user_found:
-            raise HTTPException(status_code=404, detail="User not found")
-            
-        return {"message": "Preferences set successfully"}
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        print(f"Login error: {str(e)}")
+        raise HTTPException(status_code=401, detail="Authentication failed")
+    

@@ -1,14 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image, ScrollView, Alert } from 'react-native';
-import { getAuth } from 'firebase/auth';
-import { getFirestore, doc, getDoc, updateDoc } from 'firebase/firestore';
-import { app } from '../constants/firebaseConfig';  
 import { useRouter } from 'expo-router';
-import Template from '../components/Template'; 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_URL } from '../config.json';
+import Template from '../components/Template';
 
 const ProfileSettings: React.FC = () => {
-  const auth = getAuth(app);
-  const db = getFirestore(app);
   const router = useRouter();
 
   const [userData, setUserData] = useState({
@@ -20,52 +17,119 @@ const ProfileSettings: React.FC = () => {
   });
 
   const fetchUserData = async () => {
-    if (auth.currentUser) {
-      const userRef = doc(db, 'users', auth.currentUser.uid);
-      const userSnap = await getDoc(userRef);
-
-      if (userSnap.exists()) {
-        const data = userSnap.data();
-        setUserData({
-          firstName: data.firstName || '',
-          lastName: data.lastName || '',
-          username: data.username || '',
-          phone: data.phone || '',
-          email: data.email || auth.currentUser.email || '',
-        });
-      } else {
-        console.log('No such document!');
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) {
+        Alert.alert('Error', 'User authentication token not available. Please log in again.');
+        router.replace('/Login');
+        return;
       }
+
+      const response = await fetch(`${API_URL}/user/current_user`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to fetch user data');
+      }
+
+      const data = await response.json();
+      setUserData({
+        firstName: data.firstName || '',
+        lastName: data.lastName || '',
+        username: data.username || '',
+        phone: data.phone || '',
+        email: data.email || '',
+      });
+    } catch (error) {
+      Alert.alert('Error', error instanceof Error ? error.message : 'Something went wrong.');
     }
   };
 
   const handleSave = async () => {
     try {
-      if (auth.currentUser) {
-        const userRef = doc(db, 'users', auth.currentUser.uid);
-        await updateDoc(userRef, userData);
+      const token = await AsyncStorage.getItem('token');
+      if (!token) {
+        Alert.alert('Error', 'User authentication token not available. Please log in again.');
+        router.replace('/Login');
+        return;
+      }
+
+      const response = await fetch(`${API_URL}/user/update_profile`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          first_name: userData.firstName,
+          last_name: userData.lastName,
+          username: userData.username,
+          phone: userData.phone,
+          email: userData.email,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
         Alert.alert('Profile Updated', 'Your changes have been saved.');
         router.back(); // Go back after saving
+      } else {
+        throw new Error(data.detail || 'Failed to update profile');
       }
     } catch (error) {
       console.error('Error updating profile:', error);
-      Alert.alert('Error', 'Failed to update profile.');
+      Alert.alert('Error', error instanceof Error ? error.message : 'Failed to update profile.');
     }
   };
 
-  const handleDeleteAccount = () => {
+  const handleDeleteAccount = async () => {
     Alert.alert(
-      "Delete Account",
-      "Are you sure you want to delete your account? This action cannot be undone.",
+      'Delete Account',
+      'Are you sure you want to delete your account? This action cannot be undone.',
       [
         {
-          text: "Cancel",
-          style: "cancel"
+          text: 'Cancel',
+          style: 'cancel',
         },
-        { 
-          text: "Delete", 
-          // delete function here
-        }
+        {
+          text: 'Delete',
+          onPress: async () => {
+            try {
+              const token = await AsyncStorage.getItem('token');
+              if (!token) {
+                Alert.alert('Error', 'User authentication token not available. Please log in again.');
+                router.replace('/Login');
+                return;
+              }
+
+              const response = await fetch(`${API_URL}/user/delete_account`, {
+                method: 'DELETE',
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              });
+
+              const data = await response.json();
+
+              if (response.ok) {
+                Alert.alert('Account Deleted', 'Your account has been deleted.');
+                await AsyncStorage.clear(); // Clear local storage
+                router.replace('/Login'); // Redirect to login screen
+              } else {
+                throw new Error(data.detail || 'Failed to delete account');
+              }
+            } catch (error) {
+              console.error('Error deleting account:', error);
+              Alert.alert('Error', error instanceof Error ? error.message : 'Failed to delete account.');
+            }
+          },
+        },
       ]
     );
   };

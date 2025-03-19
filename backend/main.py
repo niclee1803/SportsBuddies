@@ -5,11 +5,12 @@ import firebase_admin
 from firebase_admin import credentials
 
 # Initialize Firebase if not already done elsewhere
-cred = credentials.Certificate("config/firebase_credentials.json")
+cred = credentials.Certificate("./firebase_credentials.json")
 firebase_admin.initialize_app(cred)
 
 # Import routers from other files
 from auth.routes import router as auth_router
+from user.routes import router as user_router
 ##from activities.routes import router as activities_router
 ##from events.routes import router as events_router
 
@@ -26,6 +27,7 @@ app.add_middleware(
 
 # Include routers from different modules
 app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
+app.include_router(user_router, prefix="/user", tags=["User"])
 ##app.include_router(activities_router, prefix="/activities", tags=["Activities"])
 ##app.include_router(events_router, prefix="/events", tags=["Events"])
 

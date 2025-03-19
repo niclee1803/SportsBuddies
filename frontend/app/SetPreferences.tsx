@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, Alert, FlatList, StyleSheet } 
 import { useRouter } from "expo-router";
 import { fetchCurrentUser } from "../utils/AuthUtils";
 import { API_URL } from "../config.json";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 interface SportsSkill {
   sport: string;
@@ -47,32 +48,40 @@ export default function SetPreferences() {
 
   const handleSubmit = async () => {
     try {
-      if (!user?.email) {
-        Alert.alert("Error", "User email not available. Please log in again.");
+      // Ensure the user is authenticated and has a valid token
+      const token = await AsyncStorage.getItem("token");
+      if (!token) {
+        Alert.alert("Error", "User authentication token not available. Please log in again.");
+        router.replace("/Login");
         return;
       }
-
+  
+      // Validate that all fields are filled
       const emptyFields = sportsSkills.some((skill) => !skill.sport || !skill.skill_level);
       if (emptyFields) {
         Alert.alert("Error", "Please fill in all sport and skill level fields.");
         return;
       }
-
+  
+      // Prepare the request body
       const requestBody = {
-        email: user.email,
         sports_skills: sportsSkills,
       };
-
-      const response = await fetch(`${API_URL}/auth/set_preferences`, {
+      
+      console.log(JSON.stringify(requestBody));
+      // Make the API call to the backend
+      const response = await fetch(`${API_URL}/user/set_preferences`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(requestBody),
       });
-
+  
       const data = await response.json();
-
+  
+      // Handle the response
       if (response.ok) {
         Alert.alert("Success!", "Preferences set successfully!", [
           { text: "OK", onPress: () => router.replace("/Home") },
