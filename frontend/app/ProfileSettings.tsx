@@ -229,7 +229,7 @@ const ProfileSettings: React.FC = () => {
               });
             }}
             placeholder={userData.preferences.sports || "Select a sport"}
-            containerStyle={{ width: '100%', marginBottom: 20 }}
+            containerStyle={{ width: '100%', marginBottom: 12 }}
             dropDownContainerStyle={{ backgroundColor: '#fafafa' }}
           />   
 
