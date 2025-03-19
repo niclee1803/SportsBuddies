@@ -12,10 +12,7 @@ import {
   validatePassword
 } from "../components/signup/ValidationUtils";
 import styles from "../components/signup/styles";
-import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
-import { app } from "../constants/firebaseConfig";
-import { getFirestore } from "firebase/firestore";
+import { API_URL } from "../config.json";
 
 export default function SignUp() {
   const router = useRouter();
@@ -23,8 +20,6 @@ export default function SignUp() {
   const [loading, setLoading] = useState<boolean>(false); // New loading state
 
   const totalSteps = 5;
-  const auth = getAuth(app);
-  const db = getFirestore(app);
 
   // Form state
   const [firstName, setFirstName] = useState<string>("");
@@ -93,27 +88,40 @@ export default function SignUp() {
     setLoading(true); // Show loading overlay
 
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
-
-      await setDoc(doc(db, "users", user.uid), {
-        firstName,
-        lastName,
-        email,
-        phone,
-        username,
-        createdAt: new Date().toISOString(),
+      const response = await fetch(`${API_URL}/auth/signup`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          firstName,
+          lastName,
+          email,
+          phone,
+          username,
+          password,
+        }),
       });
+
+      const data = await response.json();
 
       setLoading(false); // Hide loading overlay before alert
 
-      if (Platform.OS === "web") {
-        window.alert("Success! Your account has been created successfully!");
-        router.push("/Login");
+      if (response.ok) {
+        if (Platform.OS === "web") {
+          window.alert("Success! Your account has been created successfully!");
+          router.push("/Login");
+        } else {
+          Alert.alert("Success!", "Your account has been created successfully!", [
+            { text: "OK", onPress: () => router.push("/Login") },
+          ]);
+        }
       } else {
-        Alert.alert("Success!", "Your account has been created successfully!", [
-          { text: "OK", onPress: () => router.push("/Login") },
-        ]);
+        if (Platform.OS === "web") {
+          window.alert(`Error: ${data.error}`);
+        } else {
+          Alert.alert("Error", data.error, [{ text: "OK" }]);
+        }
       }
     } catch (error: any) {
       setLoading(false); // Hide loading overlay on error
