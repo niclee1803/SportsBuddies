@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, Alert, Platform } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import Clipboard from '@react-native-clipboard/clipboard';
-import { Feather, AntDesign, FontAwesome, Ionicons } from '@expo/vector-icons';
+import { Feather, AntDesign, FontAwesome5, Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { query, collection, where, getDocs, doc, getDoc, updateDoc, getFirestore } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, getStorage } from 'firebase/storage';
@@ -15,6 +15,9 @@ import { useLocalSearchParams } from 'expo-router';
 import * as Sharing from 'expo-sharing';
 import { getAuth } from 'firebase/auth';
 import { app } from '../constants/firebaseConfig'; 
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { NavigationContainer } from '@react-navigation/native';
+
 
 type Activity = {
   id: string;
@@ -56,12 +59,12 @@ const Profile = () => {
     
         if (docSnap.exists()) {
           const data = docSnap.data();
-          const fullName = `${data.firstName || ""} ${data.lastName || ""}`.trim(); // ✅ Concatenate First & Last Name
+          const fullName = `${data.firstName || ""} ${data.lastName || ""}`.trim(); 
     
           setUser({
             firstName: data.firstName || "",
             lastName: data.lastName || "",
-            name: fullName,   // ✅ Store full name
+            name: fullName,   
             username: data.username || "",
             bio: data.bio || "",
             preferences: data.preferences || [],
@@ -202,79 +205,123 @@ const Profile = () => {
     activityTitle: { fontWeight: 'bold', fontSize: 16, marginBottom: 5 },
     activityDetails: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 5 },
     activityTags: { marginTop: 10, fontStyle: 'italic' },
+
+    bottomNav: {
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+      backgroundColor: '#5D81C6',  
+      paddingVertical: 10,
+      borderTopWidth: 1,
+      borderColor: '#ddd',
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      height: 60,
+    },
+    
+    navButton: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      flex: 1,
+      paddingVertical: 5,
+    },
+    
   });
   
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity>
-          <Image source={{ uri: profilePic }} style={styles.profileImage} />
+    <View style={{ flex: 1 }}>
+      <ScrollView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity>
+            <Image source={{ uri: profilePic }} style={styles.profileImage} />
+          </TouchableOpacity>
+          <Text style={styles.name}>{user.firstName} {user.lastName}</Text>
+          <Text style={styles.username}>@{user.username || "..."}</Text>
+        </View>
+  
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity style={styles.button} onPress={() => router.push('/friends')}>
+            <FontAwesome5 name="users" size={20} color="black" />
+            <Text style={styles.buttonText}>Friends</Text>
+          </TouchableOpacity>
+  
+          <TouchableOpacity style={styles.button} onPress={shareProfile}>
+            <AntDesign name="sharealt" size={20} color="black" />
+            <Text style={styles.buttonText}>Share</Text>
+          </TouchableOpacity>
+  
+          <TouchableOpacity style={styles.button} onPress={() => router.push('/Settings?edit=true')}>
+            <Feather name="edit-3" size={20} color="black" />
+            <Text style={styles.buttonText}>Edit</Text>
+          </TouchableOpacity>
+        </View>
+  
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Recent Activities</Text>
+          {activities.length === 0 ? (
+            <Text style={styles.noActivityText}>No recent activities</Text>
+          ) : (
+            activities.map((activity) => (
+              <View key={activity.id} style={styles.activityCard}>
+                <View style={styles.activityHeader}>
+                  <Image source={{ uri: profilePic }} style={styles.activityUserImage} />
+                  <Text style={styles.activityUserName}>{user.name}</Text>
+                </View>
+                <Text style={styles.activityTitle}>{activity.title}</Text>
+                <View style={styles.activityDetails}>
+                  <Ionicons name="calendar" size={18} color="black" />
+                  <Text>{activity.date}, {activity.time}</Text>
+                </View>
+                <View style={styles.activityDetails}>
+                  <Ionicons name="location" size={18} color="black" />
+                  <Text>{activity.location}</Text>
+                </View>
+                <View style={styles.activityDetails}>
+                  <FontAwesome5 name="soccer-ball-o" size={18} color="black" />
+                  <Text>{activity.sport}</Text>
+                </View>
+                <View style={styles.activityDetails}>
+                  <Feather name="bar-chart-2" size={18} color="black" />
+                  <Text>{activity.level}</Text>
+                </View>
+                <Text style={styles.activityTags}>Tags: {activity.tags.join(", ")}</Text>
+              </View>
+            ))
+          )}
+        </View>
+      </ScrollView>
+  
+      {/* Bottom Navigation Bar */}
+      <View style={styles.bottomNav}>
+        <TouchableOpacity onPress={() => router.push('/Home')} style={styles.navButton}>
+          <FontAwesome5 name="home" size={24} color="black" />
+          <Text>Home</Text>
         </TouchableOpacity>
-        <Text style={styles.name}>{user.firstName} {user.lastName}</Text>
-        <Text style={styles.username}>@{user.username || "..."}</Text>
-      </View>
-
-      <View style={styles.buttonContainer}>
-      <TouchableOpacity 
-        style={styles.button} 
-        onPress={() => router.push('/friends')}>
-      <FontAwesome name="users" size={20} color="black" />
-      <Text style={styles.buttonText}>Friends</Text>
-      </TouchableOpacity>
-
-
-        <TouchableOpacity 
-          style={styles.button} 
-          onPress={shareProfile}  
->
-        <AntDesign name="sharealt" size={20} color="black" />
-        <Text style={styles.buttonText}>Share</Text>
+  
+        <TouchableOpacity onPress={() => router.push('/Groups')} style={styles.navButton}>
+          <FontAwesome5 name="users" size={24} color="black" />
+          <Text>Groups</Text>
         </TouchableOpacity>
-
-        <TouchableOpacity 
-          style={styles.button} 
-          onPress={() => router.push('/Settings?edit=true')}>
-        <Feather name="edit-3" size={20} color="black" />
-        <Text style={styles.buttonText}>Edit</Text>
+  
+        <TouchableOpacity onPress={() => router.push('/Create')} style={styles.navButton}>
+          <Ionicons name="add-circle-outline" size={24} color="black" />
+          <Text>Create</Text>
+        </TouchableOpacity>
+  
+        <TouchableOpacity onPress={() => router.push('/Profile')} style={styles.navButton}>
+          <FontAwesome5 name="user-circle" size={24} color="black" />
+          <Text>Profile</Text>
+        </TouchableOpacity>
+  
+        <TouchableOpacity onPress={() => router.push('/Settings')} style={styles.navButton}>
+          <Ionicons name="settings-outline" size={24} color="black" />
+          <Text>Settings</Text>
         </TouchableOpacity>
       </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}></Text>
-        {activities.length === 0 ? (
-          <Text style={styles.noActivityText}>No recent activities</Text>
-        ) : (
-          activities.map((activity) => (
-            <View key={activity.id} style={styles.activityCard}>
-              <View style={styles.activityHeader}>
-                <Image source={{ uri: profilePic }} style={styles.activityUserImage} />
-                <Text style={styles.activityUserName}>{user.name}</Text>
-              </View>
-              <Text style={styles.activityTitle}>{activity.title}</Text>
-              <View style={styles.activityDetails}>
-                <Ionicons name="calendar" size={18} color="black" />
-                <Text>{activity.date}, {activity.time}</Text>
-              </View>
-              <View style={styles.activityDetails}>
-                <Ionicons name="location" size={18} color="black" />
-                <Text>{activity.location}</Text>
-              </View>
-              <View style={styles.activityDetails}>
-                <FontAwesome name="soccer-ball-o" size={18} color="black" />
-                <Text>{activity.sport}</Text>
-              </View>
-              <View style={styles.activityDetails}>
-                <Feather name="bar-chart-2" size={18} color="black" />
-                <Text>{activity.level}</Text>
-              </View>
-              <Text style={styles.activityTags}>Tags: {activity.tags.join(", ")}</Text>
-            </View>
-          ))
-        )}
-      </View>
-    </ScrollView>
+    </View>
   );
-};
+}
 
 export default Profile;
