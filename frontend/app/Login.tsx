@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator, Moda
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { signInWithEmailAndPassword, getAuth } from "firebase/auth";
 import { useRouter } from "expo-router";
+import { API_URL } from "../config.json";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function Login() {
@@ -32,7 +33,7 @@ export default function Login() {
       await AsyncStorage.setItem("token", idToken);
 
       // Fetch user preferences from the backend
-      const response = await fetch("http://192.168.0.101:8000/auth/current_user", {
+      const response = await fetch(`${API_URL}/auth/current_user`, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${idToken}`,

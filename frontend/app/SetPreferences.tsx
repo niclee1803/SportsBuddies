@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { View, Text, TextInput, TouchableOpacity, Alert, FlatList, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import { fetchCurrentUser } from "../utils/AuthUtils";
+import { API_URL } from "../config.json";
 
 interface SportsSkill {
   sport: string;
@@ -62,7 +63,7 @@ export default function SetPreferences() {
         sports_skills: sportsSkills,
       };
 
-      const response = await fetch("http://127.0.0.1:8000/auth/set_preferences", {
+      const response = await fetch(`${API_URL}/auth/set_preferences`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -96,7 +97,8 @@ export default function SetPreferences() {
   return (
     <View style={styles.container}>
       <Text style={styles.heading}>Set Your Preferences</Text>
-      <Text style={styles.emailLabel}>Setting preferences for: {user?.email || "Not logged in"}</Text>
+      <Text style={styles.subHeading}>Welcome, {user?.email || "Error! Please restart the app"}!
+      {"\n"}Tell us what you like:</Text>
       <FlatList
         data={sportsSkills}
         renderItem={({ item, index }) => (
@@ -130,7 +132,7 @@ export default function SetPreferences() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
+    marginTop: 100,
     alignItems: "center",
     backgroundColor: "#f9f9f9",
   },
@@ -139,10 +141,11 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 10,
   },
-  emailLabel: {
+  subHeading: {
     fontSize: 16,
     marginBottom: 20,
     color: "#555",
+    textAlign: "center",
   },
   input: {
     height: 40,
@@ -171,7 +174,8 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   submitButton: {
-    width: "100%",
+    marginBottom: 50,
+    width: 200,
     height: 40,
     backgroundColor: "#42c8f5",
     borderRadius: 5,

@@ -12,6 +12,7 @@ import {
   validatePassword
 } from "../components/signup/ValidationUtils";
 import styles from "../components/signup/styles";
+import { API_URL } from "../config.json";
 
 export default function SignUp() {
   const router = useRouter();
@@ -87,7 +88,7 @@ export default function SignUp() {
     setLoading(true); // Show loading overlay
 
     try {
-      const response = await fetch("http://127.0.0.1:8000/auth/signup/", {
+      const response = await fetch(`${API_URL}/auth/signup`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

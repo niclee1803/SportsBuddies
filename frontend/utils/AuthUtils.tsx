@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { API_URL } from "../config.json";
 
 export const fetchCurrentUser = async () => {
   try {
@@ -10,7 +11,7 @@ export const fetchCurrentUser = async () => {
     }
 
     // Make the API request
-    const response = await fetch("http://127.0.0.1:8000/auth/current_user", {
+    const response = await fetch(`${API_URL}/auth/current_user`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${token}`,

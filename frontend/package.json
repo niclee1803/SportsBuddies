@@ -3,13 +3,14 @@
   "main": "app/index.tsx",
   "version": "1.0.0",
   "scripts": {
-    "start": "expo start",
+    "start": "npm run update-ip && expo start",
     "reset-project": "node ./scripts/reset-project.js",
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
     "test": "jest --watchAll",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "update-ip": "node scripts/update-ip.js"
   },
   "jest": {
     "preset": "jest-expo"
@@ -19,7 +20,7 @@
     "@expo/metro-config": "~0.19.0",
     "@expo/vector-icons": "^14.0.2",
     "@firebase/firestore": "^4.7.9",
-    "@react-native-async-storage/async-storage": "^1.24.0",
+    "@react-native-async-storage/async-storage": "^1.23.1",
     "@react-navigation/bottom-tabs": "^7.2.0",
     "@react-navigation/native": "^7.0.14",
     "expo": "~52.0.38",
