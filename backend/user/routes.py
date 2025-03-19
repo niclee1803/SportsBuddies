@@ -1,11 +1,15 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, UploadFile, File
 from fastapi.security import HTTPBearer
 from firebase_admin import auth, firestore
 from firebase_admin.auth import InvalidIdTokenError
 from .models import UserPreferences, UpdateProfileRequest
+import os
+import requests
+
 
 router = APIRouter()
 db = firestore.client()
+IMGUR_CLIENT_ID = os.getenv("IMGUR_CLIENT_ID")
 
 # HTTPBearer for token authentication
 auth_scheme = HTTPBearer()
@@ -23,6 +27,7 @@ def get_current_user(token: str = Depends(auth_scheme)):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+
 @router.get("/current_user")
 async def get_current_user_data(current_user: dict = Depends(get_current_user)):
     try:
@@ -39,6 +44,7 @@ async def get_current_user_data(current_user: dict = Depends(get_current_user)):
                 "firstName": user_data.get("firstName"),
                 "lastName": user_data.get("lastName"),
                 "username": user_data.get("username"),
+                "profilePicUrl": user_data.get("profilePicUrl", "https://placehold.co/150"),
             }
         else:
             raise HTTPException(status_code=404, detail="User not found")
@@ -115,5 +121,27 @@ async def delete_account(current_user: dict = Depends(get_current_user)):
         auth.delete_user(current_user["uid"])
 
         return {"message": "Account deleted successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    
+
+@router.post("/upload_profile_picture")
+async def upload_profile_picture(file: UploadFile = File(...), current_user: dict = Depends(get_current_user)):
+    try:
+        headers = {"Authorization": f"Client-ID {IMGUR_CLIENT_ID}"}
+        files = {"image": file.file}
+        response = requests.post("https://api.imgur.com/3/image", headers=headers, files=files)
+
+        if response.status_code != 200:
+            raise HTTPException(status_code=400, detail="Failed to upload image to Imgur")
+            
+        data = response.json()
+        profile_pic_url = data["data"]["link"]
+
+        # Update the user's Firestore document with the new profile picture URL
+        user_ref = db.collection("users").document(current_user["uid"])
+        user_ref.update({"profilePicUrl": profile_pic_url})
+
+        return {"message": "Profile picture uploaded successfully", "profilePicUrl": profile_pic_url}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
