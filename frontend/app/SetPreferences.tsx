@@ -83,9 +83,8 @@ export default function SetPreferences() {
   
       // Handle the response
       if (response.ok) {
-        Alert.alert("Success!", "Preferences set successfully!", [
-          { text: "OK", onPress: () => router.replace("/Home") },
-        ]);
+        Alert.alert("Success!", "Preferences set successfully!");
+        router.replace("/Home");
       } else {
         Alert.alert("Error", data.detail || "Failed to set preferences");
       }
