@@ -4,8 +4,7 @@ Clone the project
 git clone https://github.com/niclee1803/SportsBuddies.git
 ```
 
-1. Run the backend development server. Do not close the terminal.
-2. On another terminal, run the frontend development server using npm start (not npx expo start)
+Run the backend and frontend servers on different terminals.
 
 ## How to run the backend server
 1. Navigate to backend directory
