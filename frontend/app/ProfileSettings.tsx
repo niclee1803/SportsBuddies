@@ -5,19 +5,74 @@ import { getFirestore, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { app } from '../constants/firebaseConfig';  
 import { useRouter } from 'expo-router';
 import Template from '../components/Template'; 
+import DropDownPicker from 'react-native-dropdown-picker';
 
 const ProfileSettings: React.FC = () => {
   const auth = getAuth(app);
   const db = getFirestore(app);
   const router = useRouter();
 
-  const [userData, setUserData] = useState({
+  interface UserData {
+    firstName: string;
+    lastName: string;
+    username: string;
+    phone: string;
+    email: string;
+    preferences: {sports: string, fitnessLevel: string};
+  }
+
+  const [sportsOptions, setSportsOptions] = useState<string[]>([]);
+  const [sportOpen, setSportOpen] = useState<boolean>(false);
+  const [selectedSport, setSelectedSport] = useState<string | null>(null);
+
+  const [fitnessOptions, setFitnessOptions] = useState<string[]>([]);
+  const [fitnessOpen, setFitnessOpen] = useState<boolean>(false);
+  const [selectedFitness, setSelectedFitness] = useState<string | null>(null);
+
+  const [userData, setUserData] = useState<UserData>({
     firstName: '',
     lastName: '',
     username: '',
     phone: '',
     email: '',
+    preferences: {sports: '', fitnessLevel: ''},
   });
+
+  const fetchFitnessOptions = async () => {
+    try {
+      const docRef = doc(db, 'fitnessLevels', 'types');
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (data && Array.isArray(data.levels)) {
+          setFitnessOptions(data.levels);
+        }
+      } else {
+        console.log('No such document!');
+      }
+    } catch (error) {
+      console.error('Error fetching fitness level options:', error);
+    }
+  };
+
+  const fetchSportsOptions = async () => {
+    try {
+      const docRef = doc(db, 'sports', 'types');
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (data && Array.isArray(data.sports)) {
+          setSportsOptions(data.sports);
+        }
+      } else {
+        console.log('No such document!');
+      }
+    } catch (error) {
+      console.error('Error fetching sports options:', error);
+    }
+  };
 
   const fetchUserData = async () => {
     if (auth.currentUser) {
@@ -32,20 +87,35 @@ const ProfileSettings: React.FC = () => {
           username: data.username || '',
           phone: data.phone || '',
           email: data.email || auth.currentUser.email || '',
+          preferences: { 
+            sports: data.preferences?.sports || '', 
+            fitnessLevel: data.preferences?.fitnessLevel || '' 
+          }
         });
+        setSelectedSport(data.preferences?.sports || null);
+        setSelectedFitness(data.preferences?.fitnessLevel || null);
       } else {
         console.log('No such document!');
       }
     }
   };
-
+ 
   const handleSave = async () => {
     try {
       if (auth.currentUser) {
         const userRef = doc(db, 'users', auth.currentUser.uid);
-        await updateDoc(userRef, userData);
+        await updateDoc(userRef, { 
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+          phone: userData.phone,
+          email: userData.email,
+          preferences: { 
+            sports: userData.preferences.sports, 
+            fitnessLevel: userData.preferences.fitnessLevel 
+          }
+        });
         Alert.alert('Profile Updated', 'Your changes have been saved.');
-        router.back(); // Go back after saving
+        router.back();
       }
     } catch (error) {
       console.error('Error updating profile:', error);
@@ -64,7 +134,7 @@ const ProfileSettings: React.FC = () => {
         },
         { 
           text: "Delete", 
-          // delete function here
+          // delete function here, not implemented
         }
       ]
     );
@@ -72,6 +142,11 @@ const ProfileSettings: React.FC = () => {
 
   useEffect(() => {
     fetchUserData();
+  }, []);
+
+  useEffect(() => {
+    fetchSportsOptions();
+    fetchFitnessOptions();
   }, []);
 
   return (
@@ -134,8 +209,54 @@ const ProfileSettings: React.FC = () => {
               onChangeText={(text) => setUserData({ ...userData, email: text })}
             />
           </View>
-        </View>
 
+          <Text style={styles.label}>Preferred Sport 1</Text>
+          <DropDownPicker
+            listMode='SCROLLVIEW'
+            open={sportOpen}
+            value={selectedSport}
+            items={sportsOptions.map(option => ({ label: option, value: option }))}
+            setOpen={setSportOpen}
+            setValue={(callback) => {
+              const value = callback(selectedSport);
+              setSelectedSport(value);
+              setUserData({ 
+                ...userData, 
+                preferences: { 
+                  ...userData.preferences,
+                  sports: value || '' 
+                } 
+              });
+            }}
+            placeholder={userData.preferences.sports || "Select a sport"}
+            containerStyle={{ width: '100%', marginBottom: 20 }}
+            dropDownContainerStyle={{ backgroundColor: '#fafafa' }}
+          />   
+
+          <Text style={styles.label}>Sport 1 Proficiency</Text>
+          <DropDownPicker
+            listMode='SCROLLVIEW'
+            open={fitnessOpen}
+            value={selectedFitness}
+            items={fitnessOptions.map(option => ({ label: option, value: option }))}
+            setOpen={setFitnessOpen}
+            setValue={(callback) => {
+              const value = callback(selectedFitness);
+              setSelectedFitness(value);
+              setUserData({ 
+                ...userData, 
+                preferences: { 
+                  ...userData.preferences,
+                  fitnessLevel: value || '' 
+                } 
+              });
+            }}
+            placeholder={userData.preferences.fitnessLevel || "Select proficiency level"}
+            containerStyle={{ width: '100%', marginBottom: 20 }}
+            dropDownContainerStyle={{ backgroundColor: '#fafafa' }}
+          />   
+        </View>
+       
         <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
           <Text style={styles.ButtonText}>Save</Text>
         </TouchableOpacity>
@@ -155,7 +276,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 30,
     width: '100%',
-    backgroundColor: '#D3D3D3',
+    
   },
   profileContainer: {
     alignItems: 'center',
@@ -177,7 +298,6 @@ const styles = StyleSheet.create({
   inputGroup: {
     width: '90%',
     paddingHorizontal: 20,
-    gap: 20,
   },
   nameRow: {
     flexDirection: 'row',
@@ -204,16 +324,17 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: 'black',
     width: '100%',
   },
   saveButton: {
-    backgroundColor: '#42c8f5',
-    borderRadius: 5,
-    paddingVertical: 12,
-    width: '90%',
-    marginTop: 30,
-    alignItems: 'center',
+    width: "20%",
+    height: 40,
+    backgroundColor: "#42c8f5",
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 10,
   },
   ButtonText: {
     color: 'black',
@@ -221,13 +342,13 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   delAccButton: {
-    backgroundColor: '#FF3B30',
-    borderRadius: 5,
-    paddingVertical: 12,
-    width: '90%',
-    marginTop: 15,
-    marginBottom: 30,
-    alignItems: 'center',
+    width: "50%",
+    height: 40,
+    backgroundColor: "red",
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 10,
   },
 });
 
