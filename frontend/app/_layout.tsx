@@ -33,6 +33,7 @@ function AuthStack() {
       <Stack.Screen name="index" />
       <Stack.Screen name="Login" />
       <Stack.Screen name="SignUp" />
+      <Stack.Screen name="ForgetPassword" />
     </Stack>
   );
 }
@@ -57,6 +58,12 @@ function AppStack() {
           title: "Home",
         }}
       />
+      <Stack.Screen name="Settings" options={{ title: 'Settings' }} />
+      <Stack.Screen name="ProfileSettings" options={{ title: 'Profile Settings' }} />
+      <Stack.Screen name="Profile" options={{ title: 'Profile' }} />
+      <Stack.Screen name="Create" options={{ title: 'Create' }} />
+      <Stack.Screen name="CreateActivityAsOrganiser" options={{ title: 'Create' }}/>
+      <Stack.Screen name="Groups" options={{ title: 'Groups' }} />
     </Stack>
   );
 }
