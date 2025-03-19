@@ -7,12 +7,18 @@ import os
 import requests
 import json
 
+## Load API Keys
 load_dotenv()
 firebase_api_key = os.getenv("FIREBASE_API_KEY")
 
+## Enable routing
 router = APIRouter()
+
+## Initialize Firestore DB
 db = firestore.client()
 
+# API ENDPOINTS
+### Sign up: takes a UserCreate object and creates a new user in Firebase Auth and Firestore
 @router.post("/signup")
 async def signup(user: UserCreate):
     try:
@@ -39,6 +45,8 @@ async def signup(user: UserCreate):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+
+### Login: takes a LoginRequest object and authenticates the user
 @router.post("/login")
 async def login(request: LoginRequest):
     try:

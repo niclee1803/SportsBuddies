@@ -6,9 +6,13 @@ from .models import UserPreferences, UpdateProfileRequest
 import os
 import requests
 
-
+## Enable routing
 router = APIRouter()
+
+## Initialize Firestore DB
 db = firestore.client()
+
+## Load IMGUR_CLIENT_ID from environment variables
 IMGUR_CLIENT_ID = os.getenv("IMGUR_CLIENT_ID")
 
 # HTTPBearer for token authentication
@@ -27,7 +31,7 @@ def get_current_user(token: str = Depends(auth_scheme)):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-
+### Takes in idtoken and return the current user's data from Firebase 
 @router.get("/current_user")
 async def get_current_user_data(current_user: dict = Depends(get_current_user)):
     try:
@@ -51,6 +55,7 @@ async def get_current_user_data(current_user: dict = Depends(get_current_user)):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+### Set user preferences
 @router.post("/set_preferences")
 async def set_preferences(preferences: UserPreferences, current_user: dict = Depends(get_current_user)):
     try:
@@ -76,7 +81,7 @@ async def set_preferences(preferences: UserPreferences, current_user: dict = Dep
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-
+### Update the user's profile details (excluding profile picture)
 @router.put("/update_profile")
 async def update_profile(
     profile_data: UpdateProfileRequest, 
@@ -103,7 +108,7 @@ async def update_profile(
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
     
-
+### Delete the user account from firerbase
 @router.delete("/delete_account")
 async def delete_account(current_user: dict = Depends(get_current_user)):
     try:
@@ -124,7 +129,7 @@ async def delete_account(current_user: dict = Depends(get_current_user)):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
     
-
+### Change the users profile picture by uploading to imgur and updating DB with new URL
 @router.post("/upload_profile_picture")
 async def upload_profile_picture(file: UploadFile = File(...), current_user: dict = Depends(get_current_user)):
     try:

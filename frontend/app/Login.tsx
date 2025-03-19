@@ -1,13 +1,11 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator, Modal, StyleSheet } from "react-native";
 import Icon from "react-native-vector-icons/MaterialIcons";
-import { signInWithEmailAndPassword, getAuth } from "firebase/auth";
 import { useRouter } from "expo-router";
 import { API_URL } from "../config.json";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function Login() {
-  const auth = getAuth();
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
