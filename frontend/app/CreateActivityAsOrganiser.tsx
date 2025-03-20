@@ -45,16 +45,23 @@ const CreateActivityAsOrganiser = () => {
 
     //fetching data
     useEffect(() => {
-      const subscriber=firestore()
-        .collection
-  
+      const fetchData = async () => {
+        try {
+          const sportsDoc = await getDoc(doc(db, 'sports', 'types')); 
+          if (sportsDoc.exists()) { 
+            const sportsList = sportsDoc.data().sports; // Extracting the sports array
+            setSports(sportsList);
+          } else {
+            console.log("No such document!");
+          }
+        } catch (error) {
+          console.error("Error fetching sports data:", error);
+        }
+      };
+      
+      fetchData();
   }, []);
-
-
-
-
-
-
+  
 
   
       const onDateChange = (_: any, selectedDate: Date | undefined) => {

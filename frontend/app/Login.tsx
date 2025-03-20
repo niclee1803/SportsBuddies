@@ -25,7 +25,7 @@ export default function Login() {
         body: JSON.stringify({ email, password }),
       });
   
-      const data = await response.json();
+      const data = await response.json(); //data converted from response to data and becomes: returned as object eg format //{"id_token": "eyJhbGciOiJIUzI1...",  "email": "user@example.com","preferences_set": true}
   
       if (!response.ok) {
         throw new Error(data.detail || "Login failed");
