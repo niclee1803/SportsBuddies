@@ -7,11 +7,13 @@ import { HeaderBackButton } from '@react-navigation/elements';
 import { useNavigation } from '@react-navigation/native'; 
 import * as ImagePicker from 'expo-image-picker';  // Import ImagePicker
 import { getAuth } from 'firebase/auth';
-import { getFirestore, doc, getDoc, updateDoc, collection, getDocs } from 'firebase/firestore';
+import { getFirestore, doc, getDoc, updateDoc, collection, getDocs, Firestore} from 'firebase/firestore';
 import { app } from '../constants/firebaseConfig';  
 import { useRouter } from 'expo-router';
 import DropDownPicker from 'react-native-dropdown-picker'; // Import DropDownPicker
 import DateTimePicker from "@react-native-community/datetimepicker";
+//import firestore from '@react-native-firebase/firestore'
+
 
 
 
@@ -30,7 +32,7 @@ const CreateActivityAsOrganiser = () => {
     const [showTimePicker, setShowTimePicker] = useState(false);
     const [bannerUri, setBannerUri] = useState<string | null>(null);
 
-    const [sports, setSports] = useState<string[]>([]);
+    const [sports, setSports] = useState<string[]>([]); //empty array of sports
     const [skillLevels, setSkillLevels] = useState<string[]>([]);
     const [visibilityOptions, setVisibilityOptions] = useState<string[]>([]);
 
@@ -43,25 +45,18 @@ const CreateActivityAsOrganiser = () => {
 
     //fetching data
     useEffect(() => {
-        const fetchData = async () => {
-          const sportsSnapshot = await getDocs(collection(db, 'sports', 'types'));
-          const sportsList = sportsSnapshot.docs.map(doc => doc.data().sports);
-          setSports(sportsList);
-    
-          const fitnessLevelsSnapshot = await getDocs(collection(db, 'fitnessLevels', 'types'));
-          const fitnessLevelsList = fitnessLevelsSnapshot.docs.map(doc => doc.data().fitnessLevels);
-          setSkillLevels(fitnessLevelsList);
-    
-          const visibilitySnapshot = await getDocs(collection(db, 'visibility', 'types'));
-          const visibilityList = visibilitySnapshot.docs.map(doc => doc.data().visibility);
-          setVisibilityOptions(visibilityList);
-    
-          setLoading(false); // Set loading to false once data is fetched
-        };
-    
-        fetchData();
-      }, []);
+      const subscriber=firestore()
+        .collection
+  
+  }, []);
 
+
+
+
+
+
+
+  
       const onDateChange = (_: any, selectedDate: Date | undefined) => {
         setShowDatePicker(false);
         setActivityDate(selectedDate || activityDate);
