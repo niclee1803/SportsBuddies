@@ -35,4 +35,12 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
+
+# json file to store ip address of backend server
+config.json
+
 app-example
+
+
+
+
