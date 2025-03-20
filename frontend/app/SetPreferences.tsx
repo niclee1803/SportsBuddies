@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, TextInput, TouchableOpacity, Alert, FlatList, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
-import { fetchCurrentUser } from "../utils/AuthUtils";
+import { fetchCurrentUser } from "../utils/GetUser";
 import { API_URL } from "../config.json";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -21,9 +21,8 @@ export default function SetPreferences() {
         const userData = await fetchCurrentUser();
         setUser(userData);
       } catch (error: any) {
-        Alert.alert("Error", error.message || "Failed to fetch user data", [
-          { text: "OK", onPress: () => router.replace("/Login") },
-        ]);
+        Alert.alert("Error", error.message || "Failed to fetch user data");
+        router.replace("/Login");
       }
     };
 
