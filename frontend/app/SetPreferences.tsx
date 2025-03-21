@@ -1,19 +1,22 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, TextInput, TouchableOpacity, Alert, FlatList, StyleSheet } from "react-native";
+import { View, Text, TouchableOpacity, Alert, StyleSheet, FlatList } from "react-native";
 import { useRouter } from "expo-router";
 import { fetchCurrentUser } from "../utils/GetUser";
 import { API_URL } from "../config.json";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-
-interface SportsSkill {
-  sport: string;
-  skill_level: string;
-}
+import SportsSkillsMenu, { SPORTS_LIST, SKILL_LEVELS, SportsSkill } from "../components/preferences/SportsSkillsMenu";
 
 export default function SetPreferences() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
-  const [sportsSkills, setSportsSkills] = useState<SportsSkill[]>([{ sport: "", skill_level: "" }]);
+  
+  // Initialize with default values from the exported constants
+  const [sportsSkills, setSportsSkills] = useState<SportsSkill[]>([
+    { sport: SPORTS_LIST[0], skill_level: SKILL_LEVELS[0] }
+  ]);
+  
+  // Dropdown state management
+  const [openDropdown, setOpenDropdown] = useState<{ type: 'sport' | 'skill', index: number } | null>(null);
 
   useEffect(() => {
     const getUser = async () => {
@@ -30,7 +33,7 @@ export default function SetPreferences() {
   }, [router]);
 
   const handleAddSport = () => {
-    setSportsSkills([...sportsSkills, { sport: "", skill_level: "" }]);
+    setSportsSkills([...sportsSkills, { sport: SPORTS_LIST[0], skill_level: SKILL_LEVELS[0] }]);
   };
 
   const handleSportChange = (index: number, value: string) => {
@@ -43,6 +46,28 @@ export default function SetPreferences() {
     const newSportsSkills = [...sportsSkills];
     newSportsSkills[index].skill_level = value;
     setSportsSkills(newSportsSkills);
+  };
+
+  const handleRemoveSport = (index: number) => {
+    if (sportsSkills.length > 1) {
+      const newSportsSkills = [...sportsSkills];
+      newSportsSkills.splice(index, 1);
+      setSportsSkills(newSportsSkills);
+    } else {
+      Alert.alert("Cannot Remove", "You must have at least one sport preference.");
+    }
+  };
+
+  const isDropdownOpen = (type: 'sport' | 'skill', index: number) => {
+    return openDropdown?.type === type && openDropdown?.index === index;
+  };
+
+  const toggleDropdown = (type: 'sport' | 'skill', index: number, isOpen: boolean) => {
+    if (isOpen) {
+      setOpenDropdown({ type, index });
+    } else {
+      setOpenDropdown(null);
+    }
   };
 
   const handleSubmit = async () => {
@@ -67,7 +92,6 @@ export default function SetPreferences() {
         sports_skills: sportsSkills,
       };
       
-      console.log(JSON.stringify(requestBody));
       // Make the API call to the backend
       const response = await fetch(`${API_URL}/user/set_preferences`, {
         method: "POST",
@@ -101,37 +125,45 @@ export default function SetPreferences() {
     );
   }
 
+  const renderSportItem = ({ item, index }: { item: SportsSkill, index: number }) => (
+    <SportsSkillsMenu
+      item={item}
+      index={index}
+      isDropdownOpen={isDropdownOpen}
+      toggleDropdown={toggleDropdown}
+      handleSportChange={handleSportChange}
+      handleSkillLevelChange={handleSkillLevelChange}
+      handleRemoveSport={handleRemoveSport}
+    />
+  );
+
   return (
     <View style={styles.container}>
       <Text style={styles.heading}>Set Your Preferences</Text>
-      <Text style={styles.subHeading}>Welcome, {user?.email || "Error! Please restart the app"}!
-      {"\n"}Tell us what you like:</Text>
+      <Text style={styles.subHeading}>
+        Welcome, {user?.email || "Error! Please restart the app"}!
+        {"\n"}Tell us what you like:
+      </Text>
+      
       <FlatList
         data={sportsSkills}
-        renderItem={({ item, index }) => (
-          <View key={index} style={styles.sportContainer}>
-            <TextInput
-              style={styles.input}
-              placeholder="Sport"
-              value={item.sport}
-              onChangeText={(value) => handleSportChange(index, value)}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Skill Level"
-              value={item.skill_level}
-              onChangeText={(value) => handleSkillLevelChange(index, value)}
-            />
-          </View>
+        renderItem={renderSportItem}
+        keyExtractor={(_, index) => index.toString()}
+        style={styles.flatList}
+        contentContainerStyle={styles.listContent}
+        nestedScrollEnabled={true}
+        ListFooterComponent={() => (
+          <>
+            <TouchableOpacity style={styles.addButton} onPress={handleAddSport}>
+              <Text style={styles.addButtonText}>Add Sport</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
+              <Text style={styles.submitButtonText}>Submit</Text>
+            </TouchableOpacity>
+          </>
         )}
-        keyExtractor={(item, index) => index.toString()}
       />
-      <TouchableOpacity style={styles.addButton} onPress={handleAddSport}>
-        <Text style={styles.addButtonText}>Add Sport</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-        <Text style={styles.submitButtonText}>Submit</Text>
-      </TouchableOpacity>
     </View>
   );
 }
@@ -139,14 +171,14 @@ export default function SetPreferences() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    marginTop: 100,
-    alignItems: "center",
-    backgroundColor: "#f9f9f9",
+    marginTop: 80,
+    paddingHorizontal: 20,
   },
   heading: {
     fontSize: 24,
     fontWeight: "bold",
     marginBottom: 10,
+    textAlign: "center",
   },
   subHeading: {
     fontSize: 16,
@@ -154,26 +186,19 @@ const styles = StyleSheet.create({
     color: "#555",
     textAlign: "center",
   },
-  input: {
-    height: 40,
+  flatList: {
     width: "100%",
-    backgroundColor: "#fff",
-    paddingHorizontal: 10,
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 5,
-    marginBottom: 10,
   },
-  sportContainer: {
-    width: "100%",
-    marginBottom: 15,
+  listContent: {
+    paddingBottom: 50,
   },
   addButton: {
     backgroundColor: "#28a745",
-    paddingVertical: 10,
+    paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 5,
-    marginBottom: 10,
+    marginVertical: 15,
+    alignSelf: "center",
   },
   addButtonText: {
     color: "#fff",
@@ -183,11 +208,12 @@ const styles = StyleSheet.create({
   submitButton: {
     marginBottom: 50,
     width: 200,
-    height: 40,
+    height: 45,
     backgroundColor: "#42c8f5",
     borderRadius: 5,
     justifyContent: "center",
     alignItems: "center",
+    alignSelf: "center",
   },
   submitButtonText: {
     color: "#ffffff",
