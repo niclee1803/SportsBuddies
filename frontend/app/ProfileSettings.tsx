@@ -328,6 +328,54 @@ const ProfileSettings: React.FC = () => {
               onChangeText={(text) => setUserData({ ...userData, email: text })}
             />
           </View>
+
+
+          <Text style={styles.label}>Preferred Sport 1</Text>
+          <DropDownPicker
+            listMode='SCROLLVIEW'
+            open={sportOpen}
+            value={selectedSport}
+            items={sportsOptions.map(option => ({ label: option, value: option }))}
+            setOpen={setSportOpen}
+            setValue={(callback) => {
+              const value = callback(selectedSport);
+              setSelectedSport(value);
+              setUserData({ 
+                ...userData, 
+                preferences: { 
+                  ...userData.preferences,
+                  sports: value || '' 
+                } 
+              });
+            }}
+            placeholder={userData.preferences.sports || "Select a sport"}
+            containerStyle={{ width: '100%', marginBottom: 12 }}
+            dropDownContainerStyle={{ backgroundColor: '#fafafa' }}
+          />   
+
+          <Text style={styles.label}>Sport 1 Proficiency</Text>
+          <DropDownPicker
+            listMode='SCROLLVIEW'
+            open={fitnessOpen}
+            value={selectedFitness}
+            items={fitnessOptions.map(option => ({ label: option, value: option }))}
+            setOpen={setFitnessOpen}
+            setValue={(callback) => {
+              const value = callback(selectedFitness);
+              setSelectedFitness(value);
+              setUserData({ 
+                ...userData, 
+                preferences: { 
+                  ...userData.preferences,
+                  fitnessLevel: value || '' 
+                } 
+              });
+            }}
+            placeholder={userData.preferences.fitnessLevel || "Select proficiency level"}
+            containerStyle={{ width: '100%', marginBottom: 20 }}
+            dropDownContainerStyle={{ backgroundColor: '#fafafa' }}
+          />   
+
         </View>
 
         <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
