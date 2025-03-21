@@ -17,7 +17,7 @@ Run the backend and frontend servers on different terminals.
    python -m venv venv
    ```
 
-3. Activate the virtual environment
+3. Activate the virtual environment  
    **For Windows**
    ```bash
    venv\Scripts\activate
