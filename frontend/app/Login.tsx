@@ -1,36 +1,50 @@
-import {
-  Text,
-  TextInput,
-  StyleSheet,
-  View,
-  TouchableOpacity,
-  Alert,
-  ActivityIndicator,
-  Modal,
-} from "react-native";
-import Icon from "react-native-vector-icons/MaterialIcons";
 import React, { useState } from "react";
+import { View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator, Modal, StyleSheet } from "react-native";
+import Icon from "react-native-vector-icons/MaterialIcons";
 import { useRouter } from "expo-router";
-import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
-import { app } from '../constants/firebaseConfig';  // Adjust path if needed
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { fetchCurrentUser } from "../utils/GetUser";
+import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
 
 export default function Login() {
-  const auth = getAuth(app);
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const auth = getAuth();
 
   const handleLogin = async () => {
     setIsLoading(true);
+  
     try {
+      // Authenticate directly with Firebase
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const idToken = await userCredential.user.getIdToken();
       const user = userCredential.user;
-      Alert.alert('Welcome!', `Logged in as ${user.email}`);
-      router.push('/Home');  // Navigate after login
-    } catch (error: any) {
-      Alert.alert('Login Failed', error.message);
+  
+      // Store the token in AsyncStorage
+      await AsyncStorage.setItem("token", idToken);
+  
+      Alert.alert("Welcome!", `Logged in as ${user.email}`);
+  
+      const userData = await fetchCurrentUser();
+      const preferencesSet = userData.preferences_set;
+  
+      // Navigate based on preferences
+      if (preferencesSet) {
+        router.replace("/Home");
+      } else {
+        router.replace("/SetPreferences");
+      }
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        console.error("Login error:", error);
+        Alert.alert("Login Failed", error.message);
+      } else {
+        console.error("Unexpected error:", error);
+        Alert.alert("Login Failed", "An unknown error occurred");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -50,7 +64,7 @@ export default function Login() {
           onChangeText={setEmail}
           autoCapitalize="none"
           keyboardType="email-address"
-          textContentType='emailAddress'
+          textContentType="emailAddress"
         />
 
         <Text style={styles.label}>Password</Text>
@@ -67,11 +81,7 @@ export default function Login() {
             style={styles.eyeIcon}
             onPress={() => setIsPasswordVisible(!isPasswordVisible)}
           >
-            <Icon
-              name={isPasswordVisible ? "visibility-off" : "visibility"}
-              size={24}
-              color="#888"
-            />
+            <Icon name={isPasswordVisible ? "visibility-off" : "visibility"} size={24} color="#888" />
           </TouchableOpacity>
         </View>
 

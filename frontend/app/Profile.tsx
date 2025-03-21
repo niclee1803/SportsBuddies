@@ -1,34 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, Alert, Platform } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
-import Clipboard from '@react-native-clipboard/clipboard';
-import { Feather, AntDesign, FontAwesome5, Ionicons } from '@expo/vector-icons';
+import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
-import { query, collection, where, getDocs, doc, getDoc, updateDoc, getFirestore } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL, getStorage } from 'firebase/storage';
-import { db, auth, storage } from '../constants/firebaseConfig';
-import Template from '../components/Template';
-import { onAuthStateChanged } from 'firebase/auth';
-import { DocumentData } from "firebase/firestore";
-import Toast from 'react-native-toast-message';
-import { useLocalSearchParams } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { FontAwesome5, AntDesign, Feather, Ionicons } from '@expo/vector-icons';
+import * as Clipboard from 'expo-clipboard';
 import * as Sharing from 'expo-sharing';
-import { getAuth } from 'firebase/auth';
-import { app } from '../constants/firebaseConfig'; 
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { NavigationContainer } from '@react-navigation/native';
-
-
-type Activity = {
-  id: string;
-  title: string;
-  date: string;
-  time: string;
-  location: string;
-  sport: string;
-  level: string;
-  tags: string[];
-};
+import Toast from 'react-native-toast-message';
+import { API_URL } from '../config.json';
 
 const Profile = () => {
   const router = useRouter();
@@ -36,139 +14,97 @@ const Profile = () => {
   const [user, setUser] = useState({
     firstName: '',
     lastName: '',
-    name: '',   
+    name: '',
     username: '',
     bio: '',
     preferences: [],
     friends: [],
   });
-  
-  const [activities, setActivities] = useState<Activity[]>([]);
+  const [activities, setActivities] = useState([]);
 
   useEffect(() => {
     const loadProfile = async () => {
       try {
-        const currentUser = auth.currentUser;
-        if (!currentUser) {
-          Alert.alert("User not logged in", "Please sign in to access your profile.");
+        // Get the token from AsyncStorage
+        const token = await AsyncStorage.getItem('token');
+        if (!token) {
+          Alert.alert('Error', 'User authentication token not available. Please log in again.');
+          router.replace('/Login');
           return;
         }
-    
-        const userRef = doc(db, "users", currentUser.uid);
-        const docSnap = await getDoc(userRef);
-    
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          const fullName = `${data.firstName || ""} ${data.lastName || ""}`.trim(); 
-    
-          setUser({
-            firstName: data.firstName || "",
-            lastName: data.lastName || "",
-            name: fullName,   
-            username: data.username || "",
-            bio: data.bio || "",
-            preferences: data.preferences || [],
-            friends: data.friends || [],
-          });
-    
-          setProfilePic(data.profilePicUrl || profilePic);
-        } else {
-          Alert.alert("Profile not found");
-        }
-      } catch (error) {
-        Alert.alert("Error", error instanceof Error ? error.message : "Something went wrong.");
-      }
-    };
-    
-    
 
-
-    const handleProfilePictureUpdate = async () => {
-      try {
-        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (status !== 'granted') {
-          Alert.alert('Permissions required', 'Please allow access to select a photo.');
-          return;
-        }
-    
-        let result = await ImagePicker.launchImageLibraryAsync({
-          mediaTypes: ImagePicker.MediaTypeOptions.Images,
-          allowsEditing: true,
-          aspect: [1, 1],
-          quality: 1,
+        // Fetch user data from the backend
+        const response = await fetch(`${API_URL}/user/current_user`, {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         });
-    
-        if (!result.canceled && result.assets.length > 0) {
-          const imageUri = result.assets[0].uri;
-          const response = await fetch(imageUri);
-          const blob = await response.blob();
-          const storage = getStorage(app);
-          const storageRef = ref(storage, `profilePictures/${auth.currentUser?.uid}_${Date.now()}`);
-    
-          await uploadBytes(storageRef, blob);
-          const downloadURL = await getDownloadURL(storageRef);
-    
-         
-          if (auth.currentUser) {
-            const userRef = doc(db, 'users', auth.currentUser.uid);
-            await updateDoc(userRef, { profilePicUrl: downloadURL });
-            setProfilePic(downloadURL);
-            Alert.alert('Profile Picture Updated');
-            
-            loadProfile();; 
-          }
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.detail || 'Failed to fetch user data');
         }
+
+        const data = await response.json();
+
+        // Update the user state with the backend data
+        const fullName = `${data.firstName || ''} ${data.lastName || ''}`.trim();
+        setUser({
+          firstName: data.firstName || '',
+          lastName: data.lastName || '',
+          name: fullName,
+          username: data.username || '',
+          bio: data.bio || '',
+          preferences: data.preferences || [],
+          friends: data.friends || [],
+        });
+
+        setProfilePic(data.profilePicUrl || profilePic);
       } catch (error) {
-        Alert.alert('Error', 'Could not update profile picture.');
+        Alert.alert('Error', error instanceof Error ? error.message : 'Something went wrong.');
       }
     };
-    
-    
 
     const loadActivities = async () => {
       try {
-        const currentUser = auth.currentUser;
-        if (!currentUser) return;
+        const token = await AsyncStorage.getItem('token');
+        if (!token) return;
 
-        const activitiesQuery = query(
-          collection(db, "activities"),
-          where("userId", "==", currentUser.uid)
-        );
+        const response = await fetch(`${API_URL}/user/activities`, {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
-        const activitySnapshots = await getDocs(activitiesQuery);
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.detail || 'Failed to fetch activities');
+        }
 
-        const userActivities: Activity[] = activitySnapshots.docs.map((doc) => ({
-          id: doc.id,
-          title: doc.data().title ?? "",
-          date: doc.data().date ?? "",
-          time: doc.data().time ?? "",
-          location: doc.data().location ?? "",
-          sport: doc.data().sport ?? "",
-          level: doc.data().level ?? "",
-          tags: Array.isArray(doc.data().tags) ? doc.data().tags : [],
-        }));
-
-        setActivities(userActivities);
+        const data = await response.json();
+        setActivities(data.activities || []);
       } catch (error) {
-        Alert.alert("Error", error instanceof Error ? error.message : "Something went wrong.");
+        Alert.alert('Error', error instanceof Error ? error.message : 'Something went wrong.');
       }
     };
 
     loadProfile();
     loadActivities();
-  }, []);
+  }, [router]);
 
   const shareProfile = async () => {
     try {
-      const profileLink = `https://myapp.com/Profile/${user.username}`; 
-      Clipboard.setString(profileLink); 
+      const profileLink = `${API_URL}/profile/${user.username}`;
+      await Clipboard.setStringAsync(profileLink);
+      Clipboard.setString(profileLink);
       if (await Sharing.isAvailableAsync()) {
         await Sharing.shareAsync(profileLink);
       } else {
-        Alert.alert("Profile Link Copied!", "Paste it anywhere to share.");
+        Alert.alert('Profile Link Copied!', 'Paste it anywhere to share.');
       }
-  
-     
+
       Toast.show({
         type: 'success',
         text1: 'Profile Link Copied!',
@@ -176,12 +112,10 @@ const Profile = () => {
         position: 'top',
         visibilityTime: 2000,
       });
-  
     } catch (error) {
-      Alert.alert("Error", "Could not share profile.");
+      Alert.alert('Error', 'Could not share profile.');
     }
   };
-  
 
   const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#f2f2f2', padding: 20 },
@@ -189,15 +123,12 @@ const Profile = () => {
     profileImage: { width: 100, height: 100, borderRadius: 50, borderWidth: 2, borderColor: 'black' },
     name: { fontSize: 22, fontWeight: 'bold', marginTop: 8 },
     username: { color: 'gray', fontSize: 16, marginBottom: 10 },
-  
     buttonContainer: { flexDirection: 'row', justifyContent: 'center', gap: 20, marginVertical: 10 },
     button: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#e0e0e0', padding: 10, borderRadius: 20 },
     buttonText: { marginLeft: 5, fontSize: 16 },
-  
     section: { marginTop: 20 },
     sectionTitle: { fontWeight: 'bold', fontSize: 18, marginBottom: 10 },
     noActivityText: { textAlign: 'center', color: 'gray' },
-    
     activityCard: { backgroundColor: 'white', padding: 15, borderRadius: 10, shadowOpacity: 0.2, shadowRadius: 5, marginBottom: 10 },
     activityHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
     activityUserImage: { width: 30, height: 30, borderRadius: 15, marginRight: 10 },
@@ -205,30 +136,7 @@ const Profile = () => {
     activityTitle: { fontWeight: 'bold', fontSize: 16, marginBottom: 5 },
     activityDetails: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 5 },
     activityTags: { marginTop: 10, fontStyle: 'italic' },
-
-    bottomNav: {
-      flexDirection: 'row',
-      justifyContent: 'space-around',
-      backgroundColor: '#5D81C6',  
-      paddingVertical: 10,
-      borderTopWidth: 1,
-      borderColor: '#ddd',
-      position: 'absolute',
-      bottom: 0,
-      left: 0,
-      right: 0,
-      height: 60,
-    },
-    
-    navButton: {
-      alignItems: 'center',
-      justifyContent: 'center',
-      flex: 1,
-      paddingVertical: 5,
-    },
-    
   });
-  
 
   return (
     <View style={{ flex: 1 }}>
@@ -238,27 +146,27 @@ const Profile = () => {
             <Image source={{ uri: profilePic }} style={styles.profileImage} />
           </TouchableOpacity>
           <Text style={styles.name}>{user.firstName} {user.lastName}</Text>
-          <Text style={styles.username}>@{user.username || "..."}</Text>
+          <Text style={styles.username}>@{user.username || '...'}</Text>
         </View>
-  
+
         <View style={styles.buttonContainer}>
           <TouchableOpacity style={styles.button} onPress={() => router.push('/friends')}>
             <FontAwesome5 name="users" size={20} color="black" />
             <Text style={styles.buttonText}>Friends</Text>
           </TouchableOpacity>
-  
+
           <TouchableOpacity style={styles.button} onPress={shareProfile}>
             <AntDesign name="sharealt" size={20} color="black" />
             <Text style={styles.buttonText}>Share</Text>
           </TouchableOpacity>
-  
+
           <TouchableOpacity style={styles.button} onPress={() => router.push('/Settings?edit=true')}>
             <Feather name="edit-3" size={20} color="black" />
             <Text style={styles.buttonText}>Edit</Text>
           </TouchableOpacity>
         </View>
-  
-        <View style={styles.section}>
+
+        {/* <View style={styles.section}>
           <Text style={styles.sectionTitle}>Recent Activities</Text>
           {activities.length === 0 ? (
             <Text style={styles.noActivityText}>No recent activities</Text>
@@ -286,42 +194,14 @@ const Profile = () => {
                   <Feather name="bar-chart-2" size={18} color="black" />
                   <Text>{activity.level}</Text>
                 </View>
-                <Text style={styles.activityTags}>Tags: {activity.tags.join(", ")}</Text>
+                <Text style={styles.activityTags}>Tags: {activity.tags.join(', ')}</Text>
               </View>
             ))
           )}
-        </View>
+        </View> */}
       </ScrollView>
-  
-      {/* Bottom Navigation Bar */}
-      <View style={styles.bottomNav}>
-        <TouchableOpacity onPress={() => router.push('/Home')} style={styles.navButton}>
-          <FontAwesome5 name="home" size={24} color="black" />
-          <Text>Home</Text>
-        </TouchableOpacity>
-  
-        <TouchableOpacity onPress={() => router.push('/Groups')} style={styles.navButton}>
-          <FontAwesome5 name="users" size={24} color="black" />
-          <Text>Groups</Text>
-        </TouchableOpacity>
-  
-        <TouchableOpacity onPress={() => router.push('/Create')} style={styles.navButton}>
-          <Ionicons name="add-circle-outline" size={24} color="black" />
-          <Text>Create</Text>
-        </TouchableOpacity>
-  
-        <TouchableOpacity onPress={() => router.push('/Profile')} style={styles.navButton}>
-          <FontAwesome5 name="user-circle" size={24} color="black" />
-          <Text>Profile</Text>
-        </TouchableOpacity>
-  
-        <TouchableOpacity onPress={() => router.push('/Settings')} style={styles.navButton}>
-          <Ionicons name="settings-outline" size={24} color="black" />
-          <Text>Settings</Text>
-        </TouchableOpacity>
-      </View>
     </View>
   );
-}
+};
 
 export default Profile;

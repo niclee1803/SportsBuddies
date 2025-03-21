@@ -4,6 +4,43 @@ Clone the project
 git clone https://github.com/niclee1803/SportsBuddies.git
 ```
 
+Run the backend and frontend servers on different terminals.
+
+## How to run the backend server
+1. Navigate to backend directory
+   ```bash
+   cd SportsBuddies/backend
+   ```
+
+2. If you havent already, create a virtual environment.
+   ```bash
+   python -m venv venv
+   ```
+
+3. Activate the virtual environment
+   ```bash
+   # For Windows users
+   venv\Scripts\activate
+   ```
+
+   If you get an error about not running scripts in the system being disabled, you can enable it for the current terminal process
+   ```bash
+   Set-ExecutionPolicy Unrestricted -Scope Process
+   ```
+
+3. If you haven't already, install the dependencies
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. Run the backend development server
+   ```bash
+   uvicorn main:app --host 0.0.0.0 --port 8000
+   ```
+
+6. API endpoints will be hosted on port 8000 of your IP address.
+
+
 ## How to run the frontend development server
 Requirements: Expo Go app on your mobile, Node.js on PC
 1. Navigate to frontend directory
@@ -16,12 +53,13 @@ Requirements: Expo Go app on your mobile, Node.js on PC
    npm install
    ```
    
-3. Start development server
+3. Start development server with backend API calls directed to your IP address
    ```bash
-   npx expo start
+   npm start
    ```
 
 4. Scan QR Code on mobile
+
 
 ## Github Procedure for Cloning and Updating 
 1. Clone the Main Repository to your Desktop 

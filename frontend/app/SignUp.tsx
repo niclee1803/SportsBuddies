@@ -12,19 +12,20 @@ import {
   validatePassword
 } from "../components/signup/ValidationUtils";
 import styles from "../components/signup/styles";
-import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
-import { app } from "../constants/firebaseConfig";
-import { getFirestore } from "firebase/firestore";
+import { API_URL } from "../config.json";
+
+// Import Firebase authentication
+import { getAuth, createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+
+// Initialize Firebase
+const auth = getAuth();
 
 export default function SignUp() {
   const router = useRouter();
   const [step, setStep] = useState<number>(1);
-  const [loading, setLoading] = useState<boolean>(false); // New loading state
+  const [loading, setLoading] = useState<boolean>(false);
 
   const totalSteps = 5;
-  const auth = getAuth(app);
-  const db = getFirestore(app);
 
   // Form state
   const [firstName, setFirstName] = useState<string>("");
@@ -53,14 +54,11 @@ export default function SignUp() {
     setStep(step - 1);
   };
 
-  // Updated handleNext: assumes duplicate validations (for email, username, phone) have been performed in their respective steps.
   const handleNext = async () => {
     let isValid = true;
 
     switch (step) {
       case 2:
-        // In Step2, duplicate email check is done onBlur.
-        // Here, we re-run the phone duplicate check as a fallback.
         if (emailError) {
           isValid = false;
         } else {
@@ -68,7 +66,6 @@ export default function SignUp() {
         }
         break;
       case 3:
-        // In Step3, duplicate username check is assumed to have run onBlur.
         if (usernameError || !username) {
           isValid = false;
         }
@@ -90,38 +87,87 @@ export default function SignUp() {
   };
 
   const handleSubmit = async () => {
-    setLoading(true); // Show loading overlay
+    setLoading(true);
 
     try {
+      // 1. Create user with Firebase Authentication
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
-
-      await setDoc(doc(db, "users", user.uid), {
-        firstName,
-        lastName,
-        email,
-        phone,
-        username,
-        createdAt: new Date().toISOString(),
+      
+      // 2. Update user profile in Firebase Auth
+      await updateProfile(user, {
+        displayName: `${firstName} ${lastName}`
+      });
+      
+      // 3. Get ID token to use for backend API authentication
+      const idToken = await user.getIdToken();
+      console.log(idToken);
+      // 4. Store user data in Firestore via our backend API
+      const response = await fetch(`${API_URL}/user/create_user`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${idToken}`
+        },
+        body: JSON.stringify({
+          firstName,
+          lastName,
+          phone,
+          username
+        }),
       });
 
-      setLoading(false); // Hide loading overlay before alert
+      const data = await response.json();
+      setLoading(false);
 
-      if (Platform.OS === "web") {
-        window.alert("Success! Your account has been created successfully!");
-        router.push("/Login");
+      if (response.ok) {
+        const successMessage = "Success! Your account has been created successfully!";
+        if (Platform.OS === "web") {
+          window.alert(successMessage);
+          router.push("/Login");
+        } else {
+          Alert.alert("Success!", successMessage, [
+            { text: "OK", onPress: () => router.push("/Login") },
+          ]);
+        }
       } else {
-        Alert.alert("Success!", "Your account has been created successfully!", [
-          { text: "OK", onPress: () => router.push("/Login") },
-        ]);
+        // If backend user creation fails, we should delete the Firebase auth user
+        try {
+          await user.delete();
+        } catch (deleteError) {
+          console.error("Failed to clean up auth user after profile creation error:", deleteError);
+        }
+        
+        if (Platform.OS === "web") {
+          window.alert(`Error: ${data.error || "Failed to create user profile"}`);
+        } else {
+          Alert.alert("Error", data.error || "Failed to create user profile", [{ text: "OK" }]);
+        }
       }
     } catch (error: any) {
-      setLoading(false); // Hide loading overlay on error
-
+      setLoading(false);
+      
+      // Firebase auth errors are well formatted for users
+      const errorMessage = error.message || "Failed to create account";
+      const errorCode = error.code;
+      
+      let displayMessage = errorMessage;
+      
+      // Handle common Firebase error codes with more user-friendly messages
+      if (errorCode === 'auth/email-already-in-use') {
+        displayMessage = "This email is already in use. Please try logging in or use another email.";
+      } else if (errorCode === 'auth/invalid-email') {
+        displayMessage = "Please enter a valid email address.";
+      } else if (errorCode === 'auth/operation-not-allowed') {
+        displayMessage = "Account creation is currently disabled. Please try again later.";
+      } else if (errorCode === 'auth/weak-password') {
+        displayMessage = "Password is too weak. Please choose a stronger password.";
+      }
+      
       if (Platform.OS === "web") {
-        window.alert(`Error: ${error.message}`);
+        window.alert(`Error: ${displayMessage}`);
       } else {
-        Alert.alert("Error", error.message, [{ text: "OK" }]);
+        Alert.alert("Error", displayMessage, [{ text: "OK" }]);
       }
     }
   };
