@@ -1,22 +1,19 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, TouchableOpacity, Alert, StyleSheet, FlatList } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, Alert, FlatList, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
-import { fetchCurrentUser } from "../utils/GetUser";
+import { fetchCurrentUser } from "../utils/AuthUtils";
 import { API_URL } from "../config.json";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import SportsSkillsMenu, { SPORTS_LIST, SKILL_LEVELS, SportsSkill } from "../components/preferences/SportsSkillsMenu";
+
+interface SportsSkill {
+  sport: string;
+  skill_level: string;
+}
 
 export default function SetPreferences() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
-  
-  // Initialize with default values from the exported constants
-  const [sportsSkills, setSportsSkills] = useState<SportsSkill[]>([
-    { sport: SPORTS_LIST[0], skill_level: SKILL_LEVELS[0] }
-  ]);
-  
-  // Dropdown state management
-  const [openDropdown, setOpenDropdown] = useState<{ type: 'sport' | 'skill', index: number } | null>(null);
+  const [sportsSkills, setSportsSkills] = useState<SportsSkill[]>([{ sport: "", skill_level: "" }]);
 
   useEffect(() => {
     const getUser = async () => {
@@ -24,8 +21,9 @@ export default function SetPreferences() {
         const userData = await fetchCurrentUser();
         setUser(userData);
       } catch (error: any) {
-        Alert.alert("Error", error.message || "Failed to fetch user data");
-        router.replace("/Login");
+        Alert.alert("Error", error.message || "Failed to fetch user data", [
+          { text: "OK", onPress: () => router.replace("/Login") },
+        ]);
       }
     };
 
@@ -33,7 +31,7 @@ export default function SetPreferences() {
   }, [router]);
 
   const handleAddSport = () => {
-    setSportsSkills([...sportsSkills, { sport: SPORTS_LIST[0], skill_level: SKILL_LEVELS[0] }]);
+    setSportsSkills([...sportsSkills, { sport: "", skill_level: "" }]);
   };
 
   const handleSportChange = (index: number, value: string) => {
@@ -46,28 +44,6 @@ export default function SetPreferences() {
     const newSportsSkills = [...sportsSkills];
     newSportsSkills[index].skill_level = value;
     setSportsSkills(newSportsSkills);
-  };
-
-  const handleRemoveSport = (index: number) => {
-    if (sportsSkills.length > 1) {
-      const newSportsSkills = [...sportsSkills];
-      newSportsSkills.splice(index, 1);
-      setSportsSkills(newSportsSkills);
-    } else {
-      Alert.alert("Cannot Remove", "You must have at least one sport preference.");
-    }
-  };
-
-  const isDropdownOpen = (type: 'sport' | 'skill', index: number) => {
-    return openDropdown?.type === type && openDropdown?.index === index;
-  };
-
-  const toggleDropdown = (type: 'sport' | 'skill', index: number, isOpen: boolean) => {
-    if (isOpen) {
-      setOpenDropdown({ type, index });
-    } else {
-      setOpenDropdown(null);
-    }
   };
 
   const handleSubmit = async () => {
@@ -92,6 +68,7 @@ export default function SetPreferences() {
         sports_skills: sportsSkills,
       };
       
+      console.log(JSON.stringify(requestBody));
       // Make the API call to the backend
       const response = await fetch(`${API_URL}/user/set_preferences`, {
         method: "POST",
@@ -125,45 +102,37 @@ export default function SetPreferences() {
     );
   }
 
-  const renderSportItem = ({ item, index }: { item: SportsSkill, index: number }) => (
-    <SportsSkillsMenu
-      item={item}
-      index={index}
-      isDropdownOpen={isDropdownOpen}
-      toggleDropdown={toggleDropdown}
-      handleSportChange={handleSportChange}
-      handleSkillLevelChange={handleSkillLevelChange}
-      handleRemoveSport={handleRemoveSport}
-    />
-  );
-
   return (
     <View style={styles.container}>
       <Text style={styles.heading}>Set Your Preferences</Text>
-      <Text style={styles.subHeading}>
-        Welcome, {user?.email || "Error! Please restart the app"}!
-        {"\n"}Tell us what you like:
-      </Text>
-      
+      <Text style={styles.subHeading}>Welcome, {user?.email || "Error! Please restart the app"}!
+      {"\n"}Tell us what you like:</Text>
       <FlatList
         data={sportsSkills}
-        renderItem={renderSportItem}
-        keyExtractor={(_, index) => index.toString()}
-        style={styles.flatList}
-        contentContainerStyle={styles.listContent}
-        nestedScrollEnabled={true}
-        ListFooterComponent={() => (
-          <>
-            <TouchableOpacity style={styles.addButton} onPress={handleAddSport}>
-              <Text style={styles.addButtonText}>Add Sport</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-              <Text style={styles.submitButtonText}>Submit</Text>
-            </TouchableOpacity>
-          </>
+        renderItem={({ item, index }) => (
+          <View key={index} style={styles.sportContainer}>
+            <TextInput
+              style={styles.input}
+              placeholder="Sport"
+              value={item.sport}
+              onChangeText={(value) => handleSportChange(index, value)}
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Skill Level"
+              value={item.skill_level}
+              onChangeText={(value) => handleSkillLevelChange(index, value)}
+            />
+          </View>
         )}
+        keyExtractor={(item, index) => index.toString()}
       />
+      <TouchableOpacity style={styles.addButton} onPress={handleAddSport}>
+        <Text style={styles.addButtonText}>Add Sport</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
+        <Text style={styles.submitButtonText}>Submit</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -171,14 +140,14 @@ export default function SetPreferences() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    marginTop: 80,
-    paddingHorizontal: 20,
+    marginTop: 100,
+    alignItems: "center",
+    backgroundColor: "#f9f9f9",
   },
   heading: {
     fontSize: 24,
     fontWeight: "bold",
     marginBottom: 10,
-    textAlign: "center",
   },
   subHeading: {
     fontSize: 16,
@@ -186,19 +155,26 @@ const styles = StyleSheet.create({
     color: "#555",
     textAlign: "center",
   },
-  flatList: {
+  input: {
+    height: 40,
     width: "100%",
+    backgroundColor: "#fff",
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 5,
+    marginBottom: 10,
   },
-  listContent: {
-    paddingBottom: 50,
+  sportContainer: {
+    width: "100%",
+    marginBottom: 15,
   },
   addButton: {
     backgroundColor: "#28a745",
-    paddingVertical: 12,
+    paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 5,
-    marginVertical: 15,
-    alignSelf: "center",
+    marginBottom: 10,
   },
   addButtonText: {
     color: "#fff",
@@ -208,12 +184,11 @@ const styles = StyleSheet.create({
   submitButton: {
     marginBottom: 50,
     width: 200,
-    height: 45,
+    height: 40,
     backgroundColor: "#42c8f5",
     borderRadius: 5,
     justifyContent: "center",
     alignItems: "center",
-    alignSelf: "center",
   },
   submitButtonText: {
     color: "#ffffff",

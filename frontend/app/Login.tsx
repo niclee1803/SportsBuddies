@@ -2,9 +2,8 @@ import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator, Modal, StyleSheet } from "react-native";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { useRouter } from "expo-router";
+import { API_URL } from "../config.json";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { fetchCurrentUser } from "../utils/GetUser";
-import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
 
 export default function Login() {
   const router = useRouter();
@@ -12,41 +11,41 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const auth = getAuth();
 
   const handleLogin = async () => {
     setIsLoading(true);
   
     try {
-      // Authenticate directly with Firebase
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const idToken = await userCredential.user.getIdToken();
-      const user = userCredential.user;
-
-      const data = await response.json(); 
-      // Store the token in AsyncStorage
-      await AsyncStorage.setItem("token", idToken);
-
+      // Send email and password to the backend
+      const response = await fetch(`${API_URL}/auth/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
   
-      Alert.alert("Welcome!", `Logged in as ${user.email}`);
+      const data = await response.json(); //data converted from response to data and becomes: returned as object eg format //{"id_token": "eyJhbGciOiJIUzI1...",  "email": "user@example.com","preferences_set": true}
   
-      const userData = await fetchCurrentUser();
-      const preferencesSet = userData.preferences_set;
+      if (!response.ok) {
+        throw new Error(data.detail || "Login failed");
+      }
   
-      // Navigate based on preferences
-      if (preferencesSet) {
+      // Store the custom token in AsyncStorage
+      await AsyncStorage.setItem("token", data.id_token);
+  
+      Alert.alert("Welcome!", `Logged in as ${data.email}`);
+      console.log(data.id_token)
+  
+      // Navigate based on whether preferences are set
+      if (data.preferences_set) {
         router.replace("/Home");
       } else {
         router.replace("/SetPreferences");
       }
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        console.error("Login error:", error);
-        Alert.alert("Login Failed", error.message);
-      } else {
-        console.error("Unexpected error:", error);
-        Alert.alert("Login Failed", "An unknown error occurred");
-      }
+    } catch (error: any) {
+      console.error("Login error:", error);
+      Alert.alert("Login Failed", error.message);
     } finally {
       setIsLoading(false);
     }
