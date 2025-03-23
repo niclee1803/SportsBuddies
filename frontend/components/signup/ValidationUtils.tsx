@@ -1,6 +1,4 @@
-// ValidationUtils.ts
-import { collection, query, where, getDocs } from "firebase/firestore";
-import { db } from "../../constants/firebaseConfig"; // Adjust this path based on your project structure
+import { API_URL } from "../../config.json";
 
 // Validate Name (synchronous)
 export const validateName = (
@@ -30,7 +28,7 @@ export const validateUsername = async (
   username: string,
   setUsernameError: (error: string) => void
 ): Promise<boolean> => {
-  const usernameRegex = /^(?![._])([A-Za-z0-9]+[A-Za-z0-9._]*[A-Za-z0-9]){3,20}$/;
+  const usernameRegex = /^[A-Za-z]{3,20}$/;
 
   if (!username) {
     setUsernameError("Username is required.");
@@ -43,18 +41,32 @@ export const validateUsername = async (
     return false;
   }
 
-  // Check Firestore for duplicate username
-  const usersRef = collection(db, "users");
-  const q = query(usersRef, where("username", "==", username));
-  const querySnapshot = await getDocs(q);
-
-  if (!querySnapshot.empty) {
-    setUsernameError("Username already exists. Please choose a different username.");
-    return false;
+  try {
+    // Use the API endpoint to check for duplicate username
+    const response = await fetch(`${API_URL}/user/check-username/${encodeURIComponent(username)}`);
+    
+    // Only proceed with JSON parsing if the response is OK
+    if (response.ok) {
+      const data = await response.json();
+      
+      if (!data.available) {
+        setUsernameError("Username already exists. Please choose a different username.");
+        return false;
+      }
+      
+      setUsernameError("");
+      return true;
+    } else {
+      // Handle non-OK responses (like 404, 500, etc.)
+      console.warn(`API error: ${response.status} when checking username`);
+      setUsernameError("Unable to verify username availability.");
+      return true; // Allow user to proceed with a warning
+    }
+  } catch (error) {
+    console.error("Error checking username:", error);
+    setUsernameError("Unable to verify username availability.");
+    return true; // Allow user to proceed with a warning
   }
-
-  setUsernameError("");
-  return true;
 };
 
 // Validate Email with duplicate check (asynchronous)
@@ -68,18 +80,32 @@ export const validateEmail = async (
     return false;
   }
 
-  // Check Firestore for duplicate email
-  const usersRef = collection(db, "users");
-  const q = query(usersRef, where("email", "==", email));
-  const querySnapshot = await getDocs(q);
-
-  if (!querySnapshot.empty) {
-    setEmailError("Email already exists. Please use a different email.");
-    return false;
+  try {
+    // Use the API endpoint to check for duplicate email
+    const response = await fetch(`${API_URL}/user/check-email/${encodeURIComponent(email)}`);
+    
+    // Only proceed with JSON parsing if the response is OK
+    if (response.ok) {
+      const data = await response.json();
+      
+      if (!data.available) {
+        setEmailError("Email already exists. Please use a different email.");
+        return false;
+      }
+      
+      setEmailError("");
+      return true;
+    } else {
+      // Handle non-OK responses
+      console.warn(`API error: ${response.status} when checking email`);
+      setEmailError("Unable to verify email availability.");
+      return true; // Allow user to proceed with a warning
+    }
+  } catch (error) {
+    console.error("Error checking email:", error);
+    setEmailError("Unable to verify email availability.");
+    return true; // Allow user to proceed with a warning
   }
-
-  setEmailError("");
-  return true;
 };
 
 // Validate Password (synchronous)
@@ -116,16 +142,30 @@ export const validatePhone = async (
     return false;
   }
 
-  // Check Firestore for duplicate phone number
-  const usersRef = collection(db, "users");
-  const q = query(usersRef, where("phone", "==", phone));
-  const querySnapshot = await getDocs(q);
-
-  if (!querySnapshot.empty) {
-    setPhoneError("Phone number already exists. Please use a different number.");
-    return false;
+  try {
+    // Use the API endpoint to check for duplicate phone
+    const response = await fetch(`${API_URL}/user/check-phone/${encodeURIComponent(phone)}`);
+    
+    // Only proceed with JSON parsing if the response is OK
+    if (response.ok) {
+      const data = await response.json();
+      
+      if (!data.available) {
+        setPhoneError("Phone number already exists. Please use a different number.");
+        return false;
+      }
+      
+      setPhoneError("");
+      return true;
+    } else {
+      // Handle non-OK responses
+      console.warn(`API error: ${response.status} when checking phone`);
+      setPhoneError("Unable to verify phone number availability.");
+      return true; // Allow user to proceed with a warning
+    }
+  } catch (error) {
+    console.error("Error checking phone:", error);
+    setPhoneError("Unable to verify phone number availability.");
+    return true; // Allow user to proceed with a warning
   }
-
-  setPhoneError("");
-  return true;
 };

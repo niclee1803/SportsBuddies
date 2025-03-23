@@ -141,7 +141,7 @@ export default function SetPreferences() {
     <View style={styles.container}>
       <Text style={styles.heading}>Set Your Preferences</Text>
       <Text style={styles.subHeading}>
-        Welcome, {user?.email || "Error! Please restart the app"}!
+        Welcome, {user?.firstName || "Error! Please restart the app"}!
         {"\n"}Tell us what you like:
       </Text>
       

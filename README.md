@@ -17,11 +17,20 @@ Run the backend and frontend servers on different terminals.
    python -m venv venv
    ```
 
-3. Activate the virtual environment
+3. Activate the virtual environment  
+   **For Windows**
    ```bash
-   # For Windows users
    venv\Scripts\activate
    ```
+   or
+   ```bash
+   venv\bin\activate
+   ```
+   **For Mac**
+   ```bash
+   source venv\scripts\activate
+   ```
+   
 
    If you get an error about not running scripts in the system being disabled, you can enable it for the current terminal process
    ```bash

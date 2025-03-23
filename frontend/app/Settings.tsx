@@ -1,71 +1,84 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Switch, Image, Alert, Platform} from 'react-native';
-import { getAuth, signOut } from 'firebase/auth';
-import { getFirestore, doc, getDoc } from 'firebase/firestore';
-import { app } from '../constants/firebaseConfig';  
+import { View, Text, StyleSheet, TouchableOpacity, Switch, Image, Alert, Platform, ActivityIndicator } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
-import Template from '../components/Template'; 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_URL } from '../config.json';
+import Template from '../components/Template';
+import { fetchCurrentUser } from '@/utils/GetUser';
 
 const Settings = () => {
-  const [user, setUser] = useState<any>(null); 
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [darkMode, setDarkMode] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  const auth = getAuth(app);
-  const db = getFirestore(app);
   const router = useRouter();
-  const fetchUserData = async () => {
-    if (auth.currentUser) {
-      const userRef = doc(db, 'users', auth.currentUser.uid); 
-      const userSnap = await getDoc(userRef);
 
-      if (userSnap.exists()) {
-        setUser(userSnap.data());
-      } else {
-        console.log('No such document!');
+  // Fetch user data from API
+  const fetchUserData = async () => {
+    setLoading(true);
+    try {
+      // Use the imported utility function
+      const userData = await fetchCurrentUser();
+      console.log("User data from API:", userData);
+      
+      // Set user data from API response
+      setUser(userData);
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+      Alert.alert(
+        "Error",
+        error instanceof Error ? error.message : "Failed to load profile data."
+      );
+      
+      // If there's an auth error, redirect to login
+      if (error instanceof Error && error.message.includes("token")) {
+        router.replace("/Login");
       }
+    } finally {
+      setLoading(false);
     }
   };
 
+  // Fetch user data when screen comes into focus
   useFocusEffect(
     useCallback(() => {
       fetchUserData();
-    }, [auth.currentUser])
+    }, [])
   );
 
   const handleLogoutConfirmation = () => {
-    //alert dont work for web so we have a diff logout confirmation for web view
+    // Alert doesn't work for web so we have a different logout confirmation for web view
     if (Platform.OS === 'web') {
       const confirmLogout = window.confirm('Are you sure you want to logout?');
       if (confirmLogout) {
         handleLogout();
       }
-    }
-      else{
-
-    Alert.alert(
-      "Confirm Logout",
-      "Are you sure you want to logout?",
-      [
-        {
-          text: "Cancel",
-          style: "cancel"
-        },
-        { 
-          text: "Logout", 
-          onPress: handleLogout 
-        }
-      ]
-    );
+    } else {
+      Alert.alert(
+        "Confirm Logout",
+        "Are you sure you want to logout?",
+        [
+          {
+            text: "Cancel",
+            style: "cancel"
+          },
+          { 
+            text: "Logout", 
+            onPress: handleLogout 
+          }
+        ]
+      );
     }
   };
   
-
   const handleLogout = async () => {
     try {
-      await signOut(auth);
+      // Clear token from AsyncStorage
+      await AsyncStorage.removeItem('token');
       router.replace('/Login'); // Navigate to the login page after logout
     } catch (error: any) {
       console.error('Logout failed:', error.message);
+      Alert.alert('Logout Failed', 'An error occurred during logout.');
     }
   };
 
@@ -73,19 +86,40 @@ const Settings = () => {
     router.push('/ProfileSettings');
   };
 
-  return ( // profile pic part is not working, need to connect to firebase storage, added placeholder to see how it looks like
+  if (loading) {
+    return (
+      <Template>
+        <View style={[styles.container, styles.loadingContainer]}>
+          <ActivityIndicator size="large" color="#42c8f5" />
+          <Text style={styles.loadingText}>Loading settings...</Text>
+        </View>
+      </Template>
+    );
+  }
+
+  return (
     <Template>
       <View style={styles.container}>
         {user && (
           <View style={styles.profileContainer}>
-            <Image source={{ uri: "https://cdn.nba.com/headshots/nba/latest/1040x760/1642355.png" }} style={styles.profileImage} /> 
+            <Image 
+              source={{ 
+                uri: user.profilePicUrl || "https://placehold.co/150"
+              }} 
+              style={styles.profileImage} 
+            /> 
             <Text style={styles.name}>{user.firstName} {user.lastName}</Text>
             <Text style={styles.username}>@{user.username}</Text>
           </View>
         )}
 
         <TouchableOpacity style={styles.settingItem}>
-          <Text style={[styles.editProfileButton, {fontWeight: 'bold'}, {fontSize: 16}]} onPress={gotoProfileSettings} >Edit Profile</Text>
+          <Text 
+            style={[styles.editProfileButton, {fontWeight: 'bold'}, {fontSize: 16}]} 
+            onPress={gotoProfileSettings}
+          >
+            Edit Profile
+          </Text>
         </TouchableOpacity>
 
         <View style={styles.settingItem}>
@@ -115,6 +149,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
+  },
+  loadingContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#333',
   },
   profileContainer: {
     alignItems: 'center',
@@ -154,7 +197,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 20,
-    //width: '20%',
   },
   editProfileButton: {
     backgroundColor: '#42c8f5',
@@ -169,7 +211,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
-  
 });
 
 export default Settings;

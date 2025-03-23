@@ -1,41 +1,28 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from "react-native";
 import DropDownPicker from "react-native-dropdown-picker";
+import { API_URL } from "../../config.json";
 
 export interface SportsSkill {
   sport: string;
   skill_level: string;
 }
 
-// Predefined list of sports
-export const SPORTS_LIST = [
-  "Basketball",
-  "Football",
-  "Soccer",
-  "Tennis",
-  "Volleyball",
-  "Swimming",
-  "Golf",
-  "Baseball",
-  "Cycling",
-  "Running",
-  "Hiking",
-  "Yoga",
-  "Boxing",
-  "Martial Arts",
-  "Skiing",
-  "Snowboarding",
-  "Surfing"
+// Fallback list if API fails
+const FALLBACK_SPORTS = [
+  "Basketball", "Football", "Soccer", "Tennis", 
+  "Volleyball", "Swimming", "Golf", "Baseball"
 ];
 
-// Skill level options
-export const SKILL_LEVELS = [
-  "Beginner",
-  "Intermediate",
-  "Advanced",
-  "Expert",
-  "Professional"
+// Predefined skill levels
+const SKILL_LEVELS = [
+  "Beginner", "Intermediate", "Advanced", "Professional"
 ];
+
+// Initialize sports list that will be populated from API
+export let SPORTS_LIST: string[] = [];
+// Export the predefined skill levels
+export { SKILL_LEVELS };
 
 interface SportContainerProps {
   item: SportsSkill;
@@ -60,9 +47,47 @@ const SportsSkillsMenu = ({
   handleSkillLevelChange,
   handleRemoveSport 
 }: SportContainerProps) => {
-  // Use provided items or create from default lists
-  const sportsItems = propSportsItems || SPORTS_LIST.map(sport => ({ label: sport, value: sport }));
-  const skillItems = propSkillItems || SKILL_LEVELS.map(skill => ({ label: skill, value: skill }));
+  // Local state for API-fetched sports list
+  const [sportsList, setSportsList] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Function to fetch sports list
+    const fetchSportsList = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(`${API_URL}/utils/sports_list`);
+        if (response.ok) {
+          const data = await response.json();
+          setSportsList(data);
+          // Update exported variable for use outside component
+          SPORTS_LIST = data;
+        } else {
+          console.warn("Failed to fetch sports list, using fallback");
+          setSportsList(FALLBACK_SPORTS);
+          SPORTS_LIST = FALLBACK_SPORTS;
+        }
+      } catch (error) {
+        console.error("Error fetching sports list:", error);
+        setSportsList(FALLBACK_SPORTS);
+        SPORTS_LIST = FALLBACK_SPORTS;
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSportsList();
+  }, []);
+
+  // Format sports for dropdown - use props if provided, else use API data, fallback to empty
+  const sportsItems = propSportsItems || 
+                     (sportsList.length > 0 ? 
+                      sportsList.map(sport => ({ label: sport, value: sport })) : 
+                      []);
+
+  // Format skill levels for dropdown - use props if provided, else use predefined SKILL_LEVELS
+  const skillItems = propSkillItems || 
+                    SKILL_LEVELS.map(skill => ({ label: skill, value: skill }));
 
   return (
     <View style={styles.sportContainer}>
@@ -83,6 +108,8 @@ const SportsSkillsMenu = ({
         scrollViewProps={{
           nestedScrollEnabled: true,
         }}
+        loading={loading}
+        placeholder={loading ? "Loading sports..." : "Select a sport"}
       />
       
       <Text style={[styles.labelText, { marginTop: 15 }]}>Skill Level:</Text>
@@ -102,6 +129,7 @@ const SportsSkillsMenu = ({
         scrollViewProps={{
           nestedScrollEnabled: true,
         }}
+        placeholder="Select a skill level"
       />
       
       <TouchableOpacity 
