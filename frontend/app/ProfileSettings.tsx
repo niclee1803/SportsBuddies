@@ -9,16 +9,30 @@ import {
   ScrollView,
   Alert,
   Platform,
+  ActivityIndicator,
 } from "react-native";
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as ImagePicker from "expo-image-picker";
 import { API_URL } from "../config.json";
 import Template from "../components/Template";
+import { fetchCurrentUser } from "@/utils/GetUser";
+import { validateUsername, validateEmail, validatePhone } from "@/components/signup/ValidationUtils";
 
 const ProfileSettings: React.FC = () => {
   const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
+  
+  // Validation error states
+  const [errors, setErrors] = useState({
+    username: "",
+    email: "",
+    phone: "",
+  });
 
+  // Current user data
   const [userData, setUserData] = useState({
     firstName: "",
     lastName: "",
@@ -28,48 +42,143 @@ const ProfileSettings: React.FC = () => {
     profilePicUrl: "",
   });
 
+  // Original user data for comparison to detect changes
+  const [originalData, setOriginalData] = useState({
+    firstName: "",
+    lastName: "",
+    username: "",
+    phone: "",
+    email: "",
+    profilePicUrl: "",
+  });
+
+  // Function to fetch user data from the API
   const fetchUserData = async () => {
+    setLoading(true);
     try {
-      const token = await AsyncStorage.getItem("token");
-      if (!token) {
-        Alert.alert(
-          "Error",
-          "User authentication token not available. Please log in again."
-        );
-        router.replace("/Login");
-        return;
-      }
-
-      const response = await fetch(`${API_URL}/user/current_user`, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || "Failed to fetch user data");
-      }
-
-      const data = await response.json();
-      setUserData({
+      // Use the imported utility function
+      const data = await fetchCurrentUser();
+      console.log("User data from API:", data);
+      
+      const userDataValues = {
         firstName: data.firstName || "",
         lastName: data.lastName || "",
         username: data.username || "",
         phone: data.phone || "",
         email: data.email || "",
         profilePicUrl: data.profilePicUrl || "https://placehold.co/150",
-      });
+      };
+      
+      // Update the user data state with values from the API
+      setUserData(userDataValues);
+      // Save original data for change detection
+      setOriginalData(userDataValues);
+      // Reset error and change states
+      setErrors({ username: "", email: "", phone: "" });
+      setHasChanges(false);
     } catch (error) {
+      console.error("Error fetching user data:", error);
       Alert.alert(
         "Error",
-        error instanceof Error ? error.message : "Something went wrong."
+        error instanceof Error ? error.message : "Failed to load profile data."
       );
+      
+      // If there's an auth error, redirect to login
+      if (error instanceof Error && error.message.includes("token")) {
+        router.replace("/Login");
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
+  // Load user data when component mounts
+  useEffect(() => {
+    fetchUserData();
+  }, []);
+
+  // Compare current values with original to detect changes
+  useEffect(() => {
+    const checkForChanges = () => {
+      const hasUserDataChanged = 
+        userData.firstName !== originalData.firstName ||
+        userData.lastName !== originalData.lastName ||
+        userData.username !== originalData.username ||
+        userData.phone !== originalData.phone ||
+        userData.email !== originalData.email;
+      
+      setHasChanges(hasUserDataChanged);
+    };
+    
+    checkForChanges();
+  }, [userData, originalData]);
+
+  // Handle input change with validation
+  const handleInputChange = (field: string, value: string) => {
+    setUserData({ ...userData, [field]: value });
+  };
+
+  // Validation functions that use ValidationUtils
+  const validateUsernameField = async () => {
+    // Skip validation if unchanged
+    if (userData.username === originalData.username) {
+      setErrors(prev => ({ ...prev, username: "" }));
+      return true;
+    }
+    return await validateUsername(
+      userData.username, 
+      (error) => setErrors(prev => ({ ...prev, username: error }))
+    );
+  };
+
+  const validateEmailField = async () => {
+    // Skip validation if unchanged
+    if (userData.email === originalData.email) {
+      setErrors(prev => ({ ...prev, email: "" }));
+      return true;
+    }
+    return await validateEmail(
+      userData.email, 
+      (error) => setErrors(prev => ({ ...prev, email: error }))
+    );
+  };
+
+  const validatePhoneField = async () => {
+    // Skip validation if unchanged
+    if (userData.phone === originalData.phone) {
+      setErrors(prev => ({ ...prev, phone: "" }));
+      return true;
+    }
+    return await validatePhone(
+      userData.phone, 
+      (error) => setErrors(prev => ({ ...prev, phone: error }))
+    );
+  };
+
+  // Validate all fields at once
+  const validateAllFields = async () => {
+    const usernameValid = await validateUsernameField();
+    const emailValid = await validateEmailField();
+    const phoneValid = await validatePhoneField();
+    
+    return usernameValid && emailValid && phoneValid;
+  };
+
   const handleSave = async () => {
+    // First validate all fields
+    const isValid = await validateAllFields();
+    
+    if (!isValid) {
+      Alert.alert("Validation Error", "Please fix the highlighted fields before saving.");
+      return;
+    }
+    
+    if (!hasChanges) {
+      Alert.alert("No Changes", "You haven't made any changes to your profile.");
+      return;
+    }
+    
+    setSaving(true);
     try {
       const token = await AsyncStorage.getItem("token");
       if (!token) {
@@ -100,6 +209,9 @@ const ProfileSettings: React.FC = () => {
 
       if (response.ok) {
         Alert.alert("Profile Updated", "Your changes have been saved.");
+        // Update original data to match current data
+        setOriginalData({ ...userData });
+        setHasChanges(false);
         router.back(); // Go back after saving
       } else {
         throw new Error(data.detail || "Failed to update profile");
@@ -110,6 +222,8 @@ const ProfileSettings: React.FC = () => {
         "Error",
         error instanceof Error ? error.message : "Failed to update profile."
       );
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -255,9 +369,19 @@ const ProfileSettings: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    fetchUserData();
-  }, []);
+  if (loading) {
+    return (
+      <Template>
+        <View style={[styles.container, styles.loadingContainer]}>
+          <ActivityIndicator size="large" color="#42c8f5" />
+          <Text style={styles.loadingText}>Loading profile data...</Text>
+        </View>
+      </Template>
+    );
+  }
+
+  // Enable save button only if there are changes and no validation errors
+  const isFormValid = hasChanges && !errors.username && !errors.email && !errors.phone;
 
   return (
     <Template>
@@ -282,9 +406,8 @@ const ProfileSettings: React.FC = () => {
               <TextInput
                 style={styles.input}
                 value={userData.firstName}
-                onChangeText={(text) =>
-                  setUserData({ ...userData, firstName: text })
-                }
+                onChangeText={(text) => handleInputChange("firstName", text)}
+                placeholder="Enter first name"
               />
             </View>
             <View style={styles.inputWrapper}>
@@ -292,9 +415,8 @@ const ProfileSettings: React.FC = () => {
               <TextInput
                 style={styles.input}
                 value={userData.lastName}
-                onChangeText={(text) =>
-                  setUserData({ ...userData, lastName: text })
-                }
+                onChangeText={(text) => handleInputChange("lastName", text)}
+                placeholder="Enter last name"
               />
             </View>
           </View>
@@ -302,36 +424,60 @@ const ProfileSettings: React.FC = () => {
           <View style={styles.fullInputWrapper}>
             <Text style={styles.label}>Username</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, errors.username ? styles.inputError : null]}
               value={userData.username}
-              onChangeText={(text) =>
-                setUserData({ ...userData, username: text })
-              }
+              onChangeText={(text) => handleInputChange("username", text)}
+              onBlur={validateUsernameField}
+              placeholder="Enter username"
             />
+            {errors.username ? (
+              <Text style={styles.errorText}>{errors.username}</Text>
+            ) : null}
           </View>
 
           <View style={styles.fullInputWrapper}>
             <Text style={styles.label}>Mobile Number</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, errors.phone ? styles.inputError : null]}
               keyboardType="phone-pad"
               value={userData.phone}
-              onChangeText={(text) => setUserData({ ...userData, phone: text })}
+              onChangeText={(text) => handleInputChange("phone", text)}
+              onBlur={validatePhoneField}
+              placeholder="Enter mobile number"
             />
+            {errors.phone ? (
+              <Text style={styles.errorText}>{errors.phone}</Text>
+            ) : null}
           </View>
 
           <View style={styles.fullInputWrapper}>
             <Text style={styles.label}>Email</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, errors.email ? styles.inputError : null]}
               value={userData.email}
-              onChangeText={(text) => setUserData({ ...userData, email: text })}
+              onChangeText={(text) => handleInputChange("email", text)}
+              onBlur={validateEmailField}
+              placeholder="Enter email"
+              keyboardType="email-address"
+              autoCapitalize="none"
             />
+            {errors.email ? (
+              <Text style={styles.errorText}>{errors.email}</Text>
+            ) : null}
           </View>
         </View>
 
-        <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-          <Text style={styles.ButtonText}>Save</Text>
+        <TouchableOpacity 
+          style={[
+            styles.saveButton, 
+            (!isFormValid || saving) && styles.disabledButton
+          ]} 
+          onPress={handleSave}
+          disabled={!isFormValid || saving}
+        >
+          <Text style={styles.ButtonText}>
+            {saving ? "Saving..." : "Save"}
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -353,6 +499,15 @@ const styles = StyleSheet.create({
     paddingVertical: 30,
     width: "100%",
     backgroundColor: "#D3D3D3",
+  },
+  loadingContainer: {
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: "#333",
   },
   profileContainer: {
     alignItems: "center",
@@ -404,6 +559,15 @@ const styles = StyleSheet.create({
     borderColor: "#ccc",
     width: "100%",
   },
+  inputError: {
+    borderColor: "red",
+    borderWidth: 1,
+  },
+  errorText: {
+    color: "red",
+    fontSize: 12,
+    marginTop: 4,
+  },
   saveButton: {
     backgroundColor: "#42c8f5",
     borderRadius: 5,
@@ -411,6 +575,10 @@ const styles = StyleSheet.create({
     width: "90%",
     marginTop: 30,
     alignItems: "center",
+  },
+  disabledButton: {
+    backgroundColor: "#a0e0f7",
+    opacity: 0.7,
   },
   ButtonText: {
     color: "black",

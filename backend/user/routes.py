@@ -117,6 +117,7 @@ async def get_current_user_data(current_user: dict = Depends(get_current_user)):
                 "firstName": user_data.get("firstName"),
                 "lastName": user_data.get("lastName"),
                 "username": user_data.get("username"),
+                "phone": user_data.get("phone"),
                 "profilePicUrl": user_data.get("profilePicUrl", "https://placehold.co/150"),
             }
         else:
