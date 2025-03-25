@@ -198,7 +198,6 @@ async def get_preferences(current_user: dict = Depends(get_current_user)):
 
     Returns:
     - **preferences**: The user's preferences.
-    - **preferences_set**: Boolean indicating if preferences are set.
     """
     try:
         user_ref = db.collection('users').document(current_user["uid"])
@@ -211,13 +210,18 @@ async def get_preferences(current_user: dict = Depends(get_current_user)):
         preferences = user_data.get('preferences', {})
         preferences_set = user_data.get('preferences_set', False)
 
+        if not preferences_set:
+            return {"message": "Preferences not set", "preferences": None}
+
         return {
-            "preferences": preferences,
-            "preferences_set": preferences_set
+            "preferences": {
+                "sports_skills": preferences.get('sports_skills', {})
+            }
         }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+  
 
 
 @router.put("/update_profile", summary="Update user profile")
