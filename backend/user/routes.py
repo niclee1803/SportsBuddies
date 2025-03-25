@@ -188,6 +188,45 @@ async def set_preferences(preferences: UserPreferences, current_user: dict = Dep
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
     
+@router.post("/edit_preferences", summary="Edit user preferences")
+async def edit_preferences(preferences: UserPreferences, current_user: dict = Depends(get_current_user)):
+    """
+    Appends the user's preferences.
+
+    - **preferences**: The user's preferences.
+    - **current_user**: The current authenticated user.
+
+    Returns:
+    - **message**: Success message.
+    """
+    try:
+        user_ref = db.collection('users').document(current_user["uid"])
+        user_doc = user_ref.get()
+
+        if not user_doc.exists:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        # Get existing preferences
+        existing_preferences = user_doc.to_dict().get('preferences', {})
+        existing_sports_skills = existing_preferences.get('sports_skills', {})
+
+        # Merge new sports skills with existing ones
+        new_sports_skills = {sport_skill.sport: sport_skill.skill_level for sport_skill in preferences.sports_skills}
+        merged_sports_skills = {**existing_sports_skills, **new_sports_skills}
+
+        # Update the document with merged preferences
+        user_ref.update({
+            'preferences': {
+                'sports_skills': merged_sports_skills
+            },
+            'preferences_set': True
+        })
+
+        return {"message": "Preferences updated successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    
 
 @router.get("/get_preferences", summary="Get user preferences")
 async def get_preferences(current_user: dict = Depends(get_current_user)):

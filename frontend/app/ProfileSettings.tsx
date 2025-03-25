@@ -251,7 +251,7 @@ setSavedPreferences(sportsSkills); // ✅ Now an array
         return;
       }
       
-      const response = await fetch(`${API_URL}/user/set_preferences`, {
+      const response = await fetch(`${API_URL}/user/edit_preferences`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -608,7 +608,7 @@ setSavedPreferences(sportsSkills); // ✅ Now an array
             styles.saveButton, 
             (!isFormValid || saving) && styles.disabledButton
           ]} 
-          onPress={handleSave}
+          onPress={handleSave || handleSavePreferences}
           disabled={!isFormValid || saving}
         >
           <Text style={styles.ButtonText}>
