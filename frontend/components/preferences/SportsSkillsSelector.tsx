@@ -37,12 +37,18 @@ interface SportsSkillsSelectorProps {
     const updatedSkills = [...sportsSkills];
     updatedSkills[index].sport = value;
     setSportsSkills(updatedSkills);
+    // Notify parent component of changes
+    const validSkills = updatedSkills.filter(item => item.sport && item.skill_level);
+    onSave(validSkills);
   };
   
   const handleSkillLevelChange = (index: number, value: string) => {
     const updatedSkills = [...sportsSkills];
     updatedSkills[index].skill_level = value;
     setSportsSkills(updatedSkills);
+    // Notify parent component of changes
+    const validSkills = updatedSkills.filter(item => item.sport && item.skill_level);
+    onSave(validSkills);
   };
   
   const handleRemoveSport = (index: number) => {
@@ -54,14 +60,14 @@ interface SportsSkillsSelectorProps {
     setSportsSkills([...sportsSkills, { sport: "", skill_level: "" }]);
   };
   
-  const handleSaveAll = async () => {
-    // Filter out any incomplete entries
-    const validSkills = sportsSkills.filter(item => item.sport && item.skill_level);
+  // const handleSaveAll = async () => {
+  //   // Filter out any incomplete entries
+  //   const validSkills = sportsSkills.filter(item => item.sport && item.skill_level);
     
-    if (validSkills.length > 0) {
-      onSave(validSkills);
-    }
-  };
+  //   if (validSkills.length > 0) {
+  //     onSave(validSkills);
+  //   }
+  // };
   
   return (
     <View style={styles.container}>
@@ -80,7 +86,7 @@ interface SportsSkillsSelectorProps {
       
       <View style={styles.buttonContainer}>
         <Button title="Add Another Sport" onPress={handleAddSport} />
-        <Button title="Save Preferences" onPress={handleSaveAll} />
+        {/* <Button title="Save Preferences" onPress={handleSaveAll} /> */}
       </View>
     </View>
   );

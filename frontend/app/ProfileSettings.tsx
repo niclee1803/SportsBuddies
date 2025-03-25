@@ -182,13 +182,14 @@ setSavedPreferences(sportsSkills); // ✅ Now an array
         userData.username !== originalData.username ||
         userData.phone !== originalData.phone ||
         userData.email !== originalData.email;
-      
-      setHasChanges(hasUserDataChanged);
-    };
+     // Also check if preferences have changed
+       const hasPreferencesChanged = JSON.stringify(savedPreferences) !== JSON.stringify(userPreferences);
     
-    checkForChanges();
-  }, [userData, originalData]);
+       setHasChanges(hasUserDataChanged || hasPreferencesChanged);
+      };
 
+      checkForChanges();
+    } , [userData, originalData, savedPreferences, userPreferences]);
 
 
   // Handle input change with validation
@@ -282,17 +283,11 @@ setSavedPreferences(sportsSkills); // ✅ Now an array
   const handleSave = async () => {
     // First validate all fields
     const isValid = await validateAllFields();
-    
     if (!isValid) {
       Alert.alert("Validation Error", "Please fix the highlighted fields before saving.");
       return;
     }
-    
-    if (!hasChanges) {
-      Alert.alert("No Changes", "You haven't made any changes to your profile.");
-      return;
-    }
-    
+  
     setSaving(true);
     try {
       const token = await AsyncStorage.getItem("token");
@@ -304,8 +299,9 @@ setSavedPreferences(sportsSkills); // ✅ Now an array
         router.replace("/Login");
         return;
       }
-
-      const response = await fetch(`${API_URL}/user/update_profile`, {
+  
+      // Save user profile data
+      const profileResponse = await fetch(`${API_URL}/user/update_profile`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -319,17 +315,29 @@ setSavedPreferences(sportsSkills); // ✅ Now an array
           email: userData.email,
         }),
       });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        Alert.alert("Profile Updated", "Your changes have been saved.");
+  
+      // Save preferences data
+      const preferencesResponse = await fetch(`${API_URL}/user/edit_preferences`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          sports_skills: savedPreferences
+        }),
+      });
+  
+      if (profileResponse.ok && preferencesResponse.ok) {
+        Alert.alert("Profile Updated", "Your profile and preferences have been saved.");
         // Update original data to match current data
         setOriginalData({ ...userData });
         setHasChanges(false);
         router.back(); // Go back after saving
       } else {
-        throw new Error(data.detail || "Failed to update profile");
+        const profileData = await profileResponse.json();
+        const preferencesData = await preferencesResponse.json();
+        throw new Error(profileData.detail || preferencesData.detail || "Failed to update profile");
       }
     } catch (error) {
       console.error("Error updating profile:", error);
@@ -341,6 +349,7 @@ setSavedPreferences(sportsSkills); // ✅ Now an array
       setSaving(false);
     }
   };
+  
 
   const handleDeleteAccount = async () => {
     Alert.alert(
@@ -596,25 +605,27 @@ setSavedPreferences(sportsSkills); // ✅ Now an array
   )}
 
 <Text style={styles.label}>Add Preferences</Text>
-<SportsSkillsSelector
-  onSave={handleSavePreferences}
-  initialPreferences={userPreferences}
+<SportsSkillsSelector 
+  onSave={setSavedPreferences}
+  initialPreferences={savedPreferences}
 />
+
 
         </View>
 
-        <TouchableOpacity 
-          style={[
-            styles.saveButton, 
-            (!isFormValid || saving) && styles.disabledButton
-          ]} 
-          onPress={handleSave || handleSavePreferences}
-          disabled={!isFormValid || saving}
-        >
-          <Text style={styles.ButtonText}>
-            {saving ? "Saving..." : "Save"}
-          </Text>
-        </TouchableOpacity>
+        <TouchableOpacity
+        style={[
+          styles.saveButton,
+          (!isFormValid || saving) && styles.disabledButton,
+        ]}
+        onPress={handleSave}
+        disabled={!isFormValid || saving}
+      >
+        <Text style={styles.ButtonText}>
+          {saving ? "Saving..." : "Save"}
+        </Text>
+      </TouchableOpacity>
+
 
         <TouchableOpacity
           style={styles.delAccButton}
