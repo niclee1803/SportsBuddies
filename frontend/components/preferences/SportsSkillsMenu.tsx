@@ -51,6 +51,8 @@ const SportsSkillsMenu = ({
   const [sportsList, setSportsList] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
+  
+
   useEffect(() => {
     // Function to fetch sports list
     const fetchSportsList = async () => {

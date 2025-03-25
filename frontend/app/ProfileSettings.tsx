@@ -1,3 +1,7 @@
+// to do: edit preferences -> reflect accordingly instead of adding new pref
+// pref changes only when press save?
+// to do: pref validation
+
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -18,8 +22,8 @@ import { API_URL } from "../config.json";
 import Template from "../components/Template";
 import { fetchCurrentUser } from "@/utils/GetUser";
 import { validateUsername, validateEmail, validatePhone } from "@/components/signup/ValidationUtils";
-import SportsSkillsSelector from "../components/preferences/SportsSkillsSelector";
-import { SportsSkill } from "../components/preferences/SportsSkillsMenu";
+import SportsSkillsMenu, { SportsSkill, SKILL_LEVELS } from "../components/preferences/SportsSkillsMenu";
+
 
 const ProfileSettings: React.FC = () => {
   const router = useRouter();
@@ -408,6 +412,40 @@ setSavedPreferences(sportsSkills); // ✅ Now an array
     );
   };
 
+  // Add these state variables and handlers
+const [dropdownOpen, setDropdownOpen] = useState({
+  sport: -1,
+  skill: -1
+});
+
+const isDropdownOpen = (type: 'sport' | 'skill', index: number) => {
+  return dropdownOpen[type] === index;
+};
+
+const toggleDropdown = (type: 'sport' | 'skill', index: number, isOpen: boolean) => {
+  setDropdownOpen({
+    ...dropdownOpen,
+    [type]: isOpen ? index : -1
+  });
+};
+
+const handleSportChange = (index: number, value: string) => {
+  const updatedSkills = [...savedPreferences];
+  updatedSkills[index].sport = value;
+  setSavedPreferences(updatedSkills);
+};
+
+const handleSkillLevelChange = (index: number, value: string) => {
+  const updatedSkills = [...savedPreferences];
+  updatedSkills[index].skill_level = value;
+  setSavedPreferences(updatedSkills);
+};
+
+const handleAddSport = () => {
+  setSavedPreferences([...savedPreferences, { sport: "", skill_level: "" }]);
+};
+
+
   const handleProfilePictureUpdate = async () => {
     try {
       // Request media library permissions
@@ -592,11 +630,25 @@ setSavedPreferences(sportsSkills); // ✅ Now an array
          
 
           <Text style={styles.label}>Sports Preferences</Text>
-          <SportsSkillsSelector
-            onSave={handleSavePreferences}
-            initialPreferences={savedPreferences}
-            handleRemovePreference={handleRemovePreference}
-          />
+
+<View style={styles.preferencesSection}>
+  <Text style={styles.sectionTitle}>Sports Preferences</Text>
+  {savedPreferences.map((item, index) => (
+    <SportsSkillsMenu
+      key={index}
+      item={item}
+      index={index}
+      isDropdownOpen={isDropdownOpen}
+      toggleDropdown={toggleDropdown}
+      handleSportChange={handleSportChange}
+      handleSkillLevelChange={handleSkillLevelChange}
+      handleRemoveSport={(index) => handleRemovePreference(savedPreferences[index].sport)}
+    />
+  ))}
+  <TouchableOpacity onPress={handleAddSport} style={styles.addButton}>
+    <Text style={styles.addButtonText}>Add Sport</Text>
+  </TouchableOpacity>
+</View>
 
 
 
@@ -753,7 +805,21 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   
-
+  addButton: {
+    backgroundColor: "#42c8f5",
+    borderRadius: 5,
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    marginTop: 10,
+    alignItems: "center",
+    alignSelf: "flex-start",
+  },
+  addButtonText: {
+    color: "white",
+    fontSize: 14,
+    fontWeight: "bold",
+  },
+  
   
 });
 
