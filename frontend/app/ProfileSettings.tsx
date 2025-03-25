@@ -18,12 +18,18 @@ import { API_URL } from "../config.json";
 import Template from "../components/Template";
 import { fetchCurrentUser } from "@/utils/GetUser";
 import { validateUsername, validateEmail, validatePhone } from "@/components/signup/ValidationUtils";
+import SportsSkillsSelector from "../components/preferences/SportsSkillsSelector";
+import { SportsSkill } from "../components/preferences/SportsSkillsMenu";
 
 const ProfileSettings: React.FC = () => {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+  const [userPreferences, setUserPreferences] = useState<SportsSkill[]>([]);
+  const [savedPreferences, setSavedPreferences] = useState<SportsSkill[]>([]);
+
+
   
   // Validation error states
   const [errors, setErrors] = useState({
@@ -76,6 +82,16 @@ const ProfileSettings: React.FC = () => {
       // Reset error and change states
       setErrors({ username: "", email: "", phone: "" });
       setHasChanges(false);
+
+      if (data.preferences && data.preferences.sports_skills) {
+        const sportsSkills: SportsSkill[] = Object.entries(data.preferences.sports_skills).map(
+          ([sport, skill_level]) => ({
+            sport,
+            skill_level: skill_level as string
+          })
+        );
+        setUserPreferences(sportsSkills);
+      }
     } catch (error) {
       console.error("Error fetching user data:", error);
       Alert.alert(
@@ -92,10 +108,70 @@ const ProfileSettings: React.FC = () => {
     }
   };
 
+  const handleRemovePreference = async (sport: string) => {
+    try {
+      const updatedPreferences = savedPreferences.filter(pref => pref.sport !== sport);
+      const response = await fetch(`${API_URL}/user/set_preferences`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${await AsyncStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({ sports_skills: updatedPreferences }),
+      });
+  
+      if (response.ok) {
+        setSavedPreferences(updatedPreferences);
+        Alert.alert("Success", "Preference removed successfully");
+      } else {
+        throw new Error("Failed to remove preference");
+      }
+    } catch (error) {
+      console.error("Error removing preference:", error);
+      Alert.alert("Error", "Failed to remove preference");
+    }
+  };
+  
+  
+
   // Load user data when component mounts
   useEffect(() => {
-    fetchUserData();
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const userData = await fetchCurrentUser();
+        setUserData(userData);
+        setOriginalData(userData);
+  
+        const response = await fetch(`${API_URL}/user/get_preferences`, {
+          headers: {
+            Authorization: `Bearer ${await AsyncStorage.getItem("token")}`,
+          },
+        });
+        const preferencesData = await response.json();
+
+// Convert the dictionary to an array
+const sportsSkills: SportsSkill[] = Object.entries(
+  preferencesData.preferences.sports_skills || {}
+).map(([sport, skill_level]) => ({
+  sport,
+  skill_level: skill_level as string,
+}));
+
+setSavedPreferences(sportsSkills); // ✅ Now an array
+        setUserPreferences(preferencesData.sports_skills || []);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        Alert.alert("Error", "Failed to load profile data and preferences.");
+      } finally {
+        setLoading(false);
+      }
+    };
+  
+    fetchData();
   }, []);
+  
+  
 
   // Compare current values with original to detect changes
   useEffect(() => {
@@ -112,6 +188,8 @@ const ProfileSettings: React.FC = () => {
     
     checkForChanges();
   }, [userData, originalData]);
+
+
 
   // Handle input change with validation
   const handleInputChange = (field: string, value: string) => {
@@ -163,6 +241,43 @@ const ProfileSettings: React.FC = () => {
     
     return usernameValid && emailValid && phoneValid;
   };
+
+  const handleSavePreferences = async (skills: SportsSkill[]) => {
+    try {
+      const token = await AsyncStorage.getItem("token");
+      if (!token) {
+        Alert.alert("Error", "User authentication token not available. Please log in again.");
+        router.replace("/Login");
+        return;
+      }
+      
+      const response = await fetch(`${API_URL}/user/set_preferences`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          sports_skills: skills
+        }),
+      });
+      
+      if (response.ok) {
+        setSavedPreferences(skills);
+        Alert.alert("Success", "Sports preferences updated successfully!");
+      } else {
+        const data = await response.json();
+        throw new Error(data.detail || "Failed to update preferences");
+      }
+    } catch (error) {
+      console.error("Error updating preferences:", error);
+      Alert.alert(
+        "Error",
+        error instanceof Error ? error.message : "Failed to update preferences."
+      );
+    }
+  };
+  
 
   const handleSave = async () => {
     // First validate all fields
@@ -465,6 +580,27 @@ const ProfileSettings: React.FC = () => {
               <Text style={styles.errorText}>{errors.email}</Text>
             ) : null}
           </View>
+          <View style={styles.preferencesSection}>
+  <Text style={styles.sectionTitle}>Saved Preferences</Text>
+  {savedPreferences.length > 0 ? (
+    savedPreferences.map((pref, index) => (
+      <View key={index} style={styles.preferenceItem}>
+        <Text>{pref.sport} - {pref.skill_level}</Text>
+        <TouchableOpacity onPress={() => handleRemovePreference(pref.sport)}>
+          <Text style={styles.removeButton}>Remove</Text>
+        </TouchableOpacity>
+      </View>
+    ))
+  ) : (
+    <Text>No saved preferences</Text>
+  )}
+</View>
+
+<SportsSkillsSelector
+  onSave={handleSavePreferences}
+  initialPreferences={userPreferences}
+/>
+
         </View>
 
         <TouchableOpacity 
@@ -594,6 +730,30 @@ const styles = StyleSheet.create({
     marginBottom: 30,
     alignItems: "center",
   },
+  preferencesSection: {
+    width: "90%",
+    //marginTop: 10,
+    marginBottom: 10,
+    paddingHorizontal: 20,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 10,
+  },
+  preferenceItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 5,
+  },
+  removeButton: {
+    color: "red",
+    fontWeight: "bold",
+  },
+  
+
+  
 });
 
 export default ProfileSettings;

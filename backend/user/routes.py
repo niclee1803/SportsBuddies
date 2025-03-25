@@ -187,6 +187,37 @@ async def set_preferences(preferences: UserPreferences, current_user: dict = Dep
         return {"message": "Preferences set successfully"}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+    
+
+@router.get("/get_preferences", summary="Get user preferences")
+async def get_preferences(current_user: dict = Depends(get_current_user)):
+    """
+    Retrieve the user's preferences from Firestore.
+
+    - **current_user**: The current authenticated user.
+
+    Returns:
+    - **preferences**: The user's preferences.
+    - **preferences_set**: Boolean indicating if preferences are set.
+    """
+    try:
+        user_ref = db.collection('users').document(current_user["uid"])
+        user_doc = user_ref.get()
+
+        if not user_doc.exists:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        user_data = user_doc.to_dict()
+        preferences = user_data.get('preferences', {})
+        preferences_set = user_data.get('preferences_set', False)
+
+        return {
+            "preferences": preferences,
+            "preferences_set": preferences_set
+        }
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
 
 
 @router.put("/update_profile", summary="Update user profile")
