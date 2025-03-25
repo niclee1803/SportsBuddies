@@ -89,7 +89,7 @@ interface SportsSkillsSelectorProps {
 const styles = StyleSheet.create({
   container: {
     width: "100%",
-    marginVertical: 10,
+    marginTop: -15,
   },
   buttonContainer: {
     flexDirection: "row",

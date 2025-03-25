@@ -580,8 +580,8 @@ setSavedPreferences(sportsSkills); // ✅ Now an array
               <Text style={styles.errorText}>{errors.email}</Text>
             ) : null}
           </View>
-          <View style={styles.preferencesSection}>
-  <Text style={styles.sectionTitle}>Saved Preferences</Text>
+         
+  <Text style={styles.label}>Saved Preferences</Text>
   {savedPreferences.length > 0 ? (
     savedPreferences.map((pref, index) => (
       <View key={index} style={styles.preferenceItem}>
@@ -594,8 +594,8 @@ setSavedPreferences(sportsSkills); // ✅ Now an array
   ) : (
     <Text>No saved preferences</Text>
   )}
-</View>
 
+<Text style={styles.label}>Add Preferences</Text>
 <SportsSkillsSelector
   onSave={handleSavePreferences}
   initialPreferences={userPreferences}
