@@ -590,25 +590,15 @@ setSavedPreferences(sportsSkills); // ✅ Now an array
             ) : null}
           </View>
          
-  <Text style={styles.label}>Saved Preferences</Text>
-  {savedPreferences.length > 0 ? (
-    savedPreferences.map((pref, index) => (
-      <View key={index} style={styles.preferenceItem}>
-        <Text>{pref.sport} - {pref.skill_level}</Text>
-        <TouchableOpacity onPress={() => handleRemovePreference(pref.sport)}>
-          <Text style={styles.removeButton}>Remove</Text>
-        </TouchableOpacity>
-      </View>
-    ))
-  ) : (
-    <Text>No saved preferences</Text>
-  )}
 
-<Text style={styles.label}>Add Preferences</Text>
-<SportsSkillsSelector 
-  onSave={setSavedPreferences}
-  initialPreferences={savedPreferences}
-/>
+          <Text style={styles.label}>Sports Preferences</Text>
+          <SportsSkillsSelector
+            onSave={handleSavePreferences}
+            initialPreferences={savedPreferences}
+            handleRemovePreference={handleRemovePreference}
+          />
+
+
 
 
         </View>

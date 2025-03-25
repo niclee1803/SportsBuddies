@@ -3,13 +3,16 @@ import { View, Button, StyleSheet } from "react-native";
 import SportsSkillsMenu, { SportsSkill, SKILL_LEVELS } from "./SportsSkillsMenu";
 
 interface SportsSkillsSelectorProps {
-    onSave: (skills: SportsSkill[]) => void;
-    initialPreferences?: SportsSkill[];
-  }
+  onSave: (skills: SportsSkill[]) => void;
+  initialPreferences?: SportsSkill[];
+  handleRemovePreference: (sport: string) => void;
+}
+
 
   const SportsSkillsSelector: React.FC<SportsSkillsSelectorProps> = ({ 
     onSave, 
-    initialPreferences = [] 
+    initialPreferences = [],
+    handleRemovePreference 
   }) => {
     const [sportsSkills, setSportsSkills] = useState<SportsSkill[]>(
       initialPreferences.length > 0 
@@ -52,9 +55,16 @@ interface SportsSkillsSelectorProps {
   };
   
   const handleRemoveSport = (index: number) => {
+    const sportToRemove = sportsSkills[index].sport;
+    if (sportToRemove) {
+      handleRemovePreference(sportToRemove);
+    }
     const updatedSkills = sportsSkills.filter((_, i) => i !== index);
     setSportsSkills(updatedSkills);
   };
+
+  
+  
   
   const handleAddSport = () => {
     setSportsSkills([...sportsSkills, { sport: "", skill_level: "" }]);
