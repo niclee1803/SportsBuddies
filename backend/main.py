@@ -11,6 +11,7 @@ firebase_admin.initialize_app(cred)
 # Import routers from other files
 from user.routes import router as user_router
 from activity.routes import router as activity_router
+from utils.routes import router as utils_router
 ##from events.routes import router as events_router
 
 app = FastAPI(title="SportsBuddies API")
@@ -25,10 +26,9 @@ app.add_middleware(
 )
 
 # Include routers from different modules
-app.include_router(user_router, prefix="/user", tags=["User"])
 app.include_router(activity_router, prefix="/activity", tags=["Activity"])
 app.include_router(user_router, prefix="/user", tags=["User Management"])
-#app.include_router(utils_router, prefix="/utils", tags=["Utilities"])
+app.include_router(utils_router, prefix="/utils", tags=["Utilities"])
 ##app.include_router(activities_router, prefix="/activities", tags=["Activities"])
 ##app.include_router(events_router, prefix="/events", tags=["Events"])
 
