@@ -1,7 +1,3 @@
-// to do: edit preferences -> reflect accordingly instead of adding new pref
-// pref changes only when press save?
-// to do: pref validation
-
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -24,25 +20,31 @@ import { fetchCurrentUser } from "@/utils/GetUser";
 import { validateUsername, validateEmail, validatePhone } from "@/components/signup/ValidationUtils";
 import SportsSkillsMenu, { SportsSkill, SKILL_LEVELS } from "../components/preferences/SportsSkillsMenu";
 
-
 const ProfileSettings: React.FC = () => {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
-  const [userPreferences, setUserPreferences] = useState<SportsSkill[]>([]);
-  const [savedPreferences, setSavedPreferences] = useState<SportsSkill[]>([]);
+  
+  // Separate states for current and original preferences
+  const [originalPreferences, setOriginalPreferences] = useState<SportsSkill[]>([]);
+  const [currentPreferences, setCurrentPreferences] = useState<SportsSkill[]>([]);
 
-
+  // For dropdown management
+  const [dropdownOpen, setDropdownOpen] = useState({
+    sport: -1,
+    skill: -1
+  });
   
   // Validation error states
   const [errors, setErrors] = useState({
     username: "",
     email: "",
     phone: "",
+    preferences: "",
   });
 
-  // Current user data
+  // User data states
   const [userData, setUserData] = useState({
     firstName: "",
     lastName: "",
@@ -52,7 +54,6 @@ const ProfileSettings: React.FC = () => {
     profilePicUrl: "",
   });
 
-  // Original user data for comparison to detect changes
   const [originalData, setOriginalData] = useState({
     firstName: "",
     lastName: "",
@@ -62,148 +63,111 @@ const ProfileSettings: React.FC = () => {
     profilePicUrl: "",
   });
 
-  // Function to fetch user data from the API
-  const fetchUserData = async () => {
-    setLoading(true);
-    try {
-      // Use the imported utility function
-      const data = await fetchCurrentUser();
-      console.log("User data from API:", data);
-      
-      const userDataValues = {
-        firstName: data.firstName || "",
-        lastName: data.lastName || "",
-        username: data.username || "",
-        phone: data.phone || "",
-        email: data.email || "",
-        profilePicUrl: data.profilePicUrl || "https://placehold.co/150",
-      };
-      
-      // Update the user data state with values from the API
-      setUserData(userDataValues);
-      // Save original data for change detection
-      setOriginalData(userDataValues);
-      // Reset error and change states
-      setErrors({ username: "", email: "", phone: "" });
-      setHasChanges(false);
-
-      if (data.preferences && data.preferences.sports_skills) {
-        const sportsSkills: SportsSkill[] = Object.entries(data.preferences.sports_skills).map(
-          ([sport, skill_level]) => ({
-            sport,
-            skill_level: skill_level as string
-          })
-        );
-        setUserPreferences(sportsSkills);
-      }
-    } catch (error) {
-      console.error("Error fetching user data:", error);
-      Alert.alert(
-        "Error",
-        error instanceof Error ? error.message : "Failed to load profile data."
-      );
-      
-      // If there's an auth error, redirect to login
-      if (error instanceof Error && error.message.includes("token")) {
-        router.replace("/Login");
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleRemovePreference = async (sport: string) => {
-    try {
-      const updatedPreferences = savedPreferences.filter(pref => pref.sport !== sport);
-      const response = await fetch(`${API_URL}/user/set_preferences`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${await AsyncStorage.getItem("token")}`,
-        },
-        body: JSON.stringify({ sports_skills: updatedPreferences }),
-      });
-  
-      if (response.ok) {
-        setSavedPreferences(updatedPreferences);
-        Alert.alert("Success", "Preference removed successfully");
-      } else {
-        throw new Error("Failed to remove preference");
-      }
-    } catch (error) {
-      console.error("Error removing preference:", error);
-      Alert.alert("Error", "Failed to remove preference");
-    }
-  };
-  
-  
-
-  // Load user data when component mounts
+  // Load user data and preferences when component mounts
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
+        // Fetch basic user data
         const userData = await fetchCurrentUser();
-        setUserData(userData);
-        setOriginalData(userData);
-  
+        console.log("User data from API:", userData);
+        
+        const userDataValues = {
+          firstName: userData.firstName || "",
+          lastName: userData.lastName || "",
+          username: userData.username || "",
+          phone: userData.phone || "",
+          email: userData.email || "",
+          profilePicUrl: userData.profilePicUrl || "https://placehold.co/150",
+        };
+        
+        setUserData(userDataValues);
+        setOriginalData(userDataValues);
+        
+        // Fetch preferences separately
         const response = await fetch(`${API_URL}/user/get_preferences`, {
           headers: {
             Authorization: `Bearer ${await AsyncStorage.getItem("token")}`,
           },
         });
+        
         const preferencesData = await response.json();
-
-// Convert the dictionary to an array
-const sportsSkills: SportsSkill[] = Object.entries(
-  preferencesData.preferences.sports_skills || {}
-).map(([sport, skill_level]) => ({
-  sport,
-  skill_level: skill_level as string,
-}));
-
-setSavedPreferences(sportsSkills); // ✅ Now an array
-        setUserPreferences(preferencesData.sports_skills || []);
+        console.log("Preferences data from API:", preferencesData);
+        
+        let sportsSkills: SportsSkill[] = [];
+        
+        // Handle both array and object formats for compatibility
+        if (preferencesData.preferences && preferencesData.preferences.sports_skills) {
+          if (Array.isArray(preferencesData.preferences.sports_skills)) {
+            // Handle array format from new OOP backend
+            sportsSkills = preferencesData.preferences.sports_skills;
+          } else if (typeof preferencesData.preferences.sports_skills === 'object') {
+            // Handle object format from previous backend
+            sportsSkills = Object.entries(preferencesData.preferences.sports_skills).map(
+              ([sport, skill_level]) => ({
+                sport,
+                skill_level: skill_level as string,
+              })
+            );
+          }
+        }
+        
+        console.log("Processed sports skills:", sportsSkills);
+        
+        // Set both original and current preferences
+        setOriginalPreferences([...sportsSkills]);
+        setCurrentPreferences([...sportsSkills]);
+        
       } catch (error) {
         console.error("Error fetching data:", error);
         Alert.alert("Error", "Failed to load profile data and preferences.");
+        
+        // If there's an auth error, redirect to login
+        if (error instanceof Error && error.message.includes("token")) {
+          router.replace("/Login");
+        }
       } finally {
         setLoading(false);
       }
     };
-  
+    
     fetchData();
   }, []);
-  
-  
 
   // Compare current values with original to detect changes
   useEffect(() => {
     const checkForChanges = () => {
+      // Check profile data changes
       const hasUserDataChanged = 
         userData.firstName !== originalData.firstName ||
         userData.lastName !== originalData.lastName ||
         userData.username !== originalData.username ||
         userData.phone !== originalData.phone ||
         userData.email !== originalData.email;
-     // Also check if preferences have changed
-       const hasPreferencesChanged = JSON.stringify(savedPreferences) !== JSON.stringify(userPreferences);
+      
+      // Check preferences changes - deep compare arrays
+      const hasPreferencesChanged = JSON.stringify(currentPreferences) !== JSON.stringify(originalPreferences);
+      
+      setHasChanges(hasUserDataChanged || hasPreferencesChanged);
+    };
     
-       setHasChanges(hasUserDataChanged || hasPreferencesChanged);
-      };
+    checkForChanges();
+  }, [userData, originalData, currentPreferences, originalPreferences]);
 
-      checkForChanges();
-    } , [userData, originalData, savedPreferences, userPreferences]);
-
-
-  // Handle input change with validation
-  const handleInputChange = (field: string, value: string) => {
-    setUserData({ ...userData, [field]: value });
+  // Dropdown handlers
+  const isDropdownOpen = (type: 'sport' | 'skill', index: number) => {
+    return dropdownOpen[type] === index;
   };
 
-  // Validation functions that use ValidationUtils
+  const toggleDropdown = (type: 'sport' | 'skill', index: number, isOpen: boolean) => {
+    setDropdownOpen({
+      ...dropdownOpen,
+      [type]: isOpen ? index : -1
+    });
+  };
+
+  // Profile field validation
   const validateUsernameField = async () => {
-    // Skip validation if unchanged
     if (userData.username === originalData.username) {
       setErrors(prev => ({ ...prev, username: "" }));
       return true;
@@ -215,7 +179,6 @@ setSavedPreferences(sportsSkills); // ✅ Now an array
   };
 
   const validateEmailField = async () => {
-    // Skip validation if unchanged
     if (userData.email === originalData.email) {
       setErrors(prev => ({ ...prev, email: "" }));
       return true;
@@ -227,7 +190,6 @@ setSavedPreferences(sportsSkills); // ✅ Now an array
   };
 
   const validatePhoneField = async () => {
-    // Skip validation if unchanged
     if (userData.phone === originalData.phone) {
       setErrors(prev => ({ ...prev, phone: "" }));
       return true;
@@ -237,58 +199,127 @@ setSavedPreferences(sportsSkills); // ✅ Now an array
       (error) => setErrors(prev => ({ ...prev, phone: error }))
     );
   };
+  
+  // Validate sports preferences
+  const validateSportsPreferences = (): boolean => {
+    // Skip validation if no changes
+    if (JSON.stringify(currentPreferences) === JSON.stringify(originalPreferences)) {
+      setErrors(prev => ({ ...prev, preferences: "" }));
+      return true;
+    }
+    
+    // Check for empty fields
+    const hasEmptyFields = currentPreferences.some(
+      pref => !pref.sport || !pref.skill_level
+    );
+    
+    if (hasEmptyFields) {
+      setErrors(prev => ({
+        ...prev, 
+        preferences: "Please complete all sport and skill level selections."
+      }));
+      return false;
+    }
+    
+    // Check for duplicates
+    const sportNames = currentPreferences.map(pref => pref.sport);
+    const uniqueSports = new Set(sportNames);
+    
+    if (sportNames.length !== uniqueSports.size) {
+      setErrors(prev => ({
+        ...prev, 
+        preferences: "You've selected the same sport multiple times."
+      }));
+      return false;
+    }
+    
+    setErrors(prev => ({ ...prev, preferences: "" }));
+    return true;
+  };
 
   // Validate all fields at once
   const validateAllFields = async () => {
     const usernameValid = await validateUsernameField();
     const emailValid = await validateEmailField();
     const phoneValid = await validatePhoneField();
+    const preferencesValid = validateSportsPreferences();
     
-    return usernameValid && emailValid && phoneValid;
+    return usernameValid && emailValid && phoneValid && preferencesValid;
   };
 
-  const handleSavePreferences = async (skills: SportsSkill[]) => {
-    try {
-      const token = await AsyncStorage.getItem("token");
-      if (!token) {
-        Alert.alert("Error", "User authentication token not available. Please log in again.");
-        router.replace("/Login");
-        return;
-      }
-      
-      const response = await fetch(`${API_URL}/user/edit_preferences`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          sports_skills: skills
-        }),
-      });
-      
-      if (response.ok) {
-        setSavedPreferences(skills);
-        Alert.alert("Success", "Sports preferences updated successfully!");
-      } else {
-        const data = await response.json();
-        throw new Error(data.detail || "Failed to update preferences");
-      }
-    } catch (error) {
-      console.error("Error updating preferences:", error);
+  // Handlers for user data changes
+  const handleInputChange = (field: string, value: string) => {
+    setUserData({ ...userData, [field]: value });
+  };
+
+  // Handlers for sports preferences
+  const handleSportChange = (index: number, value: string) => {
+    // Check if this sport is already selected in another entry
+    const isDuplicate = currentPreferences.some(
+      (pref, i) => i !== index && pref.sport === value
+    );
+    
+    if (isDuplicate) {
       Alert.alert(
-        "Error",
-        error instanceof Error ? error.message : "Failed to update preferences."
+        "Duplicate Sport",
+        "This sport is already in your preferences. Please choose a different one."
       );
+      return;
+    }
+    
+    const updatedPreferences = currentPreferences.map((pref, i) => 
+      i === index 
+        ? { ...pref, sport: value }
+        : pref
+    );
+    
+    setCurrentPreferences(updatedPreferences);
+    
+    // Clear any previous validation errors
+    if (errors.preferences) {
+      setErrors(prev => ({ ...prev, preferences: "" }));
     }
   };
-  
 
+  const handleSkillLevelChange = (index: number, value: string) => {
+    const updatedPreferences = currentPreferences.map((pref, i) => 
+      i === index 
+        ? { ...pref, skill_level: value }  // Create new object with updated skill
+        : pref
+    );
+    
+    setCurrentPreferences(updatedPreferences);
+    
+    // Clear any previous validation errors
+    if (errors.preferences) {
+      setErrors(prev => ({ ...prev, preferences: "" }));
+    }
+  };
+
+  const handleAddSport = () => {
+    setCurrentPreferences([...currentPreferences, { sport: "", skill_level: "" }]);
+  };
+
+  const handleRemoveSport = (index: number) => {
+    const sportToRemove = currentPreferences[index].sport;
+    const updatedPreferences = currentPreferences.filter((_, i) => i !== index);
+    setCurrentPreferences(updatedPreferences);
+    
+    // Clear any previous validation errors
+    if (errors.preferences) {
+      setErrors(prev => ({ ...prev, preferences: "" }));
+    }
+  };
+
+  // Main save function
   const handleSave = async () => {
     // First validate all fields
     const isValid = await validateAllFields();
     if (!isValid) {
-      Alert.alert("Validation Error", "Please fix the highlighted fields before saving.");
+      Alert.alert(
+        "Validation Error", 
+        "Please fix the highlighted fields before saving."
+      );
       return;
     }
   
@@ -321,28 +352,38 @@ setSavedPreferences(sportsSkills); // ✅ Now an array
       });
   
       // Save preferences data
-      const preferencesResponse = await fetch(`${API_URL}/user/edit_preferences`, {
+      const preferencesResponse = await fetch(`${API_URL}/user/set_preferences`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          sports_skills: savedPreferences
+          sports_skills: currentPreferences
         }),
       });
-  
-      if (profileResponse.ok && preferencesResponse.ok) {
-        Alert.alert("Profile Updated", "Your profile and preferences have been saved.");
-        // Update original data to match current data
-        setOriginalData({ ...userData });
-        setHasChanges(false);
-        router.back(); // Go back after saving
-      } else {
+      
+      // Handle responses
+      if (!profileResponse.ok) {
         const profileData = await profileResponse.json();
-        const preferencesData = await preferencesResponse.json();
-        throw new Error(profileData.detail || preferencesData.detail || "Failed to update profile");
+        throw new Error(profileData.detail || "Failed to update profile");
       }
+      
+      if (!preferencesResponse.ok) {
+        const preferencesData = await preferencesResponse.json();
+        throw new Error(preferencesData.detail || "Failed to update preferences");
+      }
+  
+      // Update was successful
+      Alert.alert("Profile Updated", "Your profile and preferences have been saved.");
+      
+      // Update original data to match current data
+      setOriginalData({ ...userData });
+      setOriginalPreferences([...currentPreferences]);
+      setHasChanges(false);
+      
+      // Navigate back
+      router.back();
     } catch (error) {
       console.error("Error updating profile:", error);
       Alert.alert(
@@ -353,17 +394,102 @@ setSavedPreferences(sportsSkills); // ✅ Now an array
       setSaving(false);
     }
   };
-  
 
+  // Profile picture update function
+  const handleProfilePictureUpdate = async () => {
+    try {
+      // Request media library permissions
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert(
+          "Permissions Required",
+          "Please allow access to select a photo."
+        );
+        return;
+      }
+
+      // Launch the image picker
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 1,
+      });
+
+      if (result.canceled || !result.assets || result.assets.length === 0) {
+        return;
+      }
+      
+      const imageUri = result.assets[0].uri;
+
+      // Convert the image URI to a Blob
+      const response = await fetch(imageUri);
+      const blob = await response.blob();
+
+      // Get the token from AsyncStorage
+      const token = await AsyncStorage.getItem("token");
+      if (!token) {
+        Alert.alert(
+          "Error",
+          "User authentication token not available. Please log in again."
+        );
+        router.replace("/Login");
+        return;
+      }
+
+      // Create form data for upload
+      const formData = new FormData();
+      if (Platform.OS === "web") {
+        formData.append("file", blob, "profile_picture.jpg");
+      } else {
+        formData.append("file", {
+          uri: imageUri,
+          name: "profile_picture.jpg",
+          type: "image/jpeg",
+        } as any);
+      }
+
+      // Upload the image
+      const uploadResponse = await fetch(
+        `${API_URL}/user/upload_profile_picture`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        }
+      );
+
+      const data = await uploadResponse.json();
+
+      if (uploadResponse.ok) {
+        Alert.alert("Success", "Profile picture updated successfully.");
+        setUserData(prev => ({
+          ...prev,
+          profilePicUrl: data.profilePicUrl,
+        }));
+      } else {
+        throw new Error(data.detail || "Failed to update profile picture");
+      }
+    } catch (error) {
+      console.error("Error updating profile picture:", error);
+      Alert.alert(
+        "Error",
+        error instanceof Error
+          ? error.message
+          : "Failed to update profile picture."
+      );
+    }
+  };
+
+  // Account deletion function
   const handleDeleteAccount = async () => {
     Alert.alert(
       "Delete Account",
       "Are you sure you want to delete your account? This action cannot be undone.",
       [
-        {
-          text: "Cancel",
-          style: "cancel",
-        },
+        { text: "Cancel", style: "cancel" },
         {
           text: "Delete",
           onPress: async () => {
@@ -392,8 +518,8 @@ setSavedPreferences(sportsSkills); // ✅ Now an array
                   "Account Deleted",
                   "Your account has been deleted."
                 );
-                await AsyncStorage.clear(); // Clear local storage
-                router.replace("/Login"); // Redirect to login screen
+                await AsyncStorage.clear();
+                router.replace("/Login");
               } else {
                 throw new Error(data.detail || "Failed to delete account");
               }
@@ -412,125 +538,7 @@ setSavedPreferences(sportsSkills); // ✅ Now an array
     );
   };
 
-  // Add these state variables and handlers
-const [dropdownOpen, setDropdownOpen] = useState({
-  sport: -1,
-  skill: -1
-});
-
-const isDropdownOpen = (type: 'sport' | 'skill', index: number) => {
-  return dropdownOpen[type] === index;
-};
-
-const toggleDropdown = (type: 'sport' | 'skill', index: number, isOpen: boolean) => {
-  setDropdownOpen({
-    ...dropdownOpen,
-    [type]: isOpen ? index : -1
-  });
-};
-
-const handleSportChange = (index: number, value: string) => {
-  const updatedSkills = [...savedPreferences];
-  updatedSkills[index].sport = value;
-  setSavedPreferences(updatedSkills);
-};
-
-const handleSkillLevelChange = (index: number, value: string) => {
-  const updatedSkills = [...savedPreferences];
-  updatedSkills[index].skill_level = value;
-  setSavedPreferences(updatedSkills);
-};
-
-const handleAddSport = () => {
-  setSavedPreferences([...savedPreferences, { sport: "", skill_level: "" }]);
-};
-
-
-  const handleProfilePictureUpdate = async () => {
-    try {
-      // Request media library permissions
-      const { status } =
-        await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== "granted") {
-        Alert.alert(
-          "Permissions required",
-          "Please allow access to select a photo."
-        );
-        return;
-      }
-
-      // Launch the image picker
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 1,
-      });
-
-      if (!result.canceled && result.assets.length > 0) {
-        const imageUri = result.assets[0].uri;
-
-        // Convert the image URI to a Blob
-        const response = await fetch(imageUri);
-        const blob = await response.blob();
-
-        // Get the token from AsyncStorage
-        const token = await AsyncStorage.getItem("token");
-        if (!token) {
-          Alert.alert(
-            "Error",
-            "User authentication token not available. Please log in again."
-          );
-          router.replace("/Login");
-          return;
-        }
-
-        // Upload the image to the backend
-        const formData = new FormData();
-        if (Platform.OS === "web")
-          formData.append("file", blob, "profile_picture.jpg");
-        else {
-          formData.append("file", {
-            uri: imageUri,
-            name: "profile_picture.jpg",
-            type: "image/jpeg",
-          } as any);
-        }
-
-        const uploadResponse = await fetch(
-          `${API_URL}/user/upload_profile_picture`,
-          {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-            body: formData,
-          }
-        );
-
-        const data = await uploadResponse.json();
-
-        if (uploadResponse.ok) {
-          Alert.alert("Success", "Profile picture updated successfully.");
-          setUserData((prev) => ({
-            ...prev,
-            profilePicUrl: data.profilePicUrl,
-          }));
-        } else {
-          throw new Error(data.detail || "Failed to update profile picture");
-        }
-      }
-    } catch (error) {
-      console.error("Error updating profile picture:", error);
-      Alert.alert(
-        "Error",
-        error instanceof Error
-          ? error.message
-          : "Failed to update profile picture."
-      );
-    }
-  };
-
+  // Loading state
   if (loading) {
     return (
       <Template>
@@ -543,11 +551,17 @@ const handleAddSport = () => {
   }
 
   // Enable save button only if there are changes and no validation errors
-  const isFormValid = hasChanges && !errors.username && !errors.email && !errors.phone;
+  const isFormValid = hasChanges && 
+    !errors.username && 
+    !errors.email && 
+    !errors.phone && 
+    !errors.preferences;
 
+  // Render component
   return (
     <Template>
       <ScrollView contentContainerStyle={styles.container}>
+        {/* Profile Picture Section */}
         <TouchableOpacity
           onPress={handleProfilePictureUpdate}
           style={styles.profileContainer}
@@ -558,10 +572,12 @@ const handleAddSport = () => {
             }}
             style={styles.profileImage}
           />
-          <Text style={styles.changePicText}>Change Pic</Text>
+          <Text style={styles.changePicText}>Change Picture</Text>
         </TouchableOpacity>
 
+        {/* Profile Information Section */}
         <View style={styles.inputGroup}>
+          {/* Name Fields */}
           <View style={styles.nameRow}>
             <View style={styles.inputWrapper}>
               <Text style={styles.label}>First Name</Text>
@@ -583,6 +599,7 @@ const handleAddSport = () => {
             </View>
           </View>
 
+          {/* Username Field */}
           <View style={styles.fullInputWrapper}>
             <Text style={styles.label}>Username</Text>
             <TextInput
@@ -597,6 +614,7 @@ const handleAddSport = () => {
             ) : null}
           </View>
 
+          {/* Phone Number Field */}
           <View style={styles.fullInputWrapper}>
             <Text style={styles.label}>Mobile Number</Text>
             <TextInput
@@ -612,6 +630,7 @@ const handleAddSport = () => {
             ) : null}
           </View>
 
+          {/* Email Field */}
           <View style={styles.fullInputWrapper}>
             <Text style={styles.label}>Email</Text>
             <TextInput
@@ -628,52 +647,57 @@ const handleAddSport = () => {
             ) : null}
           </View>
          
-
-          <Text style={styles.label}>Sports Preferences</Text>
-
-<View style={styles.preferencesSection}>
-  <Text style={styles.sectionTitle}>Sports Preferences</Text>
-  {savedPreferences.map((item, index) => (
-    <SportsSkillsMenu
-      key={index}
-      item={item}
-      index={index}
-      isDropdownOpen={isDropdownOpen}
-      toggleDropdown={toggleDropdown}
-      handleSportChange={handleSportChange}
-      handleSkillLevelChange={handleSkillLevelChange}
-      handleRemoveSport={(index) => handleRemovePreference(savedPreferences[index].sport)}
-    />
-  ))}
-  <TouchableOpacity onPress={handleAddSport} style={styles.addButton}>
-    <Text style={styles.addButtonText}>Add Sport</Text>
-  </TouchableOpacity>
-</View>
-
-
-
-
+          {/* Sports Preferences Section */}
+          <View style={styles.sectionContainer}>
+            <Text style={styles.sectionTitle}>Sports Preferences</Text>
+            
+            {currentPreferences.length === 0 ? (
+              <Text style={styles.emptyMessage}>No sports added yet. Add your favorite sports below.</Text>
+            ) : (
+              currentPreferences.map((item, index) => (
+                <SportsSkillsMenu
+                  key={index}
+                  item={item}
+                  index={index}
+                  isDropdownOpen={isDropdownOpen}
+                  toggleDropdown={toggleDropdown}
+                  handleSportChange={handleSportChange}
+                  handleSkillLevelChange={handleSkillLevelChange}
+                  handleRemoveSport={() => handleRemoveSport(index)}
+                />
+              ))
+            )}
+            
+            {errors.preferences ? (
+              <Text style={styles.errorText}>{errors.preferences}</Text>
+            ) : null}
+            
+            <TouchableOpacity onPress={handleAddSport} style={styles.addButton}>
+              <Text style={styles.addButtonText}>Add Sport</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
+        {/* Save Button */}
         <TouchableOpacity
-        style={[
-          styles.saveButton,
-          (!isFormValid || saving) && styles.disabledButton,
-        ]}
-        onPress={handleSave}
-        disabled={!isFormValid || saving}
-      >
-        <Text style={styles.ButtonText}>
-          {saving ? "Saving..." : "Save"}
-        </Text>
-      </TouchableOpacity>
+          style={[
+            styles.saveButton,
+            (!isFormValid || saving) && styles.disabledButton,
+          ]}
+          onPress={handleSave}
+          disabled={!isFormValid || saving}
+        >
+          <Text style={styles.buttonText}>
+            {saving ? "Saving..." : "Save Changes"}
+          </Text>
+        </TouchableOpacity>
 
-
+        {/* Delete Account Button */}
         <TouchableOpacity
-          style={styles.delAccButton}
+          style={styles.deleteButton}
           onPress={handleDeleteAccount}
         >
-          <Text style={styles.ButtonText}>Delete Account</Text>
+          <Text style={styles.buttonText}>Delete Account</Text>
         </TouchableOpacity>
       </ScrollView>
     </Template>
@@ -687,7 +711,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 30,
     width: "100%",
-    backgroundColor: "#D3D3D3",
+    backgroundColor: "#F5F5F5",
   },
   loadingContainer: {
     justifyContent: "center",
@@ -705,15 +729,15 @@ const styles = StyleSheet.create({
   profileImage: {
     width: 150,
     height: 150,
-    borderRadius: 200,
-    borderColor: "black",
-    borderWidth: 1,
+    borderRadius: 75,
+    borderColor: "#42c8f5",
+    borderWidth: 3,
   },
   changePicText: {
     marginTop: 10,
     fontSize: 16,
     fontWeight: "bold",
-    color: "blue",
+    color: "#42c8f5",
   },
   inputGroup: {
     width: "90%",
@@ -757,60 +781,35 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 4,
   },
-  saveButton: {
-    backgroundColor: "#42c8f5",
-    borderRadius: 5,
-    paddingVertical: 12,
-    width: "90%",
-    marginTop: 30,
-    alignItems: "center",
-  },
-  disabledButton: {
-    backgroundColor: "#a0e0f7",
-    opacity: 0.7,
-  },
-  ButtonText: {
-    color: "black",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  delAccButton: {
-    backgroundColor: "#FF3B30",
-    borderRadius: 5,
-    paddingVertical: 12,
-    width: "90%",
-    marginTop: 15,
-    marginBottom: 30,
-    alignItems: "center",
-  },
-  preferencesSection: {
-    width: "90%",
-    //marginTop: 10,
-    marginBottom: 10,
-    paddingHorizontal: 20,
+  sectionContainer: {
+    width: "100%",
+    marginVertical: 10,
+    backgroundColor: "white",
+    borderRadius: 8,
+    padding: 15,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    marginBottom: 10,
+    marginBottom: 15,
+    color: "#333",
   },
-  preferenceItem: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 5,
+  emptyMessage: {
+    color: "#888",
+    fontStyle: "italic",
+    marginBottom: 15,
   },
-  removeButton: {
-    color: "red",
-    fontWeight: "bold",
-  },
-  
   addButton: {
     backgroundColor: "#42c8f5",
     borderRadius: 5,
-    paddingVertical: 8,
+    paddingVertical: 10,
     paddingHorizontal: 15,
-    marginTop: 10,
+    marginTop: 15,
     alignItems: "center",
     alignSelf: "flex-start",
   },
@@ -819,8 +818,32 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "bold",
   },
-  
-  
+  saveButton: {
+    backgroundColor: "#42c8f5",
+    borderRadius: 8,
+    paddingVertical: 14,
+    width: "90%",
+    marginTop: 30,
+    alignItems: "center",
+  },
+  disabledButton: {
+    backgroundColor: "#a0e0f7",
+    opacity: 0.7,
+  },
+  buttonText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  deleteButton: {
+    backgroundColor: "#FF3B30",
+    borderRadius: 8,
+    paddingVertical: 14,
+    width: "90%",
+    marginTop: 15,
+    marginBottom: 30,
+    alignItems: "center",
+  },
 });
 
 export default ProfileSettings;

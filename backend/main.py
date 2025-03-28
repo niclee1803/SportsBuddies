@@ -10,7 +10,7 @@ firebase_admin.initialize_app(cred)
 
 # Import routers from other files
 from user.routes import router as user_router
-from activity.routes import router as activity_router
+##from activity.routes import router as activity_router
 from utils.routes import router as utils_router
 ##from events.routes import router as events_router
 
@@ -26,7 +26,7 @@ app.add_middleware(
 )
 
 # Include routers from different modules
-app.include_router(activity_router, prefix="/activity", tags=["Activity"])
+##app.include_router(activity_router, prefix="/activity", tags=["Activity"])
 app.include_router(user_router, prefix="/user", tags=["User Management"])
 app.include_router(utils_router, prefix="/utils", tags=["Utilities"])
 ##app.include_router(activities_router, prefix="/activities", tags=["Activities"])
@@ -34,8 +34,12 @@ app.include_router(utils_router, prefix="/utils", tags=["Utilities"])
 
 @app.get("/")
 async def root():
-    return {"message": "Welcome to the SportsBuddies API"}
-
+    """Root endpoint for the API"""
+    return {
+        "message": "Welcome to the SportsBuddies API",
+        "version": "1.0.0",
+        "docs": "/docs"
+    }
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
