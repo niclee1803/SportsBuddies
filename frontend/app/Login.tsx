@@ -27,6 +27,7 @@ export default function Login() {
       await AsyncStorage.setItem("token", idToken);
   
       Alert.alert("Welcome!", `Logged in as ${user.email}`);
+      console.log(idToken)
   
       const userData = await fetchCurrentUser();
       const preferencesSet = userData.preferences_set;

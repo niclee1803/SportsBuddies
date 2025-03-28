@@ -1,33 +1,16 @@
+from fastapi import Depends, HTTPException, Security
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from firebase_admin import auth
-from fastapi import HTTPException, Depends, Header
-from typing import Optional, Dict
+
+security = HTTPBearer()
 
 class AuthService:
-    """Service for authentication-related operations"""
-    
     @staticmethod
-    def get_current_user(authorization: Optional[str] = Header(None)) -> Dict:
-        """Verify Firebase token and return user info"""
-        if not authorization:
-            raise HTTPException(
-                status_code=401, 
-                detail="Authorization header missing"
-            )
-            
+    async def get_current_user(credentials: HTTPAuthorizationCredentials = Security(security)):
         try:
-            # Extract token from Bearer format
-            token = authorization.replace("Bearer ", "")
-            
-            # Verify the token with Firebase
+            token = credentials.credentials
+            # Firebase verification code here...
             decoded_token = auth.verify_id_token(token)
-            
-            # Return user information from the token
-            return {
-                "uid": decoded_token["uid"],
-                "email": decoded_token.get("email", ""),
-            }
+            return {"uid": decoded_token["uid"], "email": decoded_token.get("email", "")}
         except Exception as e:
-            raise HTTPException(
-                status_code=401, 
-                detail=f"Invalid authentication token: {str(e)}"
-            )
+            raise HTTPException(status_code=401, detail=f"Invalid authentication token: {str(e)}")
