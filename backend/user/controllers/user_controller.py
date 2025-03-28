@@ -39,7 +39,7 @@ class UserController:
             'username': user_data['username'],
             'createdAt': firestore.SERVER_TIMESTAMP,
             'preferences_set': False,
-            'profilePicUrl': 'https://placehold.co/150'
+            'profilePicUrl': 'https://res.cloudinary.com/dv5hycdyw/image/upload/v1743175966/c9wpqjzvmmspzyeuvxhs.png'
         }
         
         # Create user in repository
