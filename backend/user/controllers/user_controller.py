@@ -1,9 +1,9 @@
 from typing import Dict, List, Optional
 from fastapi import HTTPException, UploadFile
-from ..repositories.user_repository import UserRepository
-from ..services.image_service import ImageService
-from ..models.user import User, SportSkillModel
-from ..schemas import UserPreferences, UpdateProfileRequest, UserCreate
+from user.repositories.user_repository import UserRepository
+from user.services.image_service import ImageService
+from user.models.user import User
+from user.schemas import UserPreferences, UpdateProfileRequest
 from firebase_admin import firestore
 
 class UserController:

@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
-from .services.auth_service import AuthService
-from .controllers.user_controller import UserController
-from .schemas import UserCreate, UserPreferences, UpdateProfileRequest
 from typing import Dict
+
+from user.services.auth_service import AuthService
+from user.controllers.user_controller import UserController
+from user.schemas import UserCreate, UserPreferences, UpdateProfileRequest
 
 # Create router
 router = APIRouter()

@@ -1,6 +1,6 @@
 from firebase_admin import firestore, auth
 from typing import Optional, Dict, List
-from ..models.user import User, SportSkillModel
+from user.models.user import User
 from fastapi import HTTPException
 
 class UserRepository:

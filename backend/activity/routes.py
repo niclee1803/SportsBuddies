@@ -6,7 +6,6 @@ deletion, update, joining, and searching of activities.
 from typing import Optional, List, Dict
 from fastapi import APIRouter, HTTPException, Depends, Body, Path, Query
 from datetime import datetime
-from firebase_admin import firestore
 
 # Change relative imports to absolute imports
 from activity.controllers.activity_controller import ActivityController
@@ -14,7 +13,7 @@ from activity.schemas import ActivityCreate, ActivityUpdate
 from activity.models.activity import ActivityStatus, ActivityType, SkillLevel, Location
 from user.services.auth_service import AuthService
 
-router = APIRouter(tags=["Activities"])  # Remove prefix - already added in main.py
+router = APIRouter()
 activity_controller = ActivityController()
 
 # ============== Basic CRUD Operations ==============

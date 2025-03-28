@@ -4,8 +4,7 @@ Business logic layer for Activity operations.
 import time
 from typing import Dict, List
 from fastapi import HTTPException
-from firebase_admin import firestore
-# Change to absolute imports
+
 from activity.repository.activity_repository import ActivityRepository, FirestoreError
 from activity.models.activity import Activity, ActivityStatus, Location
 
