@@ -2,8 +2,12 @@ from fastapi import APIRouter, HTTPException, Depends, Body, UploadFile, File
 from .auth import get_current_user  # Import the get_current_user function
 from firebase_admin import firestore, auth
 from .models import UserCreate, UserPreferences, UpdateProfileRequest
-import requests
+import tempfile
 import os
+from dotenv import load_dotenv
+import cloudinary
+import cloudinary.uploader
+from cloudinary.utils import cloudinary_url
 
 # Enable routing
 router = APIRouter(
@@ -14,8 +18,14 @@ router = APIRouter(
 # Initialize Firestore DB
 db = firestore.client()
 
-# Load IMGUR_CLIENT_ID from environment variables
-IMGUR_CLIENT_ID = os.getenv("IMGUR_CLIENT_ID")
+# Initialise Cloudinary for profile pic storage
+load_dotenv()
+cloudinary.config( 
+    cloud_name = os.getenv("CLOUDINARY_CLOUD_NAME"),
+    api_key = os.getenv("CLOUDINARY_API_KEY"),
+    api_secret = os.getenv("CLOUDINARY_API_SECRET"),
+    secure = True
+)
 
 
 @router.get("/check-username/{username}", summary="Check username availability")
@@ -322,7 +332,7 @@ async def delete_account(current_user: dict = Depends(get_current_user)):
 @router.post("/upload_profile_picture", summary="Upload profile picture")
 async def upload_profile_picture(file: UploadFile = File(...), current_user: dict = Depends(get_current_user)):
     """
-    Change the user's profile picture by uploading to Imgur and updating Firestore.
+    Change the user's profile picture by uploading to Cloudinary and updating Firestore.
 
     - **file**: The image file to upload.
     - **current_user**: The current authenticated user.
@@ -332,19 +342,42 @@ async def upload_profile_picture(file: UploadFile = File(...), current_user: dic
     - **profilePicUrl**: The URL of the uploaded profile picture.
     """
     try:
-        headers = {"Authorization": f"Client-ID {IMGUR_CLIENT_ID}"}
-        files = {"image": file.file}
-        response = requests.post("https://api.imgur.com/3/image", headers=headers, files=files)
-
-        if response.status_code != 200:
-            raise HTTPException(status_code=400, detail="Failed to upload image to Imgur")
-
-        data = response.json()
-        profile_pic_url = data["data"]["link"]
-
+        # Read file contents
+        contents = await file.read()
+        
+        # Create a temporary file to pass to Cloudinary
+        with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+            temp_file.write(contents)
+            temp_file_path = temp_file.name
+        
+        # Upload to Cloudinary with optimizations
+        # Use user ID as public_id for easier management
+        upload_result = cloudinary.uploader.upload(
+            temp_file_path,
+            public_id=f"profiles/{current_user['uid']}",  # Organize in profiles folder
+            overwrite=True,  # Replace existing image with same ID
+            resource_type="image",
+            transformation=[
+                {"width": 400, "height": 400, "crop": "fill", "gravity": "face"},  # Optimize for profile picture
+                {"fetch_format": "auto"},  # Auto-format for best browser compatibility
+                {"quality": "auto"}  # Auto-quality optimization
+            ]
+        )
+        
+        # Clean up the temporary file
+        os.unlink(temp_file_path)
+        
+        # Get the optimized URL from Cloudinary
+        profile_pic_url = upload_result["secure_url"]
+        
+        # Update user profile in Firestore
         user_ref = db.collection("users").document(current_user["uid"])
         user_ref.update({"profilePicUrl": profile_pic_url})
-
-        return {"message": "Profile picture uploaded successfully", "profilePicUrl": profile_pic_url}
+        
+        return {
+            "message": "Profile picture uploaded successfully", 
+            "profilePicUrl": profile_pic_url
+        }
     except Exception as e:
+        print(f"Error uploading image: {str(e)}")
         raise HTTPException(status_code=400, detail=str(e))
