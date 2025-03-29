@@ -26,7 +26,6 @@ export default function Login() {
       // Store the token in AsyncStorage
       await AsyncStorage.setItem("token", idToken);
   
-      Alert.alert("Welcome!", `Logged in as ${user.email}`);
       console.log(idToken)
   
       const userData = await fetchCurrentUser();
@@ -34,7 +33,7 @@ export default function Login() {
   
       // Navigate based on preferences
       if (preferencesSet) {
-        router.replace("/Home");
+        router.replace("/Dashboard");
       } else {
         router.replace("/SetPreferences");
       }

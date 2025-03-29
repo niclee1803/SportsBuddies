@@ -104,8 +104,8 @@ const SportsSkillsMenu = ({
         }}
         style={styles.dropdownPicker}
         dropDownContainerStyle={styles.dropdownContainer}
-        zIndex={3000 - (index * 10)}
-        zIndexInverse={1000 + (index * 10)}
+        zIndex={5000 - (index * 20)} // Higher base z-index for sports
+        zIndexInverse={1000 + (index * 20)}
         listMode={Platform.OS === "ios" ? "SCROLLVIEW" : "FLATLIST"}
         scrollViewProps={{
           nestedScrollEnabled: true,
@@ -125,8 +125,8 @@ const SportsSkillsMenu = ({
         }}
         style={styles.dropdownPicker}
         dropDownContainerStyle={styles.dropdownContainer}
-        zIndex={2000 - (index * 10)}
-        zIndexInverse={2000 + (index * 10)}
+        zIndex={4000 - (index * 20)} // Lower base z-index for skills
+        zIndexInverse={2000 + (index * 20)}
         listMode={Platform.OS === "ios" ? "SCROLLVIEW" : "FLATLIST"}
         scrollViewProps={{
           nestedScrollEnabled: true,

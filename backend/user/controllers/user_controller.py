@@ -158,3 +158,36 @@ class UserController:
             "message": "Profile picture uploaded successfully", 
             "profilePicUrl": profile_pic_url
         }
+    
+
+    def get_public_profile(self, user_id: str) -> Dict:
+        """Get a user's public profile information."""
+        try:
+            # Get the user
+            user = self.repository.get_by_id(user_id)
+            if not user:
+                raise HTTPException(status_code=404, detail=f"User {user_id} not found")
+            
+            # Create response with only required fields - safer approach
+            response = {
+                "id": user_id,  
+                "username": getattr(user, "username", ""),
+                "firstName": getattr(user, "first_name", ""),
+                "lastName": getattr(user, "last_name", ""),
+                "profilePicUrl": getattr(user, "profile_pic_url", "")
+            }
+            
+            # Only add preferences if they exist - using a safer approach
+            if hasattr(user, "preferences") and user.preferences:
+                try:
+                    response["preferences"] = user.preferences
+                except Exception:
+                    response["preferences"] = []
+            else:
+                response["preferences"] = []
+                
+            return response
+        except Exception as e:
+            # Log the actual error for debugging
+            print(f"Error in get_public_profile: {str(e)}")
+            raise HTTPException(status_code=500, detail="Failed to retrieve user profile")

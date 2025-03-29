@@ -8,6 +8,9 @@ import * as Sharing from 'expo-sharing';
 import Toast from 'react-native-toast-message';
 import { API_URL } from '../config.json';
 import { fetchCurrentUser } from '@/utils/GetUser';
+import ActivityCard from '@/components/activity/ActivityCard';
+import { Activity } from '@/types/activity';
+import AuthLayout from '@/components/AuthLayout';
 
 const Profile = () => {
   const router = useRouter();
@@ -22,7 +25,10 @@ const Profile = () => {
     preferences: [],
     friends: [],
   });
-  const [activities, setActivities] = useState([]);
+  const [activeTab, setActiveTab] = useState('created'); // 'created' or 'joined'
+  const [createdActivities, setCreatedActivities] = useState<Activity[]>([]);
+  const [joinedActivities, setJoinedActivities] = useState<Activity[]>([]);
+  const [activitiesLoading, setActivitiesLoading] = useState(false);
 
   // Fetch profile data using the utility function
   const loadProfile = async () => {
@@ -62,37 +68,44 @@ const Profile = () => {
   };
 
   const loadActivities = async () => {
+    setActivitiesLoading(true);
     try {
       const token = await AsyncStorage.getItem('token');
       if (!token) return;
 
-      const response = await fetch(`${API_URL}/user/activities`, {
+      // Load created activities - UPDATED ENDPOINT
+      const createdResponse = await fetch(`${API_URL}/activity/my/created`, {
         method: 'GET',
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Failed to fetch activities');
+      if (createdResponse.ok) {
+        const createdData = await createdResponse.json();
+        setCreatedActivities(createdData || []);
       }
 
-      const data = await response.json();
-      setActivities(data.activities || []);
+      // Load joined activities - UPDATED ENDPOINT
+      const joinedResponse = await fetch(`${API_URL}/activity/my/participating`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (joinedResponse.ok) {
+        const joinedData = await joinedResponse.json();
+        setJoinedActivities(joinedData || []);
+      }
+      
     } catch (error) {
       console.error("Error fetching activities:", error);
       Alert.alert('Error', error instanceof Error ? error.message : 'Failed to load activities.');
+    } finally {
+      setActivitiesLoading(false);
     }
   };
-
-  // Load data when screen comes into focus
-  useFocusEffect(
-    useCallback(() => {
-      loadProfile();
-      loadActivities();
-    }, [])
-  );
 
   const shareProfile = async () => {
     try {
@@ -117,18 +130,18 @@ const Profile = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <View style={[styles.container, styles.loadingContainer]}>
-        <ActivityIndicator size="large" color="#42c8f5" />
-        <Text style={styles.loadingText}>Loading profile data...</Text>
-      </View>
-    );
-  }
+  // Load data when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      loadProfile();
+      loadActivities();
+    }, [])
+  );
 
   return (
-    <View style={{ flex: 1 }}>
+    <AuthLayout>
       <ScrollView style={styles.container}>
+        {/* Your existing header JSX */}
         <View style={styles.header}>
           <TouchableOpacity>
             <Image source={{ uri: profilePic }} style={styles.profileImage} />
@@ -138,25 +151,58 @@ const Profile = () => {
         </View>
 
         <View style={styles.buttonContainer}>
-          <TouchableOpacity style={styles.button} onPress={() => router.push('/friends')}>
-            <FontAwesome5 name="users" size={20} color="black" />
-            <Text style={styles.buttonText}>Friends</Text>
-          </TouchableOpacity>
-
           <TouchableOpacity style={styles.button} onPress={shareProfile}>
             <AntDesign name="sharealt" size={20} color="black" />
             <Text style={styles.buttonText}>Share</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.button} onPress={() => router.push('/Settings?edit=true')}>
+          <TouchableOpacity style={styles.button} onPress={() => router.push('/ProfileSettings')}>
             <Feather name="edit-3" size={20} color="black" />
             <Text style={styles.buttonText}>Edit</Text>
           </TouchableOpacity>
         </View>
+        {/* Activity Tabs */}
+        <View style={styles.tabContainer}>
+          <TouchableOpacity 
+            style={[styles.tab, activeTab === 'created' && styles.activeTab]} 
+            onPress={() => setActiveTab('created')}
+          >
+            <Text style={[styles.tabText, activeTab === 'created' && styles.activeTabText]}>
+              Created
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.tab, activeTab === 'joined' && styles.activeTab]} 
+            onPress={() => setActiveTab('joined')}
+          >
+            <Text style={[styles.tabText, activeTab === 'joined' && styles.activeTabText]}>
+              Joined
+            </Text>
+          </TouchableOpacity>
+        </View>
 
-        {/* Activities section - commented out in your original code */}
+        {/* Activities List */}
+        <View style={styles.activitiesContainer}>
+          {activitiesLoading ? (
+            <ActivityIndicator size="small" color="#42c8f5" style={styles.activitiesLoader} />
+          ) : activeTab === 'created' ? (
+            createdActivities.length > 0 ? (
+              createdActivities.map((activity) => (
+                <ActivityCard key={activity.id} activity={activity} />
+              ))
+            ) : (
+              <Text style={styles.noActivityText}>You haven't created any activities yet.</Text>
+            )
+          ) : joinedActivities.length > 0 ? (
+            joinedActivities.map((activity) => (
+              <ActivityCard key={activity.id} activity={activity} />
+            ))
+          ) : (
+            <Text style={styles.noActivityText}>You haven't joined any activities yet.</Text>
+          )}
+        </View>
       </ScrollView>
-    </View>
+    </AuthLayout>
   );
 };
 
@@ -178,16 +224,50 @@ const styles = StyleSheet.create({
   buttonContainer: { flexDirection: 'row', justifyContent: 'center', gap: 20, marginVertical: 10 },
   button: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#e0e0e0', padding: 10, borderRadius: 20 },
   buttonText: { marginLeft: 5, fontSize: 16 },
-  section: { marginTop: 20 },
-  sectionTitle: { fontWeight: 'bold', fontSize: 18, marginBottom: 10 },
-  noActivityText: { textAlign: 'center', color: 'gray' },
-  activityCard: { backgroundColor: 'white', padding: 15, borderRadius: 10, shadowOpacity: 0.2, shadowRadius: 5, marginBottom: 10 },
-  activityHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
-  activityUserImage: { width: 30, height: 30, borderRadius: 15, marginRight: 10 },
-  activityUserName: { fontWeight: 'bold' },
-  activityTitle: { fontWeight: 'bold', fontSize: 16, marginBottom: 5 },
-  activityDetails: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 5 },
-  activityTags: { marginTop: 10, fontStyle: 'italic' },
+  
+  // Tab styles
+  tabContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: 25,
+    marginBottom: 15,
+    borderRadius: 10,
+    backgroundColor: '#e0e0e0',
+    padding: 5,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderRadius: 8,
+  },
+  activeTab: {
+    backgroundColor: 'white',
+  },
+  tabText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#555',
+  },
+  activeTabText: {
+    color: '#42c8f5',
+    fontWeight: 'bold',
+  },
+  
+  // Activities styles
+  activitiesContainer: {
+    marginTop: 10,
+  },
+  activitiesLoader: {
+    marginTop: 20,
+  },
+  noActivityText: { 
+    textAlign: 'center', 
+    color: 'gray',
+    marginTop: 30,
+    fontSize: 16,
+    fontStyle: 'italic'
+  },
 });
 
 export default Profile;

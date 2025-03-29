@@ -15,16 +15,18 @@ import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as ImagePicker from "expo-image-picker";
 import { API_URL } from "../config.json";
-import Template from "../components/Template";
 import { fetchCurrentUser } from "@/utils/GetUser";
 import { validateUsername, validateEmail, validatePhone } from "@/components/signup/ValidationUtils";
 import SportsSkillsMenu, { SportsSkill, SKILL_LEVELS } from "../components/preferences/SportsSkillsMenu";
+import { Ionicons } from "@expo/vector-icons";
+import { showAlert } from "@/utils/alertUtils";
 
 const ProfileSettings: React.FC = () => {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+  const [photoLoading, setPhotoLoading] = useState(false);
   
   // Separate states for current and original preferences
   const [originalPreferences, setOriginalPreferences] = useState<SportsSkill[]>([]);
@@ -62,6 +64,26 @@ const ProfileSettings: React.FC = () => {
     email: "",
     profilePicUrl: "",
   });
+
+  // Handle back button press
+  const handleBackPress = () => {
+    if (hasChanges) {
+      showAlert(
+        "Unsaved Changes",
+        "You have unsaved changes. Are you sure you want to leave?",
+        [
+          { text: "Stay", style: "cancel" },
+          { 
+            text: "Discard Changes", 
+            onPress: () => router.back(),
+            style: "destructive"
+          }
+        ]
+      );
+    } else {
+      router.back();
+    }
+  };
 
   // Load user data and preferences when component mounts
   useEffect(() => {
@@ -422,6 +444,9 @@ const ProfileSettings: React.FC = () => {
       
       const imageUri = result.assets[0].uri;
 
+      // Set loading state
+      setPhotoLoading(true);
+
       // Convert the image URI to a Blob
       const response = await fetch(imageUri);
       const blob = await response.blob();
@@ -480,18 +505,21 @@ const ProfileSettings: React.FC = () => {
           ? error.message
           : "Failed to update profile picture."
       );
+    } finally {
+      setPhotoLoading(false);
     }
   };
 
   // Account deletion function
   const handleDeleteAccount = async () => {
-    Alert.alert(
+    showAlert(
       "Delete Account",
       "Are you sure you want to delete your account? This action cannot be undone.",
       [
         { text: "Cancel", style: "cancel" },
         {
           text: "Delete",
+          style: "destructive",
           onPress: async () => {
             try {
               const token = await AsyncStorage.getItem("token");
@@ -541,12 +569,10 @@ const ProfileSettings: React.FC = () => {
   // Loading state
   if (loading) {
     return (
-      <Template>
-        <View style={[styles.container, styles.loadingContainer]}>
-          <ActivityIndicator size="large" color="#42c8f5" />
-          <Text style={styles.loadingText}>Loading profile data...</Text>
-        </View>
-      </Template>
+      <View style={[styles.container, styles.loadingContainer]}>
+        <ActivityIndicator size="large" color="#42c8f5" />
+        <Text style={styles.loadingText}>Loading profile data...</Text>
+      </View>
     );
   }
 
@@ -559,24 +585,46 @@ const ProfileSettings: React.FC = () => {
 
   // Render component
   return (
-    <Template>
+    <View style={{ flex: 1, backgroundColor: "#F5F5F5" }}>
+      {/* Header with back button */}
+      <View style={styles.header}>
+        <TouchableOpacity 
+          style={styles.backButton} 
+          onPress={handleBackPress}
+        >
+          <Ionicons name="arrow-back" size={24} color="#42c8f5" />
+          <Text style={styles.backButtonText}>Back</Text>
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Profile Settings</Text>
+      </View>
+
       <ScrollView contentContainerStyle={styles.container}>
         {/* Profile Picture Section */}
         <TouchableOpacity
           onPress={handleProfilePictureUpdate}
           style={styles.profileContainer}
+          disabled={photoLoading}
         >
-          <Image
-            source={{
-              uri: userData.profilePicUrl || "https://placehold.co/150",
-            }}
-            style={styles.profileImage}
-          />
-          <Text style={styles.changePicText}>Change Picture</Text>
+          {photoLoading ? (
+            <View style={[styles.profileImage, styles.photoLoading]}>
+              <ActivityIndicator color="#42c8f5" size="large" />
+            </View>
+          ) : (
+            <Image
+              source={{
+                uri: userData.profilePicUrl || "https://placehold.co/150",
+              }}
+              style={styles.profileImage}
+            />
+          )}
+          <Text style={styles.changePicText}>
+            {photoLoading ? "Uploading..." : "Change Picture"}
+          </Text>
         </TouchableOpacity>
 
         {/* Profile Information Section */}
         <View style={styles.inputGroup}>
+          {/* Existing code for form fields */}
           {/* Name Fields */}
           <View style={styles.nameRow}>
             <View style={styles.inputWrapper}>
@@ -700,11 +748,43 @@ const ProfileSettings: React.FC = () => {
           <Text style={styles.buttonText}>Delete Account</Text>
         </TouchableOpacity>
       </ScrollView>
-    </Template>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 50,
+    paddingBottom: 5,
+    backgroundColor: 'white',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  headerTitle: {
+    flex: 1,
+    textAlign: 'center',
+    fontSize: 18,
+    fontWeight: '600',
+    marginRight: 40, // To center correctly with back button
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 8,
+  },
+  backButtonText: {
+    marginLeft: 4,
+    color: '#42c8f5',
+    fontSize: 16,
+  },
+  photoLoading: {
+    backgroundColor: 'rgba(200, 200, 200, 0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   container: {
     flexGrow: 1,
     justifyContent: "center",

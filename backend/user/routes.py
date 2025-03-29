@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Path
 from typing import Dict
 
 from user.services.auth_service import AuthService
@@ -84,3 +84,14 @@ async def get_preferences(current_user: Dict = Depends(get_current_user)):
     Retrieve the user's preferences from Firestore.
     """
     return user_controller.get_preferences(current_user["uid"])
+
+@router.get("/public/{user_id}", summary="Get user's public profile", response_model=Dict)
+async def get_public_profile(
+    user_id: str = Path(..., description="The user ID"),
+    current_user: dict = Depends(AuthService.get_current_user)
+):
+    """
+    Retrieve basic public information about any user.
+    Only returns non-sensitive information (name, username, profile pic, etc.)
+    """
+    return user_controller.get_public_profile(user_id)

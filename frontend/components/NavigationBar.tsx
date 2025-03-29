@@ -1,44 +1,75 @@
 import React from 'react';
 import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialIcons';
-import { useRouter } from 'expo-router';
+import { FontAwesome5, MaterialIcons, Ionicons } from '@expo/vector-icons';
+import { useRouter, usePathname } from 'expo-router';
 
-// Define a custom type for your allowed routes
-type Route = '/Home' | '/Groups' | '/Create' | '/Profile' | '/Settings';
+// Define routes and their properties
+type RouteKey = 'feed' | 'dashboard' | 'create' | 'profile' | 'settings';
+
+interface RouteConfig {
+  path: string;
+  label: string;
+  icon: JSX.Element;
+}
 
 const NavigationBar: React.FC = () => {
   const router = useRouter();
+  const currentPath = usePathname();
+  
+  // Define routes with their icons and paths
+  const routes: Record<RouteKey, RouteConfig> = {
+    dashboard: {
+      path: '/Dashboard',
+      label: 'Dashboard',
+      icon: <MaterialIcons name="dashboard" size={24} color="black" />
+    },
+    feed: {
+      path: '/Feed',
+      label: 'Feed',
+      icon: <FontAwesome5 name="stream" size={24} color="black" />
+    },
+    create: {
+      path: '/Create',
+      label: 'Create',
+      icon: <Ionicons name="add-circle-outline" size={28} color="black" />
+    },
+    profile: {
+      path: '/Profile',
+      label: 'Profile',
+      icon: <FontAwesome5 name="user-circle" size={24} color="black" />
+    },
+    settings: {
+      path: '/Settings',
+      label: 'Settings',
+      icon: <Ionicons name="settings-outline" size={24} color="black" />
+    }
+  };
 
-  const handleNavigation = (route: Route) => {
-    router.push(route as any); 
+  // Check if route is active
+  const isActive = (path: string): boolean => {
+    return currentPath === path || currentPath.startsWith(`${path}/`);
   };
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity style={styles.item} onPress={() => handleNavigation('/Home')}>
-        <Icon name="home" size={30} color="#000" />
-        <Text style={styles.itemText}>Home</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.item} onPress={() => handleNavigation('/Groups')}>
-        <Icon name="groups" size={30} color="#000" />
-        <Text style={styles.itemText}>Groups</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.item} onPress={() => handleNavigation('/Create')}>
-        <Icon name="add-circle-outline" size={30} color="#000" />
-        <Text style={styles.itemText}>Create</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.item} onPress={() => handleNavigation('/Profile')}>
-        <Icon name="person" size={30} color="#000" />
-        <Text style={styles.itemText}>Profile</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.item} onPress={() => handleNavigation('/Settings')}>
-        <Icon name="settings" size={30} color="#000" />
-        <Text style={styles.itemText}>Settings</Text>
-      </TouchableOpacity>
+      {Object.entries(routes).map(([key, route]) => (
+        <TouchableOpacity
+          key={key}
+          style={[styles.item, isActive(route.path) && styles.activeItem]}
+          onPress={() => router.push(route.path as any)}
+        >
+          {/* Clone the icon element with the active color if route is active */}
+          {React.cloneElement(route.icon, { 
+            color: isActive(route.path) ? '#42c8f5' : 'black' 
+          })}
+          <Text style={[
+            styles.itemText, 
+            isActive(route.path) && styles.activeText
+          ]}>
+            {route.label}
+          </Text>
+        </TouchableOpacity>
+      ))}
     </View>
   );
 };
@@ -48,16 +79,30 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
-    backgroundColor: '#5E83C6',
-    height: 90,
-    paddingBottom: 20,
+    backgroundColor: 'white',
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
+    height: 80,
+    paddingBottom: 20, // Add bottom padding for home indicator on newer iPhones
+    paddingTop: 10,
   },
   item: {
     alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
+  },
+  activeItem: {
+    // You can add special styling for active items if needed
   },
   itemText: {
-    color: '#000',
+    color: 'black',
+    fontSize: 12,
+    marginTop: 4,
   },
+  activeText: {
+    color: '#42c8f5',
+    fontWeight: 'bold',
+  }
 });
 
 export default NavigationBar;
