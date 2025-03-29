@@ -1,83 +1,162 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator } from 'react-native';
-import AuthLayout from '@/components/AuthLayout';
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  ActivityIndicator,
+  TextInput,
+  TouchableOpacity,
+  Alert,
+} from "react-native";
+import AuthLayout from "@/components/AuthLayout";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { API_URL } from "../config.json";
+import ActivityCard from "@/components/activity/ActivityCard";
+import { Activity } from "@/types/activity"; // Ensure your Activity type matches what your ActivityCard expects
 
-const Feed = () => {
+export default function Feed() {
+  const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(false);
-  
-  // Placeholder data for the feed
-  const placeholderActivities = [
-    { id: '1', title: 'Basketball Game', date: '2:00 PM Today', location: 'Central Park' },
-    { id: '2', title: 'Tennis Match', date: '4:30 PM Tomorrow', location: 'City Sports Center' },
-    { id: '3', title: 'Running Group', date: '7:00 AM Saturday', location: 'Riverside Track' },
-    { id: '4', title: 'Swimming Class', date: '10:00 AM Sunday', location: 'Community Pool' },
-  ];
+  const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  // Fetch activities from the /activity/search endpoint
+  const fetchActivities = async (searchValue: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Retrieve the token from AsyncStorage
+      const token = await AsyncStorage.getItem("token");
+      if (!token) {
+        Alert.alert("Authentication Error", "No token found. Please log in.");
+        setLoading(false);
+        return;
+      }
+
+      // Build query parameters if a search value is provided
+      const params = new URLSearchParams();
+      if (searchValue) {
+        params.append("sport", searchValue);
+      }
+
+      // Construct the final URL using API_URL
+      const baseUrl = `${API_URL}/activity/search`;
+      const queryString = params.toString();
+      const url = queryString ? `${baseUrl}?${queryString}` : baseUrl;
+
+      // Make the GET request with fetch
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Request failed with status ${response.status}`);
+      }
+
+      const data = await response.json();
+      // Assume the backend returns an array of Activity objects that match your Activity type.
+      setActivities(data);
+    } catch (err: any) {
+      console.error("Error fetching activities:", err);
+      setError(err.message || "Something went wrong.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchActivities("");
+  }, []);
+
+  const handleSearch = () => {
+    fetchActivities(searchTerm);
+  };
+
+  const renderActivityItem = ({ item }: { item: Activity }) => (
+    <ActivityCard activity={item} />
+  );
 
   return (
     <AuthLayout>
       <View style={styles.container}>
-        <Text style={styles.title}>Activity Feed (Not done)</Text>
-        
+        <Text style={styles.feedTitle}>Suggested for you</Text>
+
+        <View style={styles.searchRow}>
+          <TextInput
+            placeholder="Search by sport..."
+            value={searchTerm}
+            onChangeText={setSearchTerm}
+            style={styles.searchInput}
+          />
+          <TouchableOpacity style={styles.searchButton} onPress={handleSearch}>
+            <Text style={styles.searchButtonText}>Search</Text>
+          </TouchableOpacity>
+        </View>
+
         {loading ? (
           <ActivityIndicator size="large" color="#42c8f5" style={styles.loader} />
+        ) : error ? (
+          <Text style={styles.errorText}>{error}</Text>
         ) : (
           <FlatList
-            data={placeholderActivities}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <View style={styles.activityCard}>
-                <Text style={styles.activityTitle}>{item.title}</Text>
-                <Text style={styles.activityDetail}>{item.date}</Text>
-                <Text style={styles.activityDetail}>{item.location}</Text>
-              </View>
-            )}
-            contentContainerStyle={styles.listContainer}
+            data={activities}
+            keyExtractor={(item) => item.id || item.activityName || String(Math.random())}
+            renderItem={renderActivityItem}
+            contentContainerStyle={styles.listContent}
           />
         )}
       </View>
     </AuthLayout>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
-    backgroundColor: '#f2f2f2',
+    backgroundColor: "#fff",
+    paddingHorizontal: 16,
+    paddingTop: 50,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
+  feedTitle: {
+    fontSize: 20,
+    fontWeight: "600",
+    marginBottom: 12,
+  },
+  searchRow: {
+    flexDirection: "row",
     marginBottom: 16,
-    marginTop: 40,
+  },
+  searchInput: {
+    flex: 1,
+    backgroundColor: "#f0f0f0",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginRight: 8,
+  },
+  searchButton: {
+    backgroundColor: "#42c8f5",
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    justifyContent: "center",
+  },
+  searchButtonText: {
+    color: "#fff",
+    fontWeight: "600",
   },
   loader: {
-    marginTop: 40,
+    marginTop: 20,
   },
-  listContainer: {
-    paddingBottom: 80, // For bottom nav space
+  errorText: {
+    color: "red",
+    marginTop: 20,
   },
-  activityCard: {
-    backgroundColor: 'white',
-    borderRadius: 10,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  activityTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 8,
-  },
-  activityDetail: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 4,
+  listContent: {
+    paddingBottom: 80,
   },
 });
-
-export default Feed;
