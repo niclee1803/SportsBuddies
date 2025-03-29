@@ -37,8 +37,8 @@ app.add_middleware(
 # Include routers from different modules
 ##app.include_router(activity_router, prefix="/activity", tags=["Activity"])
 app.include_router(user_router, prefix="/user", tags=["User Management"])
-app.include_router(utils_router, prefix="/utils", tags=["Utilities"])
 app.include_router(activity_router, prefix="/activity", tags=["Activity Management"])
+app.include_router(utils_router, prefix="/utils", tags=["Utilities"])
 ##app.include_router(events_router, prefix="/events", tags=["Events"])
 
 @app.get("/")

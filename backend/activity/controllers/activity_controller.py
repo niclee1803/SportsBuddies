@@ -106,6 +106,29 @@ class ActivityController:
             return {"message": "Join request sent successfully"}
         except FirestoreError as e:
             raise HTTPException(status_code=500, detail=str(e))
+        
+    def cancel_join_request(self, activity_id: str, user_id: str) -> Dict:
+        """
+        Cancels a pending join request made by the user.
+        """
+        activity = self.repo.get_by_id(activity_id)
+        if not activity:
+            raise HTTPException(status_code=404, detail="Activity not found")
+        
+        if user_id not in activity.joinRequests:
+            raise HTTPException(status_code=400, detail="You don't have a pending request for this activity")
+        
+        try:
+            # Update using transaction for safety
+            def update_func(activity):
+                if activity.cancel_join_request(user_id):
+                    return {"joinRequests": activity.joinRequests}
+                return None
+                
+            self.repo.update_activity_with_transaction(activity_id, update_func)
+            return {"message": "Join request cancelled successfully"}
+        except FirestoreError as e:
+            raise HTTPException(status_code=500, detail=str(e))
     
     def approve_join(self, activity_id: str, new_user_id: str, current_user: str) -> Dict:
         """
@@ -263,6 +286,17 @@ class ActivityController:
         """
         try:
             activities = self.repo.get_pending_join_requests(user_id)
+            return [a.to_dict() for a in activities]
+        except FirestoreError as e:
+            raise HTTPException(status_code=500, detail=str(e))
+        
+    def get_creator_pending_requests(self, creator_id: str) -> List[Dict]:
+        """
+        Gets all pending join requests for activities created by this user.
+        Returns activities with the requests and requesters' information.
+        """
+        try:
+            activities = self.repo.get_activities_with_pending_requests(creator_id)
             return [a.to_dict() for a in activities]
         except FirestoreError as e:
             raise HTTPException(status_code=500, detail=str(e))

@@ -89,6 +89,16 @@ async def join_activity(
     """
     return activity_controller.join_activity(activity_id, current_user["uid"])
 
+@router.post("/{activity_id}/cancel-request", summary="Cancel a join request", response_model=Dict)
+async def cancel_join_request(
+    activity_id: str = Path(..., description="The ID of the activity"),
+    current_user: dict = Depends(AuthService.get_current_user)
+):
+    """
+    Cancels a pending join request made by the current user.
+    """
+    return activity_controller.cancel_join_request(activity_id, current_user["uid"])
+
 @router.post("/{activity_id}/approve/{user_id}", summary="Approve a join request", response_model=Dict)
 async def approve_join(
     activity_id: str = Path(..., description="The ID of the activity"),
@@ -162,6 +172,15 @@ async def get_my_requests(
     Returns all activities for which the current user has pending join requests.
     """
     return activity_controller.get_my_pending_requests(current_user["uid"])
+
+@router.get("/my/pending-approvals", summary="Get activities with pending approval requests", response_model=List[Dict])
+async def get_my_pending_approvals(
+    current_user: dict = Depends(AuthService.get_current_user)
+):
+    """
+    Returns all activities created by the user that have pending join requests.
+    """
+    return activity_controller.get_creator_pending_requests(current_user["uid"])
 
 @router.get("/search", summary="Search and filter activities", response_model=List[Dict])
 async def search_activities(

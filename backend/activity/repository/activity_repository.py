@@ -226,6 +226,26 @@ class ActivityRepository:
             return [Activity.from_dict(doc.id, doc.to_dict()) for doc in docs]
         except Exception as e:
             raise FirestoreError(f"Failed to get pending join requests: {str(e)}")
+        
+    def get_activities_with_pending_requests(self, creator_id: str) -> List[Activity]:
+        """
+        Retrieves all activities created by a user that have pending join requests.
+        
+        Args:
+            creator_id (str): The creator's user ID.
+            
+        Returns:
+            List[Activity]: Activities with pending join requests.
+        """
+        try:
+            # Get activities where the user is the creator
+            query = self.collection.where("creator_id", "==", creator_id)
+            # Only include activities with at least one join request
+            query = query.where("joinRequests", "!=", [])
+            docs = query.stream()
+            return [Activity.from_dict(doc.id, doc.to_dict()) for doc in docs]
+        except Exception as e:
+            raise FirestoreError(f"Failed to get activities with pending requests: {str(e)}")
     
     def expire_activities(self) -> Tuple[int, int]:
         """

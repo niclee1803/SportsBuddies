@@ -161,6 +161,13 @@ class Activity:
             self.joinRequests.append(user_id)
             return True
         return False
+    
+    def cancel_join_request(self, user_id: str) -> bool:
+        """Cancel a join request by user."""
+        if user_id in self.joinRequests:
+            self.joinRequests.remove(user_id)
+            return True
+        return False
 
     def approve_join_request(self, user_id: str) -> bool:
         """Approve a join request and add user to participants."""
