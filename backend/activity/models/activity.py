@@ -70,6 +70,7 @@ class Activity:
         participants (list): Current participants' user IDs.
         joinRequests (list): Pending join requests from users.
         maxParticipants (int): Maximum allowed number of participants.
+        placeName (str): Human-readable name of the place where the activity is held.
         status (ActivityStatus): Current activity status.
     """
 
@@ -82,6 +83,7 @@ class Activity:
         location: Union[Location, firestore.GeoPoint],
         dateTime: datetime,
         maxParticipants: int,
+        placeName: str, 
         bannerImageUrl: str = "",
         type: ActivityType = ActivityType.EVENT,
         price: int = 0,
@@ -100,6 +102,7 @@ class Activity:
         self.skillLevel = skillLevel if isinstance(skillLevel, SkillLevel) else SkillLevel(skillLevel)
         self.description = description
         self.creator_id = creator_id
+        self.placeName = placeName 
         
         # Handle different location types
         if isinstance(location, firestore.GeoPoint):
@@ -128,6 +131,8 @@ class Activity:
         if not self.creator_id:
             return False
         if not isinstance(self.dateTime, datetime):
+            return False
+        if not self.placeName:
             return False
         return True
 
@@ -236,6 +241,10 @@ class Activity:
         if isinstance(location, dict) and "latitude" in location and "longitude" in location:
             location = Location(latitude=location["latitude"], longitude=location["longitude"])
         
+        # Check for required fields
+        if "placeName" not in data:
+            raise ActivityError("Missing required field: placeName")
+        
         return cls(
             activity_id=activity_id,
             activityName=data.get("activityName", ""),
@@ -246,7 +255,8 @@ class Activity:
             skillLevel=data.get("skillLevel", SkillLevel.BEGINNER),
             description=data.get("description", ""),
             creator_id=data.get("creator_id", ""),
-            location=location,  # Use the converted location variable here, not data.get("location")
+            location=location,  # Use the converted location variable here
+            placeName=data.get("placeName"),  # Now required
             dateTime=date_time,
             participants=data.get("participants", []),
             joinRequests=data.get("joinRequests", []),
@@ -276,6 +286,7 @@ class Activity:
             "description": self.description,
             "creator_id": self.creator_id,
             "location": location_dict,  # Use the dict representation
+            "placeName": self.placeName,  # Add the placeName field
             "dateTime": date_time_str,  # Use the string representation
             "participants": self.participants,
             "joinRequests": self.joinRequests,

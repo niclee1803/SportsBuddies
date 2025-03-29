@@ -21,6 +21,7 @@ export interface Location {
     creator_id: string;
     creator?: Creator;
     location: Location;
+    placeName: string;  // Add the placeName field
     dateTime: string;
     participants: string[];
     joinRequests: string[];

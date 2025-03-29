@@ -2,15 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useRouter } from 'expo-router';
 import { API_URL } from '../../config.json';
 import { Activity } from '../../types/activity';
 
 interface ActivityCardProps {
   activity: Activity;
-  onPress?: () => void;
 }
 
-const ActivityCard = ({ activity, onPress }: ActivityCardProps) => {
+const ActivityCard = ({ activity }: ActivityCardProps) => {
+  const router = useRouter();
   const [creatorInfo, setCreatorInfo] = useState({
     name: "Loading...",
     profilePicUrl: "https://placehold.co/36"
@@ -46,6 +47,10 @@ const ActivityCard = ({ activity, onPress }: ActivityCardProps) => {
   const formattedDate = new Date(activity.dateTime);
   const dateString = formattedDate.toLocaleDateString();
   const timeString = formattedDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  const handleActivityPress = () => {
+    router.push(`/ActivityDetail?id=${activity.id}`);
+  };
   
   // Determine activity status based on status field and date
   const getActivityStatus = () => {
@@ -82,7 +87,7 @@ const ActivityCard = ({ activity, onPress }: ActivityCardProps) => {
   return (
     <TouchableOpacity 
       style={styles.card} 
-      onPress={onPress}
+      onPress={handleActivityPress}
       activeOpacity={0.7}
     >
       <View style={styles.cardHeader}>
@@ -148,7 +153,7 @@ const ActivityCard = ({ activity, onPress }: ActivityCardProps) => {
         <View style={styles.detailRow}>
           <Ionicons name="location-outline" size={16} color="#555" />
           <Text style={styles.detailText} numberOfLines={1}>
-            {activity.location?.latitude ? `${activity.location.latitude.toFixed(4)}, ${activity.location.longitude.toFixed(4)}` : "Location not set"}
+            {activity.placeName || "Location not set"}
           </Text>
         </View>
 

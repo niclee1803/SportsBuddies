@@ -5,6 +5,7 @@ from user.services.image_service import ImageService
 from user.models.user import User
 from user.schemas import UserPreferences, UpdateProfileRequest
 from firebase_admin import firestore
+from fastapi import  HTTPException
 
 class UserController:
     """Controller for user-related operations"""
@@ -12,6 +13,18 @@ class UserController:
     def __init__(self):
         self.repository = UserRepository()
         self.image_service = ImageService()
+        self.db = firestore.client()
+        self.users_collection = self.db.collection("users")  # ← this line is crucial
+
+    async def get_by_username(self, username: str):
+      query = self.users_collection.where("username", "==", username).limit(1).stream()
+      docs = list(query)  # Works fine, no need for async
+      if not docs:
+          return None
+      doc = docs[0]
+      user_data = doc.to_dict()
+      user_data["id"] = doc.id
+      return user_data
     
     def get_user(self, user_id: str) -> User:
         """Get user by ID with error handling"""

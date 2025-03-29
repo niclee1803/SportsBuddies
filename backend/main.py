@@ -29,7 +29,7 @@ app.swagger_ui_init_oauth = {
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Replace with specific origins in production
+    allow_origins=["*"],  # or specify ["http://localhost:8081"] for tighter security
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

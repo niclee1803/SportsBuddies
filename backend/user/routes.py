@@ -4,6 +4,7 @@ from typing import Dict
 from user.services.auth_service import AuthService
 from user.controllers.user_controller import UserController
 from user.schemas import UserCreate, UserPreferences, UpdateProfileRequest
+from fastapi import APIRouter, HTTPException, Query
 
 # Create router
 router = APIRouter()
@@ -35,6 +36,19 @@ async def check_phone(phone: str):
     """
     return user_controller.check_phone_availability(phone)
 
+@router.get("/lookup", summary="Lookup user by username")
+async def lookup_user(username: str = Query(..., description="The username to look up")):
+    """
+    Given a username, return the user's email (and possibly other fields).
+    """
+    user_data = await user_controller.get_by_username(username)  # Ensure this is async-compatible
+    if not user_data:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    return {
+        "email": user_data["email"]
+    }
+
 @router.post("/create_user", summary="Create a new user")
 async def create_user(user_data: UserCreate, current_user: Dict = Depends(get_current_user)):
     """
@@ -48,7 +62,9 @@ async def get_current_user_data(current_user: Dict = Depends(get_current_user)):
     Get the current user's data from Firestore.
     """
     user = user_controller.get_user(current_user["uid"])
-    return user.to_response_dict()
+    user_data = user.to_response_dict()
+    user_data["id"] = current_user["uid"]
+    return user_data
 
 @router.put("/update_profile", summary="Update user profile")
 async def update_profile(profile_data: UpdateProfileRequest, current_user: Dict = Depends(get_current_user)):

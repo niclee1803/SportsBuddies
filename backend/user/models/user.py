@@ -49,6 +49,7 @@ class User:
     def to_response_dict(self):
         """Convert User object to API response dictionary"""
         return {
+            "id": self.uid,
             "firstName": self.first_name,
             "lastName": self.last_name,
             "username": self.username,
