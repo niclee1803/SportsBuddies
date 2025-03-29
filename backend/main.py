@@ -1,8 +1,11 @@
 ### MAIN ENTRY POINT FOR THE FASTAPI APP ###
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import firebase_admin
 from firebase_admin import credentials
+
+security = HTTPBearer()
 
 # Initialize Firebase if not already done elsewhere
 cred = credentials.Certificate("./firebase_credentials.json")
@@ -16,6 +19,12 @@ from utils.routes import router as utils_router
 
 app = FastAPI(title="SportsBuddies API")
 
+# Add OpenAPI security definition
+app.swagger_ui_init_oauth = {
+    "usePkceWithAuthorizationCodeGrant": True,
+    "useBasicAuthenticationWithAccessCodeGrant": True
+}
+
 # Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
@@ -26,16 +35,20 @@ app.add_middleware(
 )
 
 # Include routers from different modules
-app.include_router(activity_router, prefix="/activity", tags=["Activity"])
+##app.include_router(activity_router, prefix="/activity", tags=["Activity"])
 app.include_router(user_router, prefix="/user", tags=["User Management"])
+app.include_router(activity_router, prefix="/activity", tags=["Activity Management"])
 app.include_router(utils_router, prefix="/utils", tags=["Utilities"])
-##app.include_router(activities_router, prefix="/activities", tags=["Activities"])
 ##app.include_router(events_router, prefix="/events", tags=["Events"])
 
 @app.get("/")
 async def root():
-    return {"message": "Welcome to the SportsBuddies API"}
-
+    """Root endpoint for the API"""
+    return {
+        "message": "Welcome to the SportsBuddies API",
+        "version": "1.0.0",
+        "docs": "/docs"
+    }
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

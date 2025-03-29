@@ -28,16 +28,14 @@ export const validateUsername = async (
   username: string,
   setUsernameError: (error: string) => void
 ): Promise<boolean> => {
-  const usernameRegex = /^[A-Za-z]{3,20}$/;
+  const usernameRegex = /^[A-Za-z0-9]{3,20}$/;
 
   if (!username) {
     setUsernameError("Username is required.");
     return false;
   }
   if (!usernameRegex.test(username)) {
-    setUsernameError(
-      "Username must be between 3 and 20 characters, and can only contain letters, numbers, periods, or underscores."
-    );
+    setUsernameError("Username must be between 3 and 20 characters and can only contain letters and numbers.");
     return false;
   }
 
@@ -68,6 +66,7 @@ export const validateUsername = async (
     return true; // Allow user to proceed with a warning
   }
 };
+
 
 // Validate Email with duplicate check (asynchronous)
 export const validateEmail = async (

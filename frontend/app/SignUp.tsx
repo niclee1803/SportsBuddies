@@ -16,6 +16,7 @@ import { API_URL } from "../config.json";
 
 // Import Firebase authentication
 import { getAuth, createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Initialize Firebase
 const auth = getAuth();
@@ -122,12 +123,13 @@ export default function SignUp() {
 
       if (response.ok) {
         const successMessage = "Success! Your account has been created successfully!";
+        AsyncStorage.setItem("token", idToken);
         if (Platform.OS === "web") {
           window.alert(successMessage);
-          router.push("/Login");
+          router.push("/SetPreferences");
         } else {
           Alert.alert("Success!", successMessage, [
-            { text: "OK", onPress: () => router.push("/Login") },
+            { text: "OK", onPress: () => router.push("/SetPreferences") },
           ]);
         }
       } else {

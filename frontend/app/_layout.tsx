@@ -52,18 +52,30 @@ function AppStack() {
           title: "Set Preferences",
         }}
       />
-      <Stack.Screen
-        name="Home"
-        options={{
-          title: "Home",
-        }}
-      />
       <Stack.Screen name="Settings" options={{ title: 'Settings' }} />
       <Stack.Screen name="ProfileSettings" options={{ title: 'Profile Settings' }} />
       <Stack.Screen name="Profile" options={{ title: 'Profile' }} />
       <Stack.Screen name="Create" options={{ title: 'Create' }} />
       <Stack.Screen name="CreateActivityAsOrganiser" options={{ title: 'Create' }}/>
       <Stack.Screen name="Groups" options={{ title: 'Groups' }} />
+      <Stack.Screen
+        name="Dashboard"
+        options={{
+          title: "Dashboard",
+        }}
+      />
+      <Stack.Screen
+        name="Feed"
+        options={{
+          title: "Feed",
+        }}
+      />
+      <Stack.Screen
+        name="Alerts"
+        options={{
+          title: "Alerts",
+        }}
+      />
     </Stack>
   );
 }

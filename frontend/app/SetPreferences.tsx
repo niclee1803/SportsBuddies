@@ -1,14 +1,25 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, TouchableOpacity, Alert, StyleSheet, FlatList } from "react-native";
+import { 
+  View, 
+  Text, 
+  TouchableOpacity, 
+  Alert, 
+  StyleSheet, 
+  FlatList,
+  ActivityIndicator,
+  SafeAreaView 
+} from "react-native";
 import { useRouter } from "expo-router";
 import { fetchCurrentUser } from "../utils/GetUser";
 import { API_URL } from "../config.json";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import SportsSkillsMenu, { SPORTS_LIST, SKILL_LEVELS, SportsSkill } from "../components/preferences/SportsSkillsMenu";
+import { Ionicons } from "@expo/vector-icons";
 
 export default function SetPreferences() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
   
   // Initialize with default values from the exported constants
   const [sportsSkills, setSportsSkills] = useState<SportsSkill[]>([
@@ -32,11 +43,33 @@ export default function SetPreferences() {
     getUser();
   }, [router]);
 
+  // Find the next available sport that hasn't been used yet
+  const findNextAvailableSport = (): string => {
+    const usedSports = sportsSkills.map(skill => skill.sport);
+    const availableSport = SPORTS_LIST.find(sport => !usedSports.includes(sport));
+    return availableSport || SPORTS_LIST[0]; // Fallback if all sports are used
+  };
+
   const handleAddSport = () => {
-    setSportsSkills([...sportsSkills, { sport: SPORTS_LIST[0], skill_level: SKILL_LEVELS[0] }]);
+    // Check if we've already used all available sports
+    if (sportsSkills.length >= SPORTS_LIST.length) {
+      Alert.alert("Maximum Reached", "You've already added all available sports.");
+      return;
+    }
+
+    const nextSport = findNextAvailableSport();
+    setSportsSkills([...sportsSkills, { sport: nextSport, skill_level: SKILL_LEVELS[0] }]);
   };
 
   const handleSportChange = (index: number, value: string) => {
+    // Check if this sport is already selected in another entry
+    const isDuplicate = sportsSkills.some((item, i) => i !== index && item.sport === value);
+    
+    if (isDuplicate) {
+      Alert.alert("Duplicate Sport", "This sport is already selected. Please choose a different one.");
+      return;
+    }
+    
     const newSportsSkills = [...sportsSkills];
     newSportsSkills[index].sport = value;
     setSportsSkills(newSportsSkills);
@@ -72,6 +105,8 @@ export default function SetPreferences() {
 
   const handleSubmit = async () => {
     try {
+      setLoading(true);
+      
       // Ensure the user is authenticated and has a valid token
       const token = await AsyncStorage.getItem("token");
       if (!token) {
@@ -107,113 +142,188 @@ export default function SetPreferences() {
       // Handle the response
       if (response.ok) {
         Alert.alert("Success!", "Preferences set successfully!");
-        router.replace("/Home");
+        router.replace("/Dashboard");
       } else {
         Alert.alert("Error", data.detail || "Failed to set preferences");
       }
     } catch (error: any) {
       console.error("Error setting preferences:", error);
       Alert.alert("Error", error.message || "An error occurred");
+    } finally {
+      setLoading(false);
     }
   };
 
+  const renderSportItem = ({ item, index }: { item: SportsSkill, index: number }) => (
+    <View style={styles.sportItemContainer}>
+      <SportsSkillsMenu
+        item={item}
+        index={index}
+        isDropdownOpen={isDropdownOpen}
+        toggleDropdown={toggleDropdown}
+        handleSportChange={handleSportChange}
+        handleSkillLevelChange={handleSkillLevelChange}
+        handleRemoveSport={handleRemoveSport}
+        // Filter out already selected sports except the current one
+        sportsItems={SPORTS_LIST.map(sport => ({
+          label: sport,
+          value: sport,
+          // Disable if the sport is already selected in another item
+          disabled: sport !== item.sport && sportsSkills.some(s => s.sport === sport)
+        }))}
+        skillItems={SKILL_LEVELS.map(level => ({
+          label: level,
+          value: level
+        }))}
+      />
+    </View>
+  );
+
   if (!user) {
     return (
-      <View style={styles.container}>
-        <Text>Loading user data...</Text>
-      </View>
+      <SafeAreaView style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#42c8f5" />
+        <Text style={styles.loadingText}>Loading user data...</Text>
+      </SafeAreaView>
     );
   }
 
-  const renderSportItem = ({ item, index }: { item: SportsSkill, index: number }) => (
-    <SportsSkillsMenu
-      item={item}
-      index={index}
-      isDropdownOpen={isDropdownOpen}
-      toggleDropdown={toggleDropdown}
-      handleSportChange={handleSportChange}
-      handleSkillLevelChange={handleSkillLevelChange}
-      handleRemoveSport={handleRemoveSport}
-    />
-  );
-
   return (
-    <View style={styles.container}>
-      <Text style={styles.heading}>Set Your Preferences</Text>
-      <Text style={styles.subHeading}>
-        Welcome, {user?.firstName || "Error! Please restart the app"}!
-        {"\n"}Tell us what you like:
-      </Text>
-      
-      <FlatList
-        data={sportsSkills}
-        renderItem={renderSportItem}
-        keyExtractor={(_, index) => index.toString()}
-        style={styles.flatList}
-        contentContainerStyle={styles.listContent}
-        nestedScrollEnabled={true}
-        ListFooterComponent={() => (
-          <>
-            <TouchableOpacity style={styles.addButton} onPress={handleAddSport}>
-              <Text style={styles.addButtonText}>Add Sport</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-              <Text style={styles.submitButtonText}>Submit</Text>
-            </TouchableOpacity>
-          </>
-        )}
-      />
-    </View>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.heading}>Sports Preferences</Text>
+          <Text style={styles.subHeading}>
+            Welcome, {user?.firstName || ""}!
+            {"\n"}Select your favorite sports and skill levels:
+          </Text>
+        </View>
+        
+        <FlatList
+          data={sportsSkills}
+          renderItem={renderSportItem}
+          keyExtractor={(_, index) => index.toString()}
+          style={styles.flatList}
+          contentContainerStyle={styles.listContent}
+          nestedScrollEnabled={true}
+        />
+        
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity 
+            style={[styles.addButton, sportsSkills.length >= SPORTS_LIST.length && styles.disabledButton]} 
+            onPress={handleAddSport}
+            disabled={sportsSkills.length >= SPORTS_LIST.length}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="add-circle-outline" size={20} color="white" />
+            <Text style={styles.addButtonText}>Add Another Sport</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={[styles.submitButton, loading && styles.disabledButton]} 
+            onPress={handleSubmit}
+            disabled={loading}
+            activeOpacity={0.7}
+          >
+            {loading ? (
+              <ActivityIndicator color="white" size="small" />
+            ) : (
+              <Text style={styles.submitButtonText}>Save Preferences</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#f5f5f5",
+  },
   container: {
     flex: 1,
-    marginTop: 80,
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
+    paddingTop: 24,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f5f5f5",
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: "#666",
+  },
+  header: {
+    marginBottom: 24,
+    alignItems: "center",
   },
   heading: {
     fontSize: 24,
     fontWeight: "bold",
-    marginBottom: 10,
-    textAlign: "center",
+    marginBottom: 8,
+    color: "#333",
   },
   subHeading: {
     fontSize: 16,
-    marginBottom: 20,
-    color: "#555",
+    color: "#666",
     textAlign: "center",
+    lineHeight: 22,
+  },
+  sportItemContainer: {
+    backgroundColor: "white",
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
   },
   flatList: {
     width: "100%",
   },
   listContent: {
-    paddingBottom: 50,
+    paddingBottom: 16,
+  },
+  buttonContainer: {
+    marginTop: 8,
+    paddingBottom: 24,
   },
   addButton: {
-    backgroundColor: "#28a745",
+    backgroundColor: "#42c8f5",
     paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 5,
-    marginVertical: 15,
-    alignSelf: "center",
+    borderRadius: 8,
+    marginBottom: 16,
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "center",
   },
   addButtonText: {
     color: "#fff",
     fontSize: 16,
-    fontWeight: "bold",
+    fontWeight: "600",
+    marginLeft: 8,
   },
   submitButton: {
-    marginBottom: 50,
-    width: 200,
-    height: 45,
+    height: 50,
     backgroundColor: "#42c8f5",
-    borderRadius: 5,
+    borderRadius: 8,
     justifyContent: "center",
     alignItems: "center",
-    alignSelf: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  disabledButton: {
+    backgroundColor: "#a0dcf5",
   },
   submitButtonText: {
     color: "#ffffff",

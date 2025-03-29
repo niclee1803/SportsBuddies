@@ -2,11 +2,11 @@ import React from 'react';
 import { View, Text, StyleSheet,TouchableOpacity,Image } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
-import Template from '../components/Template'; 
 //import BackButton from '../components/backarrow'; 
 import { HeaderBackButton } from '../node_modules/@react-navigation/elements';
 import { useNavigation } from '@react-navigation/native';
 import { useRouter, useFocusEffect } from 'expo-router';
+import AuthLayout from '@/components/AuthLayout';
 
 
 
@@ -18,7 +18,7 @@ const Create = () => {
     router.push('/CreateActivityAsOrganiser')
   };
   return (
-    <Template>
+    <AuthLayout>
     <ThemedView style={styles.container}>
       <View style={styles.header}>
           <HeaderBackButton  style={styles.backButton} onPress={() => navigation.goBack()} />
@@ -49,7 +49,7 @@ const Create = () => {
       </View>
       </View>
     </ThemedView>
-  </Template>
+  </AuthLayout>
 );
 
 };

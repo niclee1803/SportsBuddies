@@ -2,9 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Switch, Image, Alert, Platform, ActivityIndicator } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { API_URL } from '../config.json';
-import Template from '../components/Template';
 import { fetchCurrentUser } from '@/utils/GetUser';
+import AuthLayout from '@/components/AuthLayout';
 
 const Settings = () => {
   const [user, setUser] = useState<any>(null);
@@ -88,17 +87,17 @@ const Settings = () => {
 
   if (loading) {
     return (
-      <Template>
+      <AuthLayout>
         <View style={[styles.container, styles.loadingContainer]}>
           <ActivityIndicator size="large" color="#42c8f5" />
           <Text style={styles.loadingText}>Loading settings...</Text>
         </View>
-      </Template>
+      </AuthLayout>
     );
   }
 
   return (
-    <Template>
+    <AuthLayout>
       <View style={styles.container}>
         {user && (
           <View style={styles.profileContainer}>
@@ -141,7 +140,7 @@ const Settings = () => {
           <Text style={styles.logoutButtonText}>Logout</Text>
         </TouchableOpacity>
       </View>
-    </Template>
+    </AuthLayout>
   );
 };
 
