@@ -49,7 +49,7 @@ export default function Login() {
 
       const userData = await fetchCurrentUser();
       const preferencesSet = userData.preferences_set;
-
+      console.log(idToken)
       router.replace(preferencesSet ? "/Dashboard" : "/SetPreferences");
     } catch (error: any) {
       console.error("Login error:", error);

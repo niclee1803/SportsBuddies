@@ -38,6 +38,7 @@ class ActivityCreate(BaseModel):
     maxParticipants: int
     dateTime: datetime
     location: LocationSchema
+    placeName: str
 
 class ActivityUpdate(BaseModel):
     """
@@ -53,3 +54,4 @@ class ActivityUpdate(BaseModel):
     maxParticipants: Optional[int] = None
     dateTime: Optional[datetime] = None
     location: Optional[LocationSchema] = None
+    placeName: Optional[str] = None

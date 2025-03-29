@@ -62,7 +62,9 @@ async def get_current_user_data(current_user: Dict = Depends(get_current_user)):
     Get the current user's data from Firestore.
     """
     user = user_controller.get_user(current_user["uid"])
-    return user.to_response_dict()
+    user_data = user.to_response_dict()
+    user_data["id"] = current_user["uid"]
+    return user_data
 
 @router.put("/update_profile", summary="Update user profile")
 async def update_profile(profile_data: UpdateProfileRequest, current_user: Dict = Depends(get_current_user)):
