@@ -1,113 +1,320 @@
-import React from 'react';
-import { View, Text, StyleSheet,TouchableOpacity,Image } from 'react-native';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+import React,{ useState } from 'react';
+import { View,Text,TextInput,TouchableOpacity,Alert,StyleSheet,ScrollView,Platform } from 'react-native';
 //import BackButton from '../components/backarrow'; 
 import { HeaderBackButton } from '../node_modules/@react-navigation/elements';
-import { useNavigation } from '@react-navigation/native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import AuthLayout from '@/components/AuthLayout';
-
+import DropDownPicker from "react-native-dropdown-picker";
+import {SPORTS_LIST,SKILL_LEVELS,ROLE,} from "../components/activity/ActivityMenu";
+import DateTimeInput from "@/components/activity/DateTimeInput";
+import BannerPicker from "@/components/activity/BannerPicker";
+import {handleUploadActivity,pickImage,cancelUpload,handleSubmitActivity,} from "../utils/createactivityhelpers";
+import MapSelector from "@/components/activity/MapSelector";
 
 
 
 const Create = () => {
-  const navigation = useNavigation(); 
   const router = useRouter();
-  const gotoCreateActivityAsOrganiser = () => {
-    router.push('/CreateActivityAsOrganiser')
-  };
-  return (
-    <AuthLayout>
-    <ThemedView style={styles.container}>
-      <View style={styles.header}>
-          <HeaderBackButton  style={styles.backButton} onPress={() => navigation.goBack()} />
-          <ThemedText type="title" style={styles.title}>
-            Create Activity
-          </ThemedText>
-      </View>
-      {/* Image and button for Organiser */}
-      <View style={styles.buttonContainer}>
-      <View style={styles.imageContainer}>
-        <Image source={require('@/assets/images/organiser.png')} style={styles.image} />
-        <TouchableOpacity style={styles.button} onPress={gotoCreateActivityAsOrganiser}>
-          <ThemedText type="defaultSemiBold" style={styles.buttonText}>
-            Create as Organiser
-          </ThemedText>
-        </TouchableOpacity>
-      </View>
-    
+  const [activityName, setActivityName] = useState("");
+  const [location, setLocation] = useState("");
+  const [activityDescription, setActivityDescription] = useState("");
+  const [tags, setTags] = useState("");
+  const [maxParticipants, setMaxParticipants] = useState("");
+  const [placeName, setPlaceName] = useState("");
+  const [sport, setSport] = useState("");
+  const [sportDropdownOpen, setSportDropdownOpen] = useState(false);
+  const [sportItems, setSportItems] = useState(
+    SPORTS_LIST.map((sport) => ({ label: sport, value: sport }))
+  );
+  const [skillLevel, setSkillLevel] = useState("");
+  const [skillDropdownOpen, setSkillDropdownOpen] = useState(false);
+  const [skillItems, setSkillItems] = useState(
+    SKILL_LEVELS.map((skill) => ({ label: skill, value: skill }))
+  );
+  const [role, setRole] = useState("");
+  const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
+  const [roleItems, setRoleItems] = useState(
+    ROLE.map((role) => ({ label: role, value: role }))
+  );
+  const [date, setDate] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [bannerUri, setBannerUri] = useState<string | null>(null);
+  const [selectedCoords, setSelectedCoords] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null); 
 
-      {/* Image and button for Coach */}
-      <View style={styles.imageContainer}>
-        <Image source={require('@/assets/images/coach.png')} style={styles.image} />
-        <TouchableOpacity style={styles.button} onPress={() => console.log('Create as Coach')}>
-          <ThemedText type="defaultSemiBold" style={styles.buttonText}>
-            Create as Coach
-          </ThemedText>
-        </TouchableOpacity>
-      </View>
-      </View>
-    </ThemedView>
-  </AuthLayout>
-);
+  const onSuccess = () => {
+    Alert.alert('Success!', 'Activity uploaded successfully.');
+    // Optionally, you can navigate or reset form here
+  };
+
+  const onError = (msg: string) => {
+    Alert.alert('Error', msg);
+  };
+
+  const handleFormSubmit = () => {
+    handleSubmitActivity(
+      {
+        activityName,
+        date,
+        sport,
+        skillLevel,
+        role,
+        activityDescription,
+        maxParticipants,
+        bannerUri,
+        selectedCoords,
+        location,
+        placeName
+      },
+      onSuccess,
+      onError
+    );
+  };
+
+
+  return(
+    <AuthLayout>
+       <ScrollView
+            contentContainerStyle={styles.scrollContainer}
+            keyboardShouldPersistTaps="handled"
+          >
+            <View style={styles.container}>
+
+              
+              <Text style={styles.title}>Create Activity</Text>
+
+              <View style={styles.formWrapper}>
+                <TextInput
+                  style={styles.inputField}
+                  placeholder="Activity Name"
+                  placeholderTextColor={styles.placeholder.color}
+                  value={activityName}
+                  onChangeText={setActivityName}
+                />
+
+                <DateTimeInput
+                  label="Date"
+                  mode="date"
+                  value={date}
+                  onChange={setDate}
+                />
+
+                <DateTimeInput
+                  label="Time"
+                  mode="time"
+                  value={date}
+                  onChange={setDate}
+                />
+
+                <BannerPicker
+                  bannerUri={bannerUri}
+                  pickImage={() => pickImage(setBannerUri)} 
+                  cancelUpload={() => cancelUpload(setBannerUri)} 
+                />
+
+                <DropDownPicker
+                  open={sportDropdownOpen}
+                  value={sport}
+                  items={sportItems}
+                  setOpen={setSportDropdownOpen}
+                  setValue={(callback) => {
+                    const newValue = callback(sport);
+                    setSport(newValue);
+                  }}
+                  setItems={setSportItems}
+                  style={styles.dropdownPicker}
+                  placeholder="Select Sport"
+                  placeholderStyle={{ color: "#999" }}
+                  zIndex={3000}
+                  zIndexInverse={1000}
+                />
+
+                <DropDownPicker
+                  open={skillDropdownOpen}
+                  value={skillLevel}
+                  items={skillItems}
+                  setOpen={setSkillDropdownOpen}
+                  setValue={(callback) => {
+                    const newValue = callback(skillLevel);
+                    setSkillLevel(newValue);
+                  }}
+                  setItems={setSkillItems}
+                  style={styles.dropdownPicker}
+                  placeholder="Select Skill Level"
+                  placeholderStyle={{ color: "#999" }}
+                  zIndex={2000}
+                  zIndexInverse={2000}
+                />
+
+                <DropDownPicker
+                  open={roleDropdownOpen}
+                  value={role}
+                  items={roleItems}
+                  setOpen={setRoleDropdownOpen}
+                  setValue={(callback) => {
+                    const newValue = callback(role);
+                    setRole(newValue);
+                  }}
+                  setItems={setRoleItems}
+                  style={styles.dropdownPicker}
+                  placeholder="Select Role"
+                  placeholderStyle={{ color: "#999" }}
+                  zIndex={1000}
+                  zIndexInverse={3000}
+                />
+
+                <TextInput
+                  style={styles.textarea}
+                  placeholder="Activity Description"
+                  placeholderTextColor={styles.placeholder.color}
+                  value={activityDescription}
+                  onChangeText={setActivityDescription}
+                  multiline
+                />
+                <TextInput
+                  style={styles.inputField}
+                  placeholder="Max Participants"
+                  placeholderTextColor={styles.placeholder.color}
+                  value={maxParticipants}
+                  onChangeText={setMaxParticipants}
+                />
+
+                  <MapSelector
+                    onSelect={({ name, latitude, longitude }) => {
+                      setLocation(name);
+                      setSelectedCoords({ latitude, longitude });
+                    }}
+                  />
+
+                <TextInput
+                  style={styles.inputField}
+                  placeholder="Place Name"
+                  placeholderTextColor={styles.placeholder.color}
+                  value={placeName}
+                  onChangeText={setPlaceName}
+                />
+
+
+                {/* <TextInput
+                  style={styles.inputField}
+                  placeholder="Location"
+                  placeholderTextColor={styles.placeholder.color}
+                  value={location}
+                  onChangeText={setLocation}
+                /> */}
+
+                <TouchableOpacity style={styles.uploadButton} onPress={handleFormSubmit}>
+                  <Text style={styles.uploadButtonText}>Upload Activity</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </ScrollView>
+    </AuthLayout>
+  )
 
 };
+
+
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'flex-start',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    backgroundColor:'white'
-  },
-  header: {
-    flexDirection: 'row',  // Place back button and title in a row
-    alignItems: 'center',  // Align them vertically centered
-    marginTop: 40,  // Space from top for the header
-    marginBottom: 30,  // Space between header and other content
+    padding: 20,
+    backgroundColor: '#f2f2f2',
   },
   title: {
-    marginTop:40,
-    marginBottom: 30,
-    textAlign: 'center',
-    color:"black"
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginTop: 10, 
+    marginBottom: 8,
+    color: '#333',
+    textAlign: "center",
   },
-  backButton: {
-    padding: 10, // Adjust padding around the back button
-    marginLeft: 10, // Add space from the left edge
-    marginTop:10
+  formWrapper: {
+    width: "100%",
+    maxWidth: 600,
+    alignSelf: "center",
   },
-  buttonContainer: {
-    flex:1,
-    flexDirection: 'row', // Arrange children horizontally
-    justifyContent: 'center', // Center the content horizontally
-    alignItems: 'center', // Center the content vertically
-    gap: 10, // Add space between the containers
+  label: {
+    fontSize: 16,
+    fontWeight: "bold",
+    marginBottom: 6,
+    marginTop: 12,
   },
-  button: {
-    backgroundColor: '#87CEFA', // You can adjust the color as needed
-    paddingVertical: 15,
-    paddingHorizontal:10,
-    borderRadius: 25,
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
+  placeholder: {
+    color: "#999", // 👈 Placeholder color here
   },
-  buttonText: {
-    color: '#ffffff',
-    fontSize: 18,
+  inputField: {
+    height: 30,
+    borderColor: "#ccc",
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    backgroundColor: "#f9f9f9",
+    marginBottom: 10,
+    justifyContent: "center",
   },
-  imageContainer: {
-    alignItems: 'center',
-    marginBottom: 40, // Space between images and buttons
+  textarea: {
+    height: 40,
+    borderColor: "#ccc",
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingTop: 12,
+    backgroundColor: "#f9f9f9",
+    marginBottom: 16,
+    textAlignVertical: "top",
+  },
+  dropdownPicker: {
+    marginBottom: 16,
+    backgroundColor: "#fff",
+    borderColor: "#ccc",
+    borderRadius: 8,
+  },
+  bannerContainer: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 16,
+    backgroundColor: "#f9f9f9",
+    alignItems: "center",
   },
   image: {
-    width: 200, // Adjust the width of the image
-    height: 200, // Adjust the height of the image
-    marginBottom: 20, // Space between the image and the button
+    width: "100%",
+    height: 200,
+    borderRadius: 8,
+    marginTop: 12,
+    marginBottom: 16,
+  },
+  uploadButton: {
+    backgroundColor: "#42c8f5",
+    paddingVertical: 16,
+    borderRadius: 8,
+    alignItems: "center",
+    marginTop: 20,
+  },
+  uploadButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  iosPicker: {
+    backgroundColor: "#f0f0f0",
+    borderRadius: 8,
+    marginVertical: 10,
+  },
+
+  scrollContainer: {
+    flexGrow: 1,
+    paddingBottom: 50,
   },
 });
+
+
+
 
 export default Create;
