@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, Alert, ActivityIndicator, RefreshControl } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { FontAwesome5, AntDesign, Feather, Ionicons } from '@expo/vector-icons';
+import { AntDesign, Feather } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import * as Sharing from 'expo-sharing';
 import Toast from 'react-native-toast-message';
@@ -29,6 +29,18 @@ const Profile = () => {
   const [createdActivities, setCreatedActivities] = useState<Activity[]>([]);
   const [joinedActivities, setJoinedActivities] = useState<Activity[]>([]);
   const [activitiesLoading, setActivitiesLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([loadProfile(), loadActivities()]);
+    } catch (error) {
+      console.error("Error refreshing data:", error);
+    } finally {
+      setRefreshing(false);
+    }
+  }, []);
 
   // Fetch profile data using the utility function
   const loadProfile = async () => {
@@ -140,8 +152,17 @@ const Profile = () => {
 
   return (
     <AuthLayout>
-      <ScrollView style={styles.container}>
-        {/* Your existing header JSX */}
+      <ScrollView 
+        style={styles.container}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={["#42c8f5"]}
+            tintColor="#42c8f5"
+          />
+        }
+      >
         <View style={styles.header}>
           <TouchableOpacity>
             <Image source={{ uri: profilePic }} style={styles.profileImage} />
