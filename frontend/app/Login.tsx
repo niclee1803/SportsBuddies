@@ -1,50 +1,59 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator, Modal, StyleSheet } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  Alert,
+  ActivityIndicator,
+  Modal,
+  StyleSheet,
+} from "react-native";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { fetchCurrentUser } from "../utils/GetUser";
 import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
+import { API_URL } from "../config.json";
 
 export default function Login() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
+  const [input, setInput] = useState(""); // email or username
   const [password, setPassword] = useState("");
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const auth = getAuth();
 
+  const resolveEmail = async (inputValue: string): Promise<string> => {
+    if (inputValue.includes("@")) return inputValue;
+
+    try {
+      const response = await fetch(`${API_URL}/user/lookup?username=${inputValue}`);
+      if (!response.ok) throw new Error("Username not found");
+      const data = await response.json();
+      return data.email;
+    } catch (err) {
+      throw new Error("Username not found");
+    }
+  };
+
   const handleLogin = async () => {
     setIsLoading(true);
-  
+
     try {
-      // Authenticate directly with Firebase
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const resolvedEmail = await resolveEmail(input);
+      const userCredential = await signInWithEmailAndPassword(auth, resolvedEmail, password);
       const idToken = await userCredential.user.getIdToken();
-      const user = userCredential.user;
-  
-      // Store the token in AsyncStorage
+
       await AsyncStorage.setItem("token", idToken);
-  
-      console.log(idToken)
-  
+
       const userData = await fetchCurrentUser();
       const preferencesSet = userData.preferences_set;
-  
-      // Navigate based on preferences
-      if (preferencesSet) {
-        router.replace("/Dashboard");
-      } else {
-        router.replace("/SetPreferences");
-      }
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        console.error("Login error:", error);
-        Alert.alert("Login Failed", error.message);
-      } else {
-        console.error("Unexpected error:", error);
-        Alert.alert("Login Failed", "An unknown error occurred");
-      }
+
+      router.replace(preferencesSet ? "/Dashboard" : "/SetPreferences");
+    } catch (error: any) {
+      console.error("Login error:", error);
+      Alert.alert("Login Failed", error.message || "An unknown error occurred");
     } finally {
       setIsLoading(false);
     }
@@ -54,17 +63,16 @@ export default function Login() {
     <View style={styles.view}>
       <Text style={styles.heading}>Login</Text>
       <Text style={styles.heading2}>Welcome back!</Text>
+
       <View style={styles.formContainer}>
-        <Text style={styles.label}>Email</Text>
+        <Text style={styles.label}>Username or Email</Text>
         <TextInput
           style={styles.input}
-          value={email}
-          placeholder="hello@example.com"
+          value={input}
+          placeholder="Enter your username or email"
           placeholderTextColor="#888"
-          onChangeText={setEmail}
+          onChangeText={setInput}
           autoCapitalize="none"
-          keyboardType="email-address"
-          textContentType="emailAddress"
         />
 
         <Text style={styles.label}>Password</Text>
@@ -105,7 +113,6 @@ export default function Login() {
         </TouchableOpacity>
       </View>
 
-      {/* Loading Overlay */}
       {isLoading && (
         <Modal transparent={true} animationType="fade">
           <View style={styles.loadingOverlay}>
@@ -129,9 +136,9 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 20,
   },
-  heading2: { 
-    fontSize: 16, 
-    marginBottom: 60 
+  heading2: {
+    fontSize: 16,
+    marginBottom: 60,
   },
   formContainer: {
     width: 400,
