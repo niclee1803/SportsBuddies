@@ -14,10 +14,10 @@ export default function HomeScreen() {
   return (
     <>
       {Platform.OS === 'android' && (
-        <StatusBar translucent backgroundColor="transparent" />
+        <StatusBar translucent backgroundColor="transparent"  barStyle={"dark-content"} />
       )}
       {Platform.OS === 'ios' && (
-        <StatusBar translucent backgroundColor="transparent" />
+        <StatusBar translucent backgroundColor="transparent" barStyle={"dark-content"} />
       )}
       <ImageBackground
         source={getBackgroundSource()}
