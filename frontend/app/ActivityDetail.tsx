@@ -33,6 +33,7 @@ export default function ActivityDetail() {
   const [bannerError, setBannerError] = useState(false);
   const [creatorInfo, setCreatorInfo] = useState<any>(null);
   const [creatorLoading, setCreatorLoading] = useState(false);
+  const [buttonLoading, setButtonLoading] = useState(false);
 
   useEffect(() => {
     const fetchActivityAndUser = async () => {
@@ -132,7 +133,7 @@ export default function ActivityDetail() {
     if (!activity) return;
 
     try {
-      setLoading(true);
+      setButtonLoading(true);
       const token = await AsyncStorage.getItem("token");
 
       const response = await fetch(`${API_URL}/activity/${activity.id}/join`, {
@@ -146,28 +147,26 @@ export default function ActivityDetail() {
       const data = await response.json();
 
       if (response.ok) {
-        // Update the activity with the new join request
+        // Update only the local state instead of refetching everything
         setJoinRequestSent(true);
-        showAlert("Success", "Join request sent successfully!");
-
-        // Refresh activity data to get updated status
-        const updatedResponse = await fetch(`${API_URL}/activity/${id}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (updatedResponse.ok) {
-          const updatedData = await updatedResponse.json();
-          setActivity(updatedData);
+        
+        // If the activity has joinRequests array, update it
+        if (activity.joinRequests) {
+          const updatedActivity = {
+            ...activity,
+            joinRequests: [...activity.joinRequests, currentUserId as string]
+          };
+          setActivity(updatedActivity);
         }
+        
+        showAlert("Success", "Join request sent successfully!");
       } else {
         showAlert("Error", data.detail || "Failed to send join request");
       }
     } catch (err: any) {
       showAlert("Error", err.message || "An error occurred");
     } finally {
-      setLoading(false);
+      setButtonLoading(false);
     }
   };
 
@@ -188,7 +187,7 @@ export default function ActivityDetail() {
           style: "destructive",
           onPress: async () => {
             try {
-              setLoading(true);
+              setButtonLoading(true);
               const token = await AsyncStorage.getItem("token");
   
               const response = await fetch(`${API_URL}/activity/${activity.id}/leave`, {
@@ -202,26 +201,25 @@ export default function ActivityDetail() {
               const data = await response.json();
   
               if (response.ok) {
-                showAlert("Success", "You have left this activity.");
-  
-                // Refresh activity data to get updated status
-                const updatedResponse = await fetch(`${API_URL}/activity/${id}`, {
-                  headers: {
-                    Authorization: `Bearer ${token}`,
-                  },
-                });
-  
-                if (updatedResponse.ok) {
-                  const updatedData = await updatedResponse.json();
-                  setActivity(updatedData);
+                // Update local state instead of refetching
+                if (activity.participants) {
+                  const updatedActivity = {
+                    ...activity,
+                    participants: activity.participants.filter(
+                      (id) => id !== currentUserId
+                    ),
+                  };
+                  setActivity(updatedActivity);
                 }
+                
+                showAlert("Success", "You have left this activity.");
               } else {
                 showAlert("Error", data.detail || "Failed to leave the activity");
               }
             } catch (err: any) {
               showAlert("Error", err.message || "An error occurred");
             } finally {
-              setLoading(false);
+              setButtonLoading(false);
             }
           }
         }
@@ -246,7 +244,7 @@ export default function ActivityDetail() {
           style: "destructive",
           onPress: async () => {
             try {
-              setLoading(true);
+              setButtonLoading(true);
               const token = await AsyncStorage.getItem("token");
   
               const response = await fetch(`${API_URL}/activity/${activity.id}/cancel-request`, {
@@ -260,27 +258,27 @@ export default function ActivityDetail() {
               const data = await response.json();
   
               if (response.ok) {
+                // Update local state instead of refetching
                 setJoinRequestSent(false);
-                showAlert("Success", "Join request cancelled successfully.");
-  
-                // Refresh activity data to get updated status
-                const updatedResponse = await fetch(`${API_URL}/activity/${id}`, {
-                  headers: {
-                    Authorization: `Bearer ${token}`,
-                  },
-                });
-  
-                if (updatedResponse.ok) {
-                  const updatedData = await updatedResponse.json();
-                  setActivity(updatedData);
+                
+                if (activity.joinRequests) {
+                  const updatedActivity = {
+                    ...activity,
+                    joinRequests: activity.joinRequests.filter(
+                      (id) => id !== currentUserId
+                    ),
+                  };
+                  setActivity(updatedActivity);
                 }
+                
+                showAlert("Success", "Join request cancelled successfully.");
               } else {
                 showAlert("Error", data.detail || "Failed to cancel join request");
               }
             } catch (err: any) {
               showAlert("Error", err.message || "An error occurred");
             } finally {
-              setLoading(false);
+              setButtonLoading(false);
             }
           }
         }
@@ -300,6 +298,15 @@ export default function ActivityDetail() {
       activity.status === "cancelled" || 
       new Date(activity.dateTime) < new Date();
   
+    // If button is loading, show a spinner
+    if (buttonLoading) {
+      return (
+        <View style={[styles.actionButton, { backgroundColor: "#999" }]}>
+          <ActivityIndicator size="small" color="#fff" />
+        </View>
+      );
+    }
+    
     // If current user is the creator
     if (activity.creator_id === currentUserId) {
       return (
@@ -441,7 +448,7 @@ export default function ActivityDetail() {
                 <Ionicons name="checkmark-circle" size={14} color="#fff" />
                 <Text style={styles.userStatusText}>Participating</Text>
               </View>
-            ) : activity.joinRequests?.includes(currentUserId) ? (
+            ) : activity.joinRequests?.includes(currentUserId) || joinRequestSent ? (
               <View style={[styles.userStatusBadge, { backgroundColor: '#f0ad4e' }]}>
                 <Ionicons name="time" size={14} color="#fff" />
                 <Text style={styles.userStatusText}>Pending Request</Text>
