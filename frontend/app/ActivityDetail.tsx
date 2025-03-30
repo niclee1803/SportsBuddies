@@ -8,6 +8,7 @@ import {
   ScrollView,
   ActivityIndicator,
   Platform,
+  Share
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons, FontAwesome5 } from "@expo/vector-icons";
@@ -127,6 +128,42 @@ export default function ActivityDetail() {
 
   const handleBack = () => {
     router.back();
+  };
+
+  const handleShareActivity = async () => {
+    if (!activity) return;
+    
+    try {
+      // Create share content based on activity details
+      const title = activity.activityName;
+      const message = `Join me for ${activity.activityName}!\n\n${activity.sport} (${activity.skillLevel})\nDate: ${format(new Date(activity.dateTime), "EEEE, MMMM d, yyyy")}\nTime: ${format(new Date(activity.dateTime), "h:mm a")}\nLocation: ${activity.placeName}\n\n${activity.description}`;
+      
+      // Include a URL to your app or website if available
+      const url = `https://sportsbuddies.app/activity/${activity.id}`;
+      
+      // Call share API
+      const result = await Share.share({
+        title: title,
+        message: Platform.OS === 'ios' ? message : message + "\n\n" + url,
+        url: Platform.OS === 'ios' ? url : undefined,
+      });
+      
+      if (result.action === Share.sharedAction) {
+        if (result.activityType) {
+          // shared with activity type
+          console.log(`Shared with ${result.activityType}`);
+        } else {
+          // shared
+          console.log('Shared');
+        }
+      } else if (result.action === Share.dismissedAction) {
+        // dismissed
+        console.log('Share dismissed');
+      }
+    } catch (error) {
+      console.error("Error sharing:", error);
+      showAlert("Error", "Could not share this activity");
+    }
   };
 
   const handleJoinRequest = async () => {
@@ -425,6 +462,12 @@ export default function ActivityDetail() {
         <TouchableOpacity style={styles.backIconButton} onPress={handleBack}>
           <Ionicons name="arrow-back" size={24} color="white" />
         </TouchableOpacity>
+      
+
+      {/* Share Button */}
+        <TouchableOpacity style={styles.shareIconButton} onPress={handleShareActivity}>
+          <Ionicons name="share-social" size={24} color="white" />
+        </TouchableOpacity>
       </View>
 
       {/* Activity Details */}
@@ -632,6 +675,17 @@ const styles = StyleSheet.create({
   backButtonText: {
     color: "white",
     fontSize: 16,
+  },
+  shareIconButton: {
+    position: "absolute",
+    top: 50,
+    right: 20,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   detailsContainer: {
     padding: 20,
