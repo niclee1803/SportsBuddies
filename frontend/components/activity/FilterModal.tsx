@@ -6,23 +6,49 @@ import {
   Modal,
   TouchableOpacity,
   ScrollView,
-  TextInput,
   Platform,
   SafeAreaView,
-  TouchableWithoutFeedback
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { format } from 'date-fns';
-import { Picker } from '@react-native-picker/picker';
+// Import your custom Dropdown and predefined lists from ActivityMenu
+import Dropdown, { SPORTS_LIST, SKILL_LEVELS } from '@/components/activity/ActivityMenu';
 
-const SPORTS = [
-  "Select sport...", "Soccer", "Basketball", "Tennis", 
-  "Running", "Cycling", "Swimming", "Volleyball", 
-  "Baseball", "Golf", "Yoga", "Fitness", "Other"
+
+
+export const LOCATIONS_LIST = [
+  "AMK Swimming Complex",
+  "Bishan Sports Centre",
+  "Bukit Batok Swimming Complex",
+  "Bukit Gombak Sports Centre",
+  "Clementi Stadium",
+  "Delta Sports Centre",
+  "Enabling Village Gym",
+  "Farrer Park Field and Tennis Centre",
+  "Geylang East Swimming Complex",
+  "Geylang Field",
+  "Heartbeat@Bedok",
+  "Hougang Sports Centre",
+  "Jalan Besar Sports Centre",
+  "Jurong East Sports Centre",
+  "Jurong Stadium",
+  "Jurong West Sports Centre",
+  "Kallang Basin Swimming Complex",
+  "Kallang Sports Centre",
+  "Katong Swimming Complex",
+  "Our Tampines Hub - Community Auditorium",
+  "Pasir Ris Sports Centre",
+  "Queenstown Sports Centre",
+  "Sengkang Sports Centre",
+  "Serangoon Sports Centre",
+  "St Wilfrid Sports Centre",
+  "Toa Payoh Sports Centre",
+  "Woodlands Sports Centre",
+  "Yio Chu Kang Sports Centre",
+  "Yishun Sports Centre",
+  "Yishun Swimming Complex"
 ];
-
-const SKILL_LEVELS = ["Any Level", "Beginner", "Intermediate", "Advanced", "Professional"];
 
 interface FilterModalProps {
   visible: boolean;
@@ -40,9 +66,9 @@ export interface FilterOptions {
   location: string;
 }
 
-const FilterModal: React.FC<FilterModalProps> = ({ 
-  visible, 
-  onClose, 
+const FilterModal: React.FC<FilterModalProps> = ({
+  visible,
+  onClose,
   onApply,
   initialFilters = {
     sport: '',
@@ -60,10 +86,10 @@ const FilterModal: React.FC<FilterModalProps> = ({
   const [dateFrom, setDateFrom] = useState<Date | null>(initialFilters.dateFrom);
   const [dateTo, setDateTo] = useState<Date | null>(initialFilters.dateTo);
   const [location, setLocation] = useState(initialFilters.location);
-  
-  // Date picker visibility
-  const [showDateFromPicker, setShowDateFromPicker] = useState(false);
-  const [showDateToPicker, setShowDateToPicker] = useState(false);
+
+  // Date picker visibility state
+  const [isDateFromPickerVisible, setDateFromPickerVisible] = useState(false);
+  const [isDateToPickerVisible, setDateToPickerVisible] = useState(false);
 
   // Reset filters when modal is opened with initialFilters
   useEffect(() => {
@@ -98,14 +124,23 @@ const FilterModal: React.FC<FilterModalProps> = ({
     setLocation('');
   };
 
-  const handleDateChange = (event: any, selectedDate: Date | undefined, setter: React.Dispatch<React.SetStateAction<Date | null>>) => {
-    const currentDate = selectedDate || new Date();
-    setter(currentDate);
-    
-    if (Platform.OS === 'android') {
-      setShowDateFromPicker(false);
-      setShowDateToPicker(false);
-    }
+  // Handlers for the modal date pickers
+  const handleConfirmDateFrom = (selectedDate: Date) => {
+    setDateFrom(selectedDate);
+    setDateFromPickerVisible(false);
+  };
+
+  const handleCancelDateFrom = () => {
+    setDateFromPickerVisible(false);
+  };
+
+  const handleConfirmDateTo = (selectedDate: Date) => {
+    setDateTo(selectedDate);
+    setDateToPickerVisible(false);
+  };
+
+  const handleCancelDateTo = () => {
+    setDateToPickerVisible(false);
   };
 
   return (
@@ -125,50 +160,45 @@ const FilterModal: React.FC<FilterModalProps> = ({
           </View>
 
           <ScrollView style={styles.scrollView}>
-            <View style={styles.filterSection}>
+            {/* Sport Dropdown with higher zIndex */}
+            <View style={[styles.filterSection, styles.sportSection]}>
               <Text style={styles.sectionTitle}>Sport</Text>
-              <View style={styles.pickerContainer}>
-                <Picker
-                  selectedValue={sport}
-                  onValueChange={setSport}
-                  style={styles.picker}
-                >
-                  {SPORTS.map((sportOption) => (
-                    <Picker.Item 
-                      key={sportOption} 
-                      label={sportOption} 
-                      value={sportOption === "Select sport..." ? "" : sportOption} 
-                    />
-                  ))}
-                </Picker>
-              </View>
+              <Dropdown
+                items={SPORTS_LIST.map(sportItem => ({
+                  label: sportItem,
+                  value: sportItem.toLowerCase(),
+                }))}
+                value={sport}
+                onChangeItem={(item) => setSport(item.value)}
+                placeholder="Select sport..."
+                searchable={true}
+                searchablePlaceholder="Search sport..."
+              />
             </View>
 
-            <View style={styles.filterSection}>
+            {/* Skill Level Dropdown with lower zIndex */}
+            <View style={[styles.filterSection, styles.skillLevelSection]}>
               <Text style={styles.sectionTitle}>Skill Level</Text>
-              <View style={styles.pickerContainer}>
-                <Picker
-                  selectedValue={skillLevel}
-                  onValueChange={setSkillLevel}
-                  style={styles.picker}
-                >
-                  {SKILL_LEVELS.map((level) => (
-                    <Picker.Item 
-                      key={level} 
-                      label={level} 
-                      value={level === "Any Level" ? "" : level.toLowerCase()} 
-                    />
-                  ))}
-                </Picker>
-              </View>
+              <Dropdown
+                items={SKILL_LEVELS.map(level => ({
+                  label: level,
+                  value: level.toLowerCase(),
+                }))}
+                value={skillLevel}
+                onChangeItem={(item) => setSkillLevel(item.value)}
+                placeholder="Select skill level..."
+                searchable={true}
+                searchablePlaceholder="Search skill level..."
+              />
             </View>
 
+            {/* Activity Type - using buttons */}
             <View style={styles.filterSection}>
               <Text style={styles.sectionTitle}>Activity Type</Text>
               <View style={styles.typeButtonContainer}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={[
-                    styles.typeButton, 
+                    styles.typeButton,
                     styles.typeButtonLeft,
                     activityType === "event" && styles.activeTypeButton
                   ]}
@@ -179,7 +209,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
                     activityType === "event" && styles.activeTypeButtonText
                   ]}>Events</Text>
                 </TouchableOpacity>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={[
                     styles.typeButton,
                     styles.typeButtonRight,
@@ -195,22 +225,23 @@ const FilterModal: React.FC<FilterModalProps> = ({
               </View>
             </View>
 
+            {/* Date Range */}
             <View style={styles.filterSection}>
               <Text style={styles.sectionTitle}>Date Range</Text>
               <View style={styles.dateContainer}>
-                <TouchableOpacity 
-                  style={styles.dateButton} 
-                  onPress={() => setShowDateFromPicker(true)}
+                <TouchableOpacity
+                  style={styles.dateButton}
+                  onPress={() => setDateFromPickerVisible(true)}
                 >
                   <Ionicons name="calendar-outline" size={18} color="#555" style={styles.dateIcon} />
                   <Text style={[styles.dateText, dateFrom ? styles.dateTextActive : {}]}>
                     {dateFrom ? format(dateFrom, 'MMM dd, yyyy') : 'From date'}
                   </Text>
                 </TouchableOpacity>
-                
-                <TouchableOpacity 
+
+                <TouchableOpacity
                   style={styles.dateButton}
-                  onPress={() => setShowDateToPicker(true)}
+                  onPress={() => setDateToPickerVisible(true)}
                 >
                   <Ionicons name="calendar-outline" size={18} color="#555" style={styles.dateIcon} />
                   <Text style={[styles.dateText, dateTo ? styles.dateTextActive : {}]}>
@@ -218,51 +249,48 @@ const FilterModal: React.FC<FilterModalProps> = ({
                   </Text>
                 </TouchableOpacity>
               </View>
-              
-              {showDateFromPicker && (
-                <DateTimePicker
-                  value={dateFrom || new Date()}
-                  mode="date"
-                  display={Platform.OS === 'ios' ? 'inline' : 'default'}
-                  onChange={(event, date) => handleDateChange(event, date, setDateFrom)}
-                  minimumDate={new Date()}
-                />
-              )}
-              
-              {showDateToPicker && (
-                <DateTimePicker
-                  value={dateTo || new Date()}
-                  mode="date"
-                  display={Platform.OS === 'ios' ? 'inline' : 'default'}
-                  onChange={(event, date) => handleDateChange(event, date, setDateTo)}
-                  minimumDate={dateFrom || new Date()}
-                />
-              )}
+              <DateTimePickerModal
+                isVisible={isDateFromPickerVisible}
+                mode="date"
+                date={dateFrom || new Date()}
+                onConfirm={handleConfirmDateFrom}
+                onCancel={handleCancelDateFrom}
+                confirmTextIOS="Confirm"
+                cancelTextIOS="Cancel"
+              />
+              <DateTimePickerModal
+                isVisible={isDateToPickerVisible}
+                mode="date"
+                date={dateTo || new Date()}
+                onConfirm={handleConfirmDateTo}
+                onCancel={handleCancelDateTo}
+                confirmTextIOS="Confirm"
+                cancelTextIOS="Cancel"
+              />
             </View>
-            
+
+            {/* Location Dropdown */}
             <View style={styles.filterSection}>
               <Text style={styles.sectionTitle}>Location</Text>
-              <TextInput
-                placeholder="City or venue name..."
+              <Dropdown
+                items={LOCATIONS_LIST.map(loc => ({
+                  label: loc,
+                  value: loc,
+                }))}
                 value={location}
-                onChangeText={setLocation}
-                style={styles.input}
-                placeholderTextColor="#999"
+                onChangeItem={(item) => setLocation(item.value)}
+                placeholder="Select location..."
+                searchable={true}
+                searchablePlaceholder="Search location..."
               />
             </View>
           </ScrollView>
 
           <View style={styles.footer}>
-            <TouchableOpacity 
-              style={styles.clearButton}
-              onPress={handleClear}
-            >
+            <TouchableOpacity style={styles.clearButton} onPress={handleClear}>
               <Text style={styles.clearButtonText}>Clear All</Text>
             </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.applyButton}
-              onPress={handleApply}
-            >
+            <TouchableOpacity style={styles.applyButton} onPress={handleApply}>
               <Text style={styles.applyButtonText}>Apply Filters</Text>
             </TouchableOpacity>
           </View>
@@ -312,22 +340,47 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
   },
+  sportSection: {
+    zIndex: 3000,
+    elevation: 3000,
+  },
+  skillLevelSection: {
+    zIndex: 2000,
+    elevation: 2000,
+  },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
     marginBottom: 12,
     color: '#333',
   },
-  pickerContainer: {
+  dateContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  dateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 15,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: '#e0e0e0',
-    borderRadius: 8,
-    backgroundColor: '#f9f9f9',
-    overflow: 'hidden',
+    width: '48%',
   },
-  picker: {
-    height: 50,
+  dateIcon: {
+    marginRight: 8,
   },
+  dateText: {
+    color: '#333',
+    fontSize: 16,
+  },
+  dateTextActive: {
+    color: '#000',
+    fontWeight: '600',
+  },
+  // Added styles for Activity Type buttons
   typeButtonContainer: {
     flexDirection: 'row',
     borderRadius: 8,
@@ -362,40 +415,6 @@ const styles = StyleSheet.create({
   },
   activeTypeButtonText: {
     color: '#fff',
-  },
-  dateContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  dateButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 15,
-    backgroundColor: '#f5f5f5',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    width: '48%',
-  },
-  dateIcon: {
-    marginRight: 8,
-  },
-  dateText: {
-    color: '#999',
-  },
-  dateTextActive: {
-    color: '#333',
-    fontWeight: '500',
-  },
-  input: {
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    borderRadius: 8,
-    backgroundColor: '#f5f5f5',
-    fontSize: 16,
-    color: '#333',
   },
   footer: {
     flexDirection: 'row',

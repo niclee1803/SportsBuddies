@@ -46,11 +46,20 @@ interface DropdownProps {
   value: string;
   onChangeItem: (item: { label: string; value: string }) => void;
   placeholder: string;
+  searchable?: boolean;
+  searchablePlaceholder?: string;
 }
 
 
-const Dropdown: React.FC<DropdownProps> = ({ items, value, onChangeItem, placeholder }) => {
-  const [open, setOpen] = useState(false); // Required in v5+
+const Dropdown: React.FC<DropdownProps> = ({
+  items,
+  value,
+  onChangeItem,
+  placeholder,
+  searchable = false,
+  searchablePlaceholder = 'Search...',
+}) => {
+  const [open, setOpen] = useState(false);
   const [dropdownItems, setDropdownItems] = useState(items);
 
   return (
@@ -68,6 +77,8 @@ const Dropdown: React.FC<DropdownProps> = ({ items, value, onChangeItem, placeho
       }}
       setItems={setDropdownItems}
       placeholder={placeholder}
+      searchable={searchable}
+      searchPlaceholder={searchablePlaceholder}
       style={{
         marginBottom: 15,
         backgroundColor: "#fff",
