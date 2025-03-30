@@ -301,15 +301,40 @@ class ActivityController:
         except FirestoreError as e:
             raise HTTPException(status_code=500, detail=str(e))
     
-    def search_and_filter(self, queries: Dict) -> List[Dict]:
+    def search_and_filter(self, filters: Dict) -> List[Dict]:
         """
-        Searches for activities based on given query parameters (sport, skillLevel, etc.).
+        Searches for activities based on given query parameters.
+        
+        Args:
+            filters: Dictionary containing the filter criteria
+                - query: Text to search in name and description
+                - sport: Sport to filter by
+                - skillLevel: Skill level to filter by
+                - type: Activity type to filter by
+                - status: Activity status to filter by
+                - dateFrom: Filter activities after this date
+                - dateTo: Filter activities before this date
+                - location: Dict with latitude and longitude
+                - maxDistance: Maximum distance in kilometers for location search
+                - placeName: Filter by place name
+                - limit: Max number of results to return
+                - start_after: Activity ID to start after (pagination)
+                
+        Returns:
+            List of activity dictionaries that match the criteria
         """
         try:
-            found = self.repo.search_activities(queries)
+            # If no filters provided, return all activities (with limit)
+            if not any(k != 'limit' and k != 'start_after' for k in filters.keys()):
+                # Default to showing only available activities when no filters are specified
+                filters["status"] = ActivityStatus.AVAILABLE.value
+                
+            found = self.repo.search_activities(filters)
             return [a.to_dict() for a in found]
         except FirestoreError as e:
-            raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Error searching activities: {str(e)}")
             
     def run_expire_job(self) -> Dict:
         """

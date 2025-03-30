@@ -16,6 +16,81 @@ from user.services.auth_service import AuthService
 router = APIRouter()
 activity_controller = ActivityController()
 
+# ================= Search & Filter =================
+@router.get("/search", summary="Search and filter activities", response_model=List[Dict])
+async def search_activities(
+    # Text search parameters
+    query: Optional[str] = Query(None, description="Search in activity name and description"),
+    sport: Optional[str] = Query(None, description="Filter by sport name"),
+    skillLevel: Optional[str] = Query(None, description="Filter by skill level"),
+    activityType: Optional[str] = Query(None, description="Filter by activity type (event/coaching session)"),
+    status: Optional[str] = Query(None, description="Filter by activity status"),
+    placeName: Optional[str] = Query(None, description="Search by place name"),
+    
+    # Date range parameters
+    dateFrom: Optional[datetime] = Query(None, description="Filter activities after this date"),
+    dateTo: Optional[datetime] = Query(None, description="Filter activities before this date"),
+    
+    # Location parameters
+    latitude: Optional[float] = Query(None, description="Latitude for location-based search"),
+    longitude: Optional[float] = Query(None, description="Longitude for location-based search"),
+    maxDistance: Optional[float] = Query(None, description="Maximum distance in kilometers for location search"),
+    
+    # Pagination parameters
+    limit: int = Query(50, description="Maximum number of activities to return"),
+    start_after: Optional[str] = Query(None, description="Activity ID to start after for pagination"),
+    
+    # User authentication
+    current_user: dict = Depends(AuthService.get_current_user)
+):
+    """
+    Search for activities with various filtering options.
+    - Can search by name/description using the `query` parameter
+    - Can filter by sport, skill level, activity type, and status
+    - Can filter by date range
+    - Can search by location proximity
+    - Can search by place name
+    
+    If no parameters are provided, returns all available activities.
+    """
+    print(f"Search request received with filters: {query}, {sport}, {skillLevel}")
+    # Build filters dictionary
+    filters = {}
+    
+    # Text search filters
+    if query:
+        filters["query"] = query
+    if sport:
+        filters["sport"] = sport
+    if skillLevel:
+        filters["skillLevel"] = skillLevel
+    if activityType:
+        filters["type"] = activityType
+    if status:
+        filters["status"] = status
+    if placeName:
+        filters["placeName"] = placeName
+    
+    # Date range filters
+    if dateFrom:
+        filters["dateFrom"] = dateFrom
+    if dateTo:
+        filters["dateTo"] = dateTo
+    
+    # Location-based search filters
+    if latitude is not None and longitude is not None:
+        filters["location"] = {"latitude": latitude, "longitude": longitude}
+        # If maxDistance is not specified, use a reasonable default
+        filters["maxDistance"] = maxDistance if maxDistance is not None else 50.0
+    
+    # Pagination parameters
+    filters["limit"] = limit
+    if start_after:
+        filters["start_after"] = start_after
+    
+    # Call the controller method to handle the search
+    return activity_controller.search_and_filter(filters)
+
 # ============== Basic CRUD Operations ==============
 
 @router.post("/", summary="Create a new activity", response_model=Dict)
@@ -181,50 +256,6 @@ async def get_my_pending_approvals(
     Returns all activities created by the user that have pending join requests.
     """
     return activity_controller.get_creator_pending_requests(current_user["uid"])
-
-@router.get("/search", summary="Search and filter activities", response_model=List[Dict])
-async def search_activities(
-    sport: Optional[str] = Query(None, description="Filter by sport name"),
-    skillLevel: Optional[str] = Query(None, description="Filter by skill level"),
-    activityType: Optional[str] = Query(None, description="Filter by activity type"),
-    status: Optional[str] = Query(ActivityStatus.AVAILABLE.value, description="Filter by activity status"),
-    dateFrom: Optional[datetime] = Query(None, description="Filter activities after this date"),
-    dateTo: Optional[datetime] = Query(None, description="Filter activities before this date"),
-    latitude: Optional[float] = Query(None, description="Latitude for location-based search"),
-    longitude: Optional[float] = Query(None, description="Longitude for location-based search"),
-    maxDistance: Optional[float] = Query(None, description="Maximum distance in kilometers for location search"),
-    limit: int = Query(50, description="Maximum number of activities to return"),
-    start_after: Optional[str] = Query(None, description="Activity ID to start after for pagination"),
-    current_user: dict = Depends(AuthService.get_current_user)
-):
-    """
-    Searches for activities with various filtering options.
-    """
-    filters = {}
-    
-    if sport:
-        filters["sport"] = sport
-    if skillLevel:
-        filters["skillLevel"] = skillLevel
-    if activityType:
-        filters["type"] = activityType
-    if status:
-        filters["status"] = status
-    
-    if dateFrom:
-        filters["dateFrom"] = dateFrom
-    if dateTo:
-        filters["dateTo"] = dateTo
-    
-    if latitude is not None and longitude is not None and maxDistance is not None:
-        filters["location"] = {"latitude": latitude, "longitude": longitude}
-        filters["maxDistance"] = maxDistance
-        
-    filters["limit"] = limit
-    if start_after:
-        filters["start_after"] = start_after
-    
-    return activity_controller.search_and_filter(filters)
 
 # ============== Admin Operations ==============
 

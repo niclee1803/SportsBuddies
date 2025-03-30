@@ -25,7 +25,7 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    paddingBottom: 10, // Add some padding to prevent content from being hidden behind the nav bar
+    paddingBottom: 2, // Add some padding to prevent content from being hidden behind the nav bar
   },
 });
 

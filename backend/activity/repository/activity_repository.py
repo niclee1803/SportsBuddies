@@ -115,83 +115,113 @@ class ActivityRepository:
         except Exception as e:
             raise FirestoreError(f"Failed to list activities by creator: {str(e)}")
     
-    def search_activities(self, filters: dict, limit: int = 50, start_after: str = None) -> List[Activity]:
+    def search_activities(self, filters: Dict) -> List[Activity]:
         """
-        Searches activities based on various filters with pagination.
+        Search for activities based on given criteria.
         
         Args:
-            filters (dict): A dictionary of filter conditions.
-            limit (int): Maximum number of documents to return.
-            start_after (str): Document ID to start after for pagination.
+            filters: Dictionary of filter criteria
             
         Returns:
-            List[Activity]: A list of matching activities.
+            List of Activity objects that match the criteria
         """
-        try:
-            query = self.collection
+        query = self.collection
+        
+        # Start with a base query for non-expired, non-cancelled activities unless specified
+        if "status" in filters:
+            query = query.where("status", "==", filters["status"])
+        else:
+            # Default: Only show available activities
+            query = query.where("status", "==", ActivityStatus.AVAILABLE.value)
+        
+        # Filter by sport
+        if "sport" in filters:
+            query = query.where("sport", "==", filters["sport"])
+        
+        # Filter by skill level
+        if "skillLevel" in filters:
+            query = query.where("skillLevel", "==", filters["skillLevel"])
+        
+        # Filter by activity type
+        if "type" in filters:
+            query = query.where("type", "==", filters["type"])
+        
+        # Filter by dateTime range
+        if "dateFrom" in filters:
+            date_from = filters["dateFrom"]
+            query = query.where("dateTime", ">=", date_from)
+        
+        if "dateTo" in filters:
+            date_to = filters["dateTo"]
+            query = query.where("dateTime", "<=", date_to)
+        
+        # Get results
+        results = query.limit(filters.get("limit", 50)).get()
+        
+        # Convert to Activity objects
+        activities = [Activity.from_dict(doc.id, doc.to_dict()) for doc in results]
+        
+        # Post-processing filters (these can't be done efficiently in Firestore queries)
+        filtered_activities = activities
+        
+        # Text search in name and description
+        if "query" in filters and filters["query"]:
+            query_terms = filters["query"].lower().split()
+            filtered_activities = []
+            for activity in activities:
+                activity_text = (f"{activity.activityName} {activity.description} "
+                                f"{activity.sport} {activity.placeName}").lower()
+                if all(term in activity_text for term in query_terms):
+                    filtered_activities.append(activity)
+        
+        # Filter by place name (case-insensitive contains)
+        if "placeName" in filters and filters["placeName"]:
+            place_query = filters["placeName"].lower()
+            filtered_activities = [
+                a for a in filtered_activities 
+                if place_query in a.placeName.lower()
+            ]
+        
+        # Filter by location proximity
+        if "location" in filters and "maxDistance" in filters:
+            center_lat = filters["location"]["latitude"]
+            center_lng = filters["location"]["longitude"]
+            max_distance = filters["maxDistance"]
             
-            # Apply status filter (default to AVAILABLE)
-            status = filters.get("status", ActivityStatus.AVAILABLE.value)
-            query = query.where("status", "==", status)
+            # Define a function to calculate distance
+            def calculate_distance(lat1, lon1, lat2, lon2):
+                # Haversine formula for calculating distance between two points on Earth
+                R = 6371  # Earth radius in kilometers
+                
+                # Convert latitude and longitude from degrees to radians
+                lat1_rad = math.radians(lat1)
+                lon1_rad = math.radians(lon1)
+                lat2_rad = math.radians(lat2)
+                lon2_rad = math.radians(lon2)
+                
+                # Differences
+                dlat = lat2_rad - lat1_rad
+                dlon = lon2_rad - lon1_rad
+                
+                # Haversine formula
+                a = math.sin(dlat/2)**2 + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(dlon/2)**2
+                c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+                distance = R * c
+                
+                return distance
             
-            # Apply standard filters
-            if "sport" in filters:
-                query = query.where("sport", "==", filters["sport"])
-            if "skillLevel" in filters:
-                query = query.where("skillLevel", "==", filters["skillLevel"])
-            if "type" in filters:
-                query = query.where("type", "==", filters["type"])
-                
-            # Apply date range filter
-            if "dateFrom" in filters:
-                query = query.where("dateTime", ">=", filters["dateFrom"])
-            if "dateTo" in filters:
-                query = query.where("dateTime", "<=", filters["dateTo"])
-            
-            # Apply pagination
-            if start_after:
-                doc_ref = self.collection.document(start_after)
-                doc = doc_ref.get()
-                if doc.exists:
-                    query = query.start_after(doc)
-                    
-            query = query.limit(limit)
-            docs = query.stream()
-            activities = [Activity.from_dict(doc.id, doc.to_dict()) for doc in docs]
-            
-            # Post-processing for location-based filtering
-            if "location" in filters and "maxDistance" in filters:
-                lat = filters["location"]["latitude"]
-                lng = filters["location"]["longitude"]
-                max_distance = filters["maxDistance"]  # in kilometers
-                
-                # Filter activities by distance (client-side filtering)
-                from math import radians, cos, sin, asin, sqrt
-                
-                def haversine(lat1, lon1, lat2, lon2):
-                    """Calculate the great circle distance between two points on earth."""
-                    # Convert decimal degrees to radians
-                    lat1, lon1, lat2, lon2 = map(radians, [lat1, lon1, lat2, lon2])
-                    # Haversine formula
-                    dlon = lon2 - lon1
-                    dlat = lat2 - lat1
-                    a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
-                    c = 2 * asin(sqrt(a))
-                    r = 6371  # Radius of earth in kilometers
-                    return c * r
-                
-                filtered_activities = []
-                for activity in activities:
-                    loc = activity.get_location_as_object()
-                    distance = haversine(lat, lng, loc.latitude, loc.longitude)
-                    if distance <= max_distance:
-                        filtered_activities.append(activity)
-                
-                return filtered_activities
-            
-            return activities
-        except Exception as e:
-            raise FirestoreError(f"Failed to search activities: {str(e)}")
+            # Filter activities by distance
+            filtered_activities = [
+                a for a in filtered_activities 
+                if calculate_distance(
+                    center_lat, 
+                    center_lng, 
+                    a.get_location_as_object().latitude, 
+                    a.get_location_as_object().longitude
+                ) <= max_distance
+            ]
+        
+        return filtered_activities
     
     def get_activities_by_participants(self, user_id: str) -> List[Activity]:
         """
