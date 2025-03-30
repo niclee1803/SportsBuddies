@@ -31,6 +31,8 @@ export default function ActivityDetail() {
   const [joinRequestSent, setJoinRequestSent] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [bannerError, setBannerError] = useState(false);
+  const [creatorInfo, setCreatorInfo] = useState<any>(null);
+  const [creatorLoading, setCreatorLoading] = useState(false);
 
   useEffect(() => {
     const fetchActivityAndUser = async () => {
@@ -82,6 +84,38 @@ export default function ActivityDetail() {
 
     fetchActivityAndUser();
   }, [id]);
+
+  useEffect(() => {
+    const fetchCreatorInfo = async () => {
+      if (!activity || !activity.creator_id) return;
+      
+      setCreatorLoading(true);
+      try {
+        const token = await AsyncStorage.getItem("token");
+        if (!token) return;
+        
+        const response = await fetch(`${API_URL}/user/public/${activity.creator_id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        
+        if (!response.ok) {
+          console.error("Failed to fetch creator info:", response.status);
+          return;
+        }
+        
+        const creatorData = await response.json();
+        setCreatorInfo(creatorData);
+      } catch (err) {
+        console.error("Error fetching creator info:", err);
+      } finally {
+        setCreatorLoading(false);
+      }
+    };
+    
+    fetchCreatorInfo();
+  }, [activity]);
 
   // Reset banner error state when activity changes
   useEffect(() => {
@@ -261,6 +295,11 @@ export default function ActivityDetail() {
   const renderActionButton = () => {
     if (!activity || !currentUserId) return null;
   
+    // Check if activity is expired based on datetime or status
+    const isExpired = activity.status === "expired" || 
+      activity.status === "cancelled" || 
+      new Date(activity.dateTime) < new Date();
+  
     // If current user is the creator
     if (activity.creator_id === currentUserId) {
       return (
@@ -310,15 +349,13 @@ export default function ActivityDetail() {
     }
   
     // If activity is cancelled or expired
-    if (activity.status === "cancelled" || activity.status === "expired") {
+    if (isExpired) {
       return (
         <TouchableOpacity
           style={[styles.actionButton, { backgroundColor: "#6c757d" }]}
           disabled={true}
         >
-          <Text style={styles.actionButtonText}>
-            {activity.status === "cancelled" ? "Cancelled" : "Expired"}
-          </Text>
+          <Text style={styles.actionButtonText}>Past Activity</Text>
         </TouchableOpacity>
       );
     }
@@ -329,6 +366,10 @@ export default function ActivityDetail() {
         <Text style={styles.actionButtonText}>Join Activity</Text>
       </TouchableOpacity>
     );
+  };
+
+  const navigateToProfile = (userId: string) => {
+    //router.push(`/UserProfile?id=${userId}`);
   };
 
   if (loading) {
@@ -427,6 +468,42 @@ export default function ActivityDetail() {
 
           {activity.price > 0 && (
             <Text style={styles.priceText}>${activity.price}</Text>
+          )}
+        </View>
+
+        {/* Organizer Information */}
+        <View style={styles.organizerSection}>
+          <Text style={styles.sectionTitle}>Organiser</Text>
+          
+          {creatorLoading ? (
+            <View style={styles.creatorLoadingContainer}>
+              <ActivityIndicator size="small" color="#0066cc" />
+              <Text style={styles.infoText}>Loading organizer info...</Text>
+            </View>
+          ) : creatorInfo ? (
+            <TouchableOpacity 
+              style={styles.organizerContainer}
+              onPress={() => navigateToProfile(activity.creator_id)}
+            >
+              <Image
+                source={{ 
+                  uri: creatorInfo.profilePicUrl || "https://placehold.co/60/gray/white?text=User" 
+                }}
+                style={styles.organizerImage}
+                onError={(e) => console.log("Organizer image failed to load")}
+              />
+              <View style={styles.organizerInfo}>
+                <Text style={styles.organizerName}>
+                  {creatorInfo.firstName} {creatorInfo.lastName}
+                </Text>
+                <Text style={styles.organizerUsername}>
+                  @{creatorInfo.username}
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#999" />
+            </TouchableOpacity>
+          ) : (
+            <Text style={styles.infoText}>Organizer information unavailable</Text>
           )}
         </View>
 
@@ -595,6 +672,44 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
     color: "#2c3e50",
+  },
+  organizerSection: {
+    marginVertical: 15,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+    paddingTop: 15,
+  },
+  organizerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f9f9f9',
+    padding: 12,
+    borderRadius: 10,
+  },
+  organizerImage: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    marginRight: 12,
+    borderWidth: 1,
+    borderColor: '#eee',
+  },
+  organizerInfo: {
+    flex: 1,
+  },
+  organizerName: {
+    fontWeight: 'bold',
+    fontSize: 16,
+    color: '#333',
+  },
+  organizerUsername: {
+    fontSize: 14,
+    color: '#666',
+  },
+  creatorLoadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
   },
   infoRow: {
     flexDirection: "row",
