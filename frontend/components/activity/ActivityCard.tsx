@@ -63,7 +63,7 @@ const ActivityCard = ({ activity }: ActivityCardProps) => {
     
     // If status is not cancelled, check date to determine if completed or upcoming
     if (formattedDate < now) {
-      return { label: "Completed", color: "#8E8E93", icon: "checkmark-done-circle" };
+      return { label: "Past", color: "#8E8E93", icon: "checkmark-done-circle" };
     }
     
     // Handle other status values
