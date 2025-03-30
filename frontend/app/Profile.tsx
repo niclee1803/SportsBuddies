@@ -241,8 +241,8 @@ const styles = StyleSheet.create({
   header: { alignItems: 'center', marginBottom: 20 },
   profileImage: { width: 100, height: 100, borderRadius: 50, borderWidth: 2, borderColor: 'black' },
   name: { fontSize: 22, fontWeight: 'bold', marginTop: 8 },
-  username: { color: 'gray', fontSize: 16, marginBottom: 10 },
-  buttonContainer: { flexDirection: 'row', justifyContent: 'center', gap: 20, marginVertical: 10 },
+  username: { color: 'gray', fontSize: 16 },
+  buttonContainer: { flexDirection: 'row', justifyContent: 'center', gap: 20, marginVertical: 5 },
   button: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#e0e0e0', padding: 10, borderRadius: 20 },
   buttonText: { marginLeft: 5, fontSize: 16 },
   

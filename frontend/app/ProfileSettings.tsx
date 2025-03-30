@@ -624,7 +624,6 @@ const ProfileSettings: React.FC = () => {
 
         {/* Profile Information Section */}
         <View style={styles.inputGroup}>
-          {/* Existing code for form fields */}
           {/* Name Fields */}
           <View style={styles.nameRow}>
             <View style={styles.inputWrapper}>
