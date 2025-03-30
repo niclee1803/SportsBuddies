@@ -102,18 +102,18 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    marginTop: 20, 
+    marginTop: 10, 
     marginBottom: 8,
     color: '#333',
   },
   subtitle: {
     fontSize: 16,
     color: '#666',
-    marginBottom: 24,
+    marginBottom: 30,
   },
   loader: {
     marginBottom: 24,
-    height: 16, // Match the height of the subtitle text
+    height: 16,
   },
   optionsGrid: {
     flexDirection: 'row',
