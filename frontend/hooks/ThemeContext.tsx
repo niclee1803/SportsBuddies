@@ -1,5 +1,5 @@
 
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, act } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useColorScheme } from 'react-native';
 
@@ -15,6 +15,7 @@ export const lightColors = {
   notification: '#FF3B30',
   placeholder: '#888888',
   profilebutton: "#e0e0e0",
+  actdetailsheader: "#2c3e50",
 };
 
 export const darkColors = {
@@ -28,6 +29,7 @@ export const darkColors = {
   notification: '#FF453A',
   placeholder: '#1E1E1E',
   profilebutton: "#1E1E1E",
+  actdetailsheader: "#2196F3",
 };
 
 
