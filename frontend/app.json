@@ -34,8 +34,7 @@
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
-      ],
-      "withDisableForcedDarkModeAndroid"
+      ]
     ],
     "experiments": {
       "typedRoutes": true
