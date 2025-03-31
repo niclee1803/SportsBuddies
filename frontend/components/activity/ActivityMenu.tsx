@@ -1,5 +1,6 @@
 import React, { useState }from "react";
 import DropDownPicker from "react-native-dropdown-picker";
+import { useTheme } from "@/hooks/ThemeContext";
 
 
 
@@ -61,9 +62,12 @@ const Dropdown: React.FC<DropdownProps> = ({
 }) => {
   const [open, setOpen] = useState(false);
   const [dropdownItems, setDropdownItems] = useState(items);
+  const { isDarkMode } = useTheme();
+  const { colors } = useTheme();
 
   return (
     <DropDownPicker
+   
       open={open}
       value={value}
       items={dropdownItems}
@@ -81,10 +85,12 @@ const Dropdown: React.FC<DropdownProps> = ({
       searchPlaceholder={searchablePlaceholder}
       style={{
         marginBottom: 15,
-        backgroundColor: "#fff",
-        borderColor: "#ddd",
+        backgroundColor: colors.card,
+        borderColor: colors.border,
         borderRadius: 5,
       }}
+      textStyle={{ color: colors.text }}
+      labelStyle={{ color: colors.text }}
     />
   );
 };

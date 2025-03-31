@@ -21,8 +21,10 @@ import { showAlert } from "@/utils/alertUtils";
 import { useRouter } from "expo-router";
 import { format } from "date-fns";
 import FilterModal, { FilterOptions } from "@/components/activity/FilterModal";
+import { useTheme } from '@/hooks/ThemeContext';
 
 export default function Feed() {
+  const { colors } = useTheme();
   const router = useRouter();
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(false);
@@ -191,7 +193,7 @@ export default function Feed() {
     if (loading && !refreshing) return null;
     
     return (
-      <View style={styles.emptyContainer}>
+      <View style={[styles.emptyContainer]}>
         {noResults ? (
           <>
             <Ionicons name="search-outline" size={64} color="#ccc" />
@@ -205,8 +207,8 @@ export default function Feed() {
         ) : (
           <>
             <FontAwesome5 name="calendar-alt" size={64} color="#ccc" />
-            <Text style={styles.emptyText}>No activities available.</Text>
-            <Text style={styles.emptySubText}>
+            <Text style={[styles.emptyText, {color:colors.text}]}>No activities available.</Text>
+            <Text style={[styles.emptySubText,{color:colors.text}]}>
               Be the first to create an activity!
             </Text>
             <TouchableOpacity 
@@ -234,9 +236,9 @@ export default function Feed() {
 
   return (
     <AuthLayout>
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.feedTitle}>Discover Activities</Text>
+      <View style={[styles.container, {backgroundColor: colors.background }]}>
+        <View style={[styles.header, {backgroundColor: colors.background }]}>
+          <Text style={[styles.feedTitle, {color: colors.text }]}>Discover Activities</Text>
           <TouchableOpacity 
             style={styles.createActivityButton}
             onPress={() => router.push("/Create")}
@@ -246,13 +248,13 @@ export default function Feed() {
         </View>
 
         <View style={styles.searchRow}>
-          <View style={styles.searchInputContainer}>
+          <View style={[styles.searchInputContainer,{backgroundColor: colors.card, borderColor: colors.border }]}>
             <Ionicons name="search" size={20} color="#aaa" style={styles.searchIcon} />
             <TextInput
               placeholder="Search activities..."
               value={searchTerm}
               onChangeText={setSearchTerm}
-              style={styles.searchInput}
+              style={[styles.searchInput, { color: colors.text }]}
               placeholderTextColor="#999"
               returnKeyType="search"
               onSubmitEditing={handleSearch}
@@ -274,11 +276,12 @@ export default function Feed() {
           <TouchableOpacity 
             style={[
               styles.filterButton, 
-              activeFilterCount() > 0 ? styles.activeFilterButton : {}
+              activeFilterCount() > 0 ? styles.activeFilterButton : {},
+              {backgroundColor: colors.card, borderColor: colors.border }
             ]} 
             onPress={() => setFilterModalVisible(true)}
           >
-            <Ionicons name="options" size={22} color={activeFilterCount() > 0 ? "#fff" : "#555"} />
+            <Ionicons name="options" size={22} color={colors.smalltext} />
             {activeFilterCount() > 0 && (
               <View style={styles.filterBadge}>
                 <Text style={styles.filterBadgeText}>{activeFilterCount()}</Text>
@@ -292,8 +295,8 @@ export default function Feed() {
           <ScrollView 
             horizontal 
             showsHorizontalScrollIndicator={false}
-            style={styles.filtersRow}
-            contentContainerStyle={styles.filtersRowContent}
+            style={[styles.filtersRow, {backgroundColor: colors.background }]}
+            contentContainerStyle={[styles.filtersRowContent, { backgroundColor: colors.background }]}
           >
             {activeFilters.sport && (
               <View style={styles.filterPill}>
