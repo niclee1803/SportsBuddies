@@ -8,6 +8,7 @@ import {
   ScrollView,
   ActivityIndicator,
   Platform,
+  Share
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons, FontAwesome5 } from "@expo/vector-icons";
@@ -31,6 +32,9 @@ export default function ActivityDetail() {
   const [joinRequestSent, setJoinRequestSent] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [bannerError, setBannerError] = useState(false);
+  const [creatorInfo, setCreatorInfo] = useState<any>(null);
+  const [creatorLoading, setCreatorLoading] = useState(false);
+  const [buttonLoading, setButtonLoading] = useState(false);
 
   useEffect(() => {
     const fetchActivityAndUser = async () => {
@@ -83,6 +87,38 @@ export default function ActivityDetail() {
     fetchActivityAndUser();
   }, [id]);
 
+  useEffect(() => {
+    const fetchCreatorInfo = async () => {
+      if (!activity || !activity.creator_id) return;
+      
+      setCreatorLoading(true);
+      try {
+        const token = await AsyncStorage.getItem("token");
+        if (!token) return;
+        
+        const response = await fetch(`${API_URL}/user/public/${activity.creator_id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        
+        if (!response.ok) {
+          console.error("Failed to fetch creator info:", response.status);
+          return;
+        }
+        
+        const creatorData = await response.json();
+        setCreatorInfo(creatorData);
+      } catch (err) {
+        console.error("Error fetching creator info:", err);
+      } finally {
+        setCreatorLoading(false);
+      }
+    };
+    
+    fetchCreatorInfo();
+  }, [activity]);
+
   // Reset banner error state when activity changes
   useEffect(() => {
     if (activity) {
@@ -94,11 +130,47 @@ export default function ActivityDetail() {
     router.back();
   };
 
+  const handleShareActivity = async () => {
+    if (!activity) return;
+    
+    try {
+      // Create share content based on activity details
+      const title = activity.activityName;
+      const message = `Join me for ${activity.activityName}!\n\n${activity.sport} (${activity.skillLevel})\nDate: ${format(new Date(activity.dateTime), "EEEE, MMMM d, yyyy")}\nTime: ${format(new Date(activity.dateTime), "h:mm a")}\nLocation: ${activity.placeName}\n\n${activity.description}`;
+      
+      // Include a URL to your app or website if available
+      const url = `https://sportsbuddies.app/activity/${activity.id}`;
+      
+      // Call share API
+      const result = await Share.share({
+        title: title,
+        message: Platform.OS === 'ios' ? message : message + "\n\n" + url,
+        url: Platform.OS === 'ios' ? url : undefined,
+      });
+      
+      if (result.action === Share.sharedAction) {
+        if (result.activityType) {
+          // shared with activity type
+          console.log(`Shared with ${result.activityType}`);
+        } else {
+          // shared
+          console.log('Shared');
+        }
+      } else if (result.action === Share.dismissedAction) {
+        // dismissed
+        console.log('Share dismissed');
+      }
+    } catch (error) {
+      console.error("Error sharing:", error);
+      showAlert("Error", "Could not share this activity");
+    }
+  };
+
   const handleJoinRequest = async () => {
     if (!activity) return;
 
     try {
-      setLoading(true);
+      setButtonLoading(true);
       const token = await AsyncStorage.getItem("token");
 
       const response = await fetch(`${API_URL}/activity/${activity.id}/join`, {
@@ -112,28 +184,26 @@ export default function ActivityDetail() {
       const data = await response.json();
 
       if (response.ok) {
-        // Update the activity with the new join request
+        // Update only the local state instead of refetching everything
         setJoinRequestSent(true);
-        showAlert("Success", "Join request sent successfully!");
-
-        // Refresh activity data to get updated status
-        const updatedResponse = await fetch(`${API_URL}/activity/${id}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (updatedResponse.ok) {
-          const updatedData = await updatedResponse.json();
-          setActivity(updatedData);
+        
+        // If the activity has joinRequests array, update it
+        if (activity.joinRequests) {
+          const updatedActivity = {
+            ...activity,
+            joinRequests: [...activity.joinRequests, currentUserId as string]
+          };
+          setActivity(updatedActivity);
         }
+        
+        showAlert("Success", "Join request sent successfully!");
       } else {
         showAlert("Error", data.detail || "Failed to send join request");
       }
     } catch (err: any) {
       showAlert("Error", err.message || "An error occurred");
     } finally {
-      setLoading(false);
+      setButtonLoading(false);
     }
   };
 
@@ -154,7 +224,7 @@ export default function ActivityDetail() {
           style: "destructive",
           onPress: async () => {
             try {
-              setLoading(true);
+              setButtonLoading(true);
               const token = await AsyncStorage.getItem("token");
   
               const response = await fetch(`${API_URL}/activity/${activity.id}/leave`, {
@@ -168,26 +238,25 @@ export default function ActivityDetail() {
               const data = await response.json();
   
               if (response.ok) {
-                showAlert("Success", "You have left this activity.");
-  
-                // Refresh activity data to get updated status
-                const updatedResponse = await fetch(`${API_URL}/activity/${id}`, {
-                  headers: {
-                    Authorization: `Bearer ${token}`,
-                  },
-                });
-  
-                if (updatedResponse.ok) {
-                  const updatedData = await updatedResponse.json();
-                  setActivity(updatedData);
+                // Update local state instead of refetching
+                if (activity.participants) {
+                  const updatedActivity = {
+                    ...activity,
+                    participants: activity.participants.filter(
+                      (id) => id !== currentUserId
+                    ),
+                  };
+                  setActivity(updatedActivity);
                 }
+                
+                showAlert("Success", "You have left this activity.");
               } else {
                 showAlert("Error", data.detail || "Failed to leave the activity");
               }
             } catch (err: any) {
               showAlert("Error", err.message || "An error occurred");
             } finally {
-              setLoading(false);
+              setButtonLoading(false);
             }
           }
         }
@@ -212,7 +281,7 @@ export default function ActivityDetail() {
           style: "destructive",
           onPress: async () => {
             try {
-              setLoading(true);
+              setButtonLoading(true);
               const token = await AsyncStorage.getItem("token");
   
               const response = await fetch(`${API_URL}/activity/${activity.id}/cancel-request`, {
@@ -226,27 +295,27 @@ export default function ActivityDetail() {
               const data = await response.json();
   
               if (response.ok) {
+                // Update local state instead of refetching
                 setJoinRequestSent(false);
-                showAlert("Success", "Join request cancelled successfully.");
-  
-                // Refresh activity data to get updated status
-                const updatedResponse = await fetch(`${API_URL}/activity/${id}`, {
-                  headers: {
-                    Authorization: `Bearer ${token}`,
-                  },
-                });
-  
-                if (updatedResponse.ok) {
-                  const updatedData = await updatedResponse.json();
-                  setActivity(updatedData);
+                
+                if (activity.joinRequests) {
+                  const updatedActivity = {
+                    ...activity,
+                    joinRequests: activity.joinRequests.filter(
+                      (id) => id !== currentUserId
+                    ),
+                  };
+                  setActivity(updatedActivity);
                 }
+                
+                showAlert("Success", "Join request cancelled successfully.");
               } else {
                 showAlert("Error", data.detail || "Failed to cancel join request");
               }
             } catch (err: any) {
               showAlert("Error", err.message || "An error occurred");
             } finally {
-              setLoading(false);
+              setButtonLoading(false);
             }
           }
         }
@@ -261,6 +330,20 @@ export default function ActivityDetail() {
   const renderActionButton = () => {
     if (!activity || !currentUserId) return null;
   
+    // Check if activity is expired based on datetime or status
+    const isExpired = activity.status === "expired" || 
+      activity.status === "cancelled" || 
+      new Date(activity.dateTime) < new Date();
+  
+    // If button is loading, show a spinner
+    if (buttonLoading) {
+      return (
+        <View style={[styles.actionButton, { backgroundColor: "#999" }]}>
+          <ActivityIndicator size="small" color="#fff" />
+        </View>
+      );
+    }
+    
     // If current user is the creator
     if (activity.creator_id === currentUserId) {
       return (
@@ -310,15 +393,13 @@ export default function ActivityDetail() {
     }
   
     // If activity is cancelled or expired
-    if (activity.status === "cancelled" || activity.status === "expired") {
+    if (isExpired) {
       return (
         <TouchableOpacity
           style={[styles.actionButton, { backgroundColor: "#6c757d" }]}
           disabled={true}
         >
-          <Text style={styles.actionButtonText}>
-            {activity.status === "cancelled" ? "Cancelled" : "Expired"}
-          </Text>
+          <Text style={styles.actionButtonText}>Past Activity</Text>
         </TouchableOpacity>
       );
     }
@@ -329,6 +410,10 @@ export default function ActivityDetail() {
         <Text style={styles.actionButtonText}>Join Activity</Text>
       </TouchableOpacity>
     );
+  };
+
+  const navigateToProfile = (userId: string) => {
+    //router.push(`/UserProfile?id=${userId}`);
   };
 
   if (loading) {
@@ -377,6 +462,12 @@ export default function ActivityDetail() {
         <TouchableOpacity style={styles.backIconButton} onPress={handleBack}>
           <Ionicons name="arrow-back" size={24} color="white" />
         </TouchableOpacity>
+      
+
+      {/* Share Button */}
+        <TouchableOpacity style={styles.shareIconButton} onPress={handleShareActivity}>
+          <Ionicons name="share-social" size={24} color="white" />
+        </TouchableOpacity>
       </View>
 
       {/* Activity Details */}
@@ -400,7 +491,7 @@ export default function ActivityDetail() {
                 <Ionicons name="checkmark-circle" size={14} color="#fff" />
                 <Text style={styles.userStatusText}>Participating</Text>
               </View>
-            ) : activity.joinRequests?.includes(currentUserId) ? (
+            ) : activity.joinRequests?.includes(currentUserId) || joinRequestSent ? (
               <View style={[styles.userStatusBadge, { backgroundColor: '#f0ad4e' }]}>
                 <Ionicons name="time" size={14} color="#fff" />
                 <Text style={styles.userStatusText}>Pending Request</Text>
@@ -427,6 +518,42 @@ export default function ActivityDetail() {
 
           {activity.price > 0 && (
             <Text style={styles.priceText}>${activity.price}</Text>
+          )}
+        </View>
+
+        {/* Organizer Information */}
+        <View style={styles.organizerSection}>
+          <Text style={styles.sectionTitle}>Organiser</Text>
+          
+          {creatorLoading ? (
+            <View style={styles.creatorLoadingContainer}>
+              <ActivityIndicator size="small" color="#0066cc" />
+              <Text style={styles.infoText}>Loading organizer info...</Text>
+            </View>
+          ) : creatorInfo ? (
+            <TouchableOpacity 
+              style={styles.organizerContainer}
+              onPress={() => navigateToProfile(activity.creator_id)}
+            >
+              <Image
+                source={{ 
+                  uri: creatorInfo.profilePicUrl || "https://placehold.co/60/gray/white?text=User" 
+                }}
+                style={styles.organizerImage}
+                onError={(e) => console.log("Organizer image failed to load")}
+              />
+              <View style={styles.organizerInfo}>
+                <Text style={styles.organizerName}>
+                  {creatorInfo.firstName} {creatorInfo.lastName}
+                </Text>
+                <Text style={styles.organizerUsername}>
+                  @{creatorInfo.username}
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#999" />
+            </TouchableOpacity>
+          ) : (
+            <Text style={styles.infoText}>Organizer information unavailable</Text>
           )}
         </View>
 
@@ -549,6 +676,17 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 16,
   },
+  shareIconButton: {
+    position: "absolute",
+    top: 50,
+    right: 20,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
   detailsContainer: {
     padding: 20,
   },
@@ -595,6 +733,44 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
     color: "#2c3e50",
+  },
+  organizerSection: {
+    marginVertical: 15,
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+    paddingTop: 15,
+  },
+  organizerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f9f9f9',
+    padding: 12,
+    borderRadius: 10,
+  },
+  organizerImage: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    marginRight: 12,
+    borderWidth: 1,
+    borderColor: '#eee',
+  },
+  organizerInfo: {
+    flex: 1,
+  },
+  organizerName: {
+    fontWeight: 'bold',
+    fontSize: 16,
+    color: '#333',
+  },
+  organizerUsername: {
+    fontSize: 14,
+    color: '#666',
+  },
+  creatorLoadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
   },
   infoRow: {
     flexDirection: "row",
