@@ -17,7 +17,12 @@ const NavigationBar: React.FC = () => {
   const router = useRouter();
   const currentPath = usePathname();
   const { colors } = useTheme();
-  
+
+  // Remove navbar when on Dashboard
+  if (currentPath && (currentPath === '/Dashboard' || currentPath.startsWith('/Dashboard/'))) {
+    return null;
+  }
+
   // Define routes with their icons and paths
   const routes: Record<RouteKey, RouteConfig> = {
     dashboard: {
@@ -61,13 +66,13 @@ const NavigationBar: React.FC = () => {
           onPress={() => router.push(route.path as any)}
         >
           {/* Clone the icon element with the active color if route is active */}
-          {React.cloneElement(route.icon, { 
-            color: isActive(route.path) ? colors.primary : colors.text 
+          {React.cloneElement(route.icon, {
+            color: isActive(route.path) ? colors.primary : colors.text
           })}
           <Text style={[
-            styles.itemText, 
-            isActive(route.path) && {color: colors.primary},
-            !isActive(route.path) && {color: colors.text}
+            styles.itemText,
+            isActive(route.path) && { color: colors.primary },
+            !isActive(route.path) && { color: colors.text }
           ]}>
             {route.label}
           </Text>
@@ -89,7 +94,6 @@ const styles = StyleSheet.create({
     paddingBottom: 20, // Add bottom padding for home indicator on newer iPhones
     paddingTop: 10,
     gap: -10, // Adjust this number to control the spacing
-    
   },
   item: {
     alignItems: 'center',
