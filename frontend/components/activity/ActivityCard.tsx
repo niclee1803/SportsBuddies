@@ -6,11 +6,14 @@ import { useRouter } from 'expo-router';
 import { API_URL } from '../../config.json';
 import { Activity } from '../../types/activity';
 
+import { useTheme } from '@/hooks/ThemeContext';
+
 interface ActivityCardProps {
   activity: Activity;
 }
 
 const ActivityCard = ({ activity }: ActivityCardProps) => {
+  const { colors } = useTheme();
   const router = useRouter();
   const [creatorInfo, setCreatorInfo] = useState({
     name: "Loading...",
@@ -86,7 +89,7 @@ const ActivityCard = ({ activity }: ActivityCardProps) => {
   
   return (
     <TouchableOpacity 
-      style={styles.card} 
+      style={[styles.card, {backgroundColor: colors.card, borderColor: colors.border }]}
       onPress={handleActivityPress}
       activeOpacity={0.7}
     >
@@ -98,13 +101,13 @@ const ActivityCard = ({ activity }: ActivityCardProps) => {
               source={{ uri: activity.creator?.profilePicUrl || creatorInfo.profilePicUrl }} 
               style={styles.creatorImage} 
             />
-            <Text style={styles.creatorName} numberOfLines={1}>
+            <Text style={[styles.creatorName, {color:colors.text}]} numberOfLines={1}>
               {activity.creator?.name || creatorInfo.name}
             </Text>
           </View>
           
           {/* Activity name right below creator */}
-          <Text style={styles.activityName} numberOfLines={2}>
+          <Text style={[styles.activityName, {color:colors.text}]} numberOfLines={2}>
             {activity.activityName}
           </Text>
         </View>
@@ -116,15 +119,15 @@ const ActivityCard = ({ activity }: ActivityCardProps) => {
             styles.typeBadge, 
             { backgroundColor: activity.type === "coaching session" ? "#FFC107" : "#4CAF50" }
           ]}>
-            <Text style={styles.typeBadgeText}>
+            <Text style={[styles.typeBadgeText ,{color:colors.background}]}>
               {activity.type === "coaching session" ? "Coaching" : "Event"}
             </Text>
           </View>
           
           {/* Participants count */}
-          <View style={styles.participantsContainer}>
-            <FontAwesome5 name="users" size={14} color="#555" />
-            <Text style={styles.participantsText}>
+          <View style={[styles.participantsContainer, {backgroundColor: colors.border}]}>
+            <FontAwesome5 name="users" size={14} color={colors.smalltext} />
+            <Text style={[styles.participantsText,{color:colors.text}]}>
               {participantCount}/{maxParticipants}
             </Text>
           </View>
@@ -144,22 +147,22 @@ const ActivityCard = ({ activity }: ActivityCardProps) => {
       {/* Activity details */}
       <View style={styles.detailsContainer}>
         <View style={styles.detailRow}>
-          <Ionicons name="calendar-outline" size={16} color="#555" />
-          <Text style={styles.detailText}>
+          <Ionicons name="calendar-outline" size={16} color={colors.smalltext} />
+          <Text style={[styles.detailText, {color: colors.smalltext }]} numberOfLines={1}>
             {dateString} • {timeString}
           </Text>
         </View>
 
         <View style={styles.detailRow}>
-          <Ionicons name="location-outline" size={16} color="#555" />
-          <Text style={styles.detailText} numberOfLines={1}>
+          <Ionicons name="location-outline" size={16} color={colors.smalltext} />
+          <Text style={[styles.detailText, {color: colors.smalltext }]} numberOfLines={1}>
             {activity.placeName || "Location not set"}
           </Text>
         </View>
 
         <View style={styles.detailRow}>
-          <FontAwesome5 name="running" size={14} color="#555" />
-          <Text style={styles.detailText}>
+          <FontAwesome5 name="running" size={14} color={colors.smalltext} />
+          <Text style={[styles.detailText, {color: colors.smalltext }]} numberOfLines={1}>
             {activity.sport} • {activity.skillLevel}
           </Text>
         </View>

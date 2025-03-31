@@ -14,6 +14,7 @@ import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { format } from 'date-fns';
 // Import your custom Dropdown and predefined lists from ActivityMenu
 import Dropdown, { SPORTS_LIST, SKILL_LEVELS } from '@/components/activity/ActivityMenu';
+import { useTheme } from '@/hooks/ThemeContext';
 
 
 
@@ -143,6 +144,8 @@ const FilterModal: React.FC<FilterModalProps> = ({
     setDateToPickerVisible(false);
   };
 
+  const { colors } = useTheme();
+
   return (
     <Modal
       visible={visible}
@@ -151,18 +154,18 @@ const FilterModal: React.FC<FilterModalProps> = ({
       onRequestClose={onClose}
     >
       <SafeAreaView style={styles.container}>
-        <View style={styles.modalContent}>
+        <View style={[styles.modalContent, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={styles.header}>
-            <Text style={styles.title}>Filter Activities</Text>
+            <Text style={[styles.title, {color:colors.text}]}>Filter Activities</Text>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <Ionicons name="close" size={24} color="#333" />
+              <Ionicons name="close" size={24} color={colors.text} />
             </TouchableOpacity>
           </View>
 
-          <ScrollView style={styles.scrollView}>
+          <ScrollView style={[styles.scrollView, { backgroundColor: colors.background }]}>
             {/* Sport Dropdown with higher zIndex */}
             <View style={[styles.filterSection, styles.sportSection]}>
-              <Text style={styles.sectionTitle}>Sport</Text>
+              <Text style={[styles.sectionTitle, {color:colors.text}]}>Sport</Text>
               <Dropdown
                 items={SPORTS_LIST.map(sportItem => ({
                   label: sportItem,
@@ -173,12 +176,14 @@ const FilterModal: React.FC<FilterModalProps> = ({
                 placeholder="Select sport..."
                 searchable={true}
                 searchablePlaceholder="Search sport..."
+              
+      
               />
             </View>
 
             {/* Skill Level Dropdown with lower zIndex */}
             <View style={[styles.filterSection, styles.skillLevelSection]}>
-              <Text style={styles.sectionTitle}>Skill Level</Text>
+              <Text style={[styles.sectionTitle, {color:colors.text}]}>Skill Level</Text>
               <Dropdown
                 items={SKILL_LEVELS.map(level => ({
                   label: level,
@@ -194,32 +199,34 @@ const FilterModal: React.FC<FilterModalProps> = ({
 
             {/* Activity Type - using buttons */}
             <View style={styles.filterSection}>
-              <Text style={styles.sectionTitle}>Activity Type</Text>
+              <Text style={[styles.sectionTitle, {color:colors.text}]}>Activity Type</Text>
               <View style={styles.typeButtonContainer}>
                 <TouchableOpacity
                   style={[
                     styles.typeButton,
                     styles.typeButtonLeft,
-                    activityType === "event" && styles.activeTypeButton
+                    { backgroundColor: colors.card, borderColor: colors.border },
+                    activityType === "event" && [styles.activeTypeButton, { backgroundColor: colors.primary }]
                   ]}
                   onPress={() => setActivityType(activityType === "event" ? "" : "event")}
                 >
                   <Text style={[
                     styles.typeButtonText,
-                    activityType === "event" && styles.activeTypeButtonText
+                    activityType === "event" && styles.activeTypeButtonText, {color: colors.text}
                   ]}>Events</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[
-                    styles.typeButton,
-                    styles.typeButtonRight,
-                    activityType === "coaching" && styles.activeTypeButton
-                  ]}
+                 style={[
+                  styles.typeButton,
+                  styles.typeButtonRight,
+                  { backgroundColor: colors.card, borderColor: colors.border },
+                  activityType === "coaching" && [styles.activeTypeButton, { backgroundColor: colors.primary }]
+                ]}
                   onPress={() => setActivityType(activityType === "coaching" ? "" : "coaching")}
                 >
                   <Text style={[
                     styles.typeButtonText,
-                    activityType === "coaching" && styles.activeTypeButtonText
+                    activityType === "coaching" && styles.activeTypeButtonText,  {color: colors.text}
                   ]}>Coaching</Text>
                 </TouchableOpacity>
               </View>
@@ -227,24 +234,30 @@ const FilterModal: React.FC<FilterModalProps> = ({
 
             {/* Date Range */}
             <View style={styles.filterSection}>
-              <Text style={styles.sectionTitle}>Date Range</Text>
+              <Text style={[styles.sectionTitle, {color:colors.text}]}>Date Range</Text>
               <View style={styles.dateContainer}>
                 <TouchableOpacity
-                  style={styles.dateButton}
+                  style={[styles.dateButton, { 
+                    backgroundColor: colors.card, 
+                    borderColor: colors.border 
+                  }]}
                   onPress={() => setDateFromPickerVisible(true)}
                 >
-                  <Ionicons name="calendar-outline" size={18} color="#555" style={styles.dateIcon} />
-                  <Text style={[styles.dateText, dateFrom ? styles.dateTextActive : {}]}>
+                  <Ionicons name="calendar-outline" size={18} color={colors.smalltext} style={styles.dateIcon} />
+                  <Text style={[styles.dateText, dateFrom ? styles.dateTextActive : {}, , {color: colors.smalltext}]}>
                     {dateFrom ? format(dateFrom, 'MMM dd, yyyy') : 'From date'}
                   </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={styles.dateButton}
+                  style={[styles.dateButton, { 
+                    backgroundColor: colors.card, 
+                    borderColor: colors.border 
+                  }]}
                   onPress={() => setDateToPickerVisible(true)}
                 >
-                  <Ionicons name="calendar-outline" size={18} color="#555" style={styles.dateIcon} />
-                  <Text style={[styles.dateText, dateTo ? styles.dateTextActive : {}]}>
+                  <Ionicons name="calendar-outline" size={18} color={colors.smalltext} style={styles.dateIcon} />
+                  <Text style={[styles.dateText, dateTo ? styles.dateTextActive : {}, {color: colors.smalltext}]}>
                     {dateTo ? format(dateTo, 'MMM dd, yyyy') : 'To date'}
                   </Text>
                 </TouchableOpacity>
@@ -271,7 +284,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
 
             {/* Location Dropdown */}
             <View style={styles.filterSection}>
-              <Text style={styles.sectionTitle}>Location</Text>
+              <Text style={[styles.sectionTitle, {color:colors.text}]}>Location</Text>
               <Dropdown
                 items={LOCATIONS_LIST.map(loc => ({
                   label: loc,
@@ -288,7 +301,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
 
           <View style={styles.footer}>
             <TouchableOpacity style={styles.clearButton} onPress={handleClear}>
-              <Text style={styles.clearButtonText}>Clear All</Text>
+              <Text style={[styles.clearButtonText, {color:colors.smalltext}]}>Clear All</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.applyButton} onPress={handleApply}>
               <Text style={styles.applyButtonText}>Apply Filters</Text>
@@ -445,7 +458,7 @@ const styles = StyleSheet.create({
     flex: 0.48,
   },
   applyButtonText: {
-    color: '#fff',
+    color: '#000',
     fontWeight: '600',
     fontSize: 16,
   },
