@@ -20,8 +20,10 @@ import { validateUsername, validateEmail, validatePhone } from "@/components/sig
 import SportsSkillsMenu, { SportsSkill, SKILL_LEVELS } from "../components/preferences/SportsSkillsMenu";
 import { Ionicons } from "@expo/vector-icons";
 import { showAlert } from "@/utils/alertUtils";
+import { useTheme } from "@/hooks/ThemeContext";
 
 const ProfileSettings: React.FC = () => {
+  const {colors } = useTheme();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -569,10 +571,11 @@ const ProfileSettings: React.FC = () => {
   // Loading state
   if (loading) {
     return (
-      <View style={[styles.container, styles.loadingContainer]}>
-        <ActivityIndicator size="large" color="#42c8f5" />
-        <Text style={styles.loadingText}>Loading profile data...</Text>
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={[styles.loadingText, { color: colors.text }]}>Loading profile data...</Text>
       </View>
+
     );
   }
 
@@ -585,20 +588,23 @@ const ProfileSettings: React.FC = () => {
 
   // Render component
   return (
-    <View style={{ flex: 1, backgroundColor: "#F5F5F5" }}>
-      {/* Header with back button */}
-      <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton} 
-          onPress={handleBackPress}
-        >
-          <Ionicons name="arrow-back" size={24} color="#42c8f5" />
-          <Text style={styles.backButtonText}>Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Profile Settings</Text>
-      </View>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
 
-      <ScrollView contentContainerStyle={styles.container}>
+      {/* Header with back button */}
+      <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+      <TouchableOpacity 
+        style={styles.backButton} 
+        onPress={handleBackPress}
+      >
+        <Ionicons name="arrow-back" size={24} color={colors.primary} />
+        <Text style={[styles.backButtonText, { color: colors.primary }]}>Back</Text>
+      </TouchableOpacity>
+      <Text style={[styles.headerTitle, { color: colors.text }]}>Profile Settings</Text>
+    </View>
+
+
+    <ScrollView contentContainerStyle={[styles.container, { backgroundColor: colors.background }]}>
+
         {/* Profile Picture Section */}
         <TouchableOpacity
           onPress={handleProfilePictureUpdate}
@@ -627,18 +633,18 @@ const ProfileSettings: React.FC = () => {
           {/* Name Fields */}
           <View style={styles.nameRow}>
             <View style={styles.inputWrapper}>
-              <Text style={styles.label}>First Name</Text>
+              <Text style={[styles.label, { color: colors.text }]}>First Name</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
                 value={userData.firstName}
                 onChangeText={(text) => handleInputChange("firstName", text)}
                 placeholder="Enter first name"
               />
             </View>
             <View style={styles.inputWrapper}>
-              <Text style={styles.label}>Last Name</Text>
+              <Text style={[styles.label, { color: colors.text }]}>Last Name</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
                 value={userData.lastName}
                 onChangeText={(text) => handleInputChange("lastName", text)}
                 placeholder="Enter last name"
@@ -648,9 +654,9 @@ const ProfileSettings: React.FC = () => {
 
           {/* Username Field */}
           <View style={styles.fullInputWrapper}>
-            <Text style={styles.label}>Username</Text>
+            <Text style={[styles.label, { color: colors.text }]}>Username</Text>
             <TextInput
-              style={[styles.input, errors.username ? styles.inputError : null]}
+              style={[[styles.input, errors.username ? styles.inputError : null], { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
               value={userData.username}
               onChangeText={(text) => handleInputChange("username", text)}
               onBlur={validateUsernameField}
@@ -663,9 +669,9 @@ const ProfileSettings: React.FC = () => {
 
           {/* Phone Number Field */}
           <View style={styles.fullInputWrapper}>
-            <Text style={styles.label}>Mobile Number</Text>
+            <Text style={[styles.label, { color: colors.text }]}>Mobile Number</Text>
             <TextInput
-              style={[styles.input, errors.phone ? styles.inputError : null]}
+              style={[[styles.input, errors.phone ? styles.inputError : null], { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
               keyboardType="phone-pad"
               value={userData.phone}
               onChangeText={(text) => handleInputChange("phone", text)}
@@ -673,15 +679,15 @@ const ProfileSettings: React.FC = () => {
               placeholder="Enter mobile number"
             />
             {errors.phone ? (
-              <Text style={styles.errorText}>{errors.phone}</Text>
+              <Text style={[styles.errorText, { color: colors.text }]}>{errors.phone}</Text>
             ) : null}
           </View>
 
           {/* Email Field */}
           <View style={styles.fullInputWrapper}>
-            <Text style={styles.label}>Email</Text>
+            <Text style={[styles.label, { color: colors.text }]}>Email</Text>
             <TextInput
-              style={[styles.input, errors.email ? styles.inputError : null]}
+              style={[[styles.input, errors.email ? styles.inputError : null], { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
               value={userData.email}
               onChangeText={(text) => handleInputChange("email", text)}
               onBlur={validateEmailField}
@@ -690,16 +696,17 @@ const ProfileSettings: React.FC = () => {
               autoCapitalize="none"
             />
             {errors.email ? (
-              <Text style={styles.errorText}>{errors.email}</Text>
+              <Text style={[styles.errorText, { color: colors.text }]}>{errors.email}</Text>
             ) : null}
           </View>
          
           {/* Sports Preferences Section */}
-          <View style={styles.sectionContainer}>
-            <Text style={styles.sectionTitle}>Sports Preferences</Text>
+          <Text style={[styles.label, { color: colors.text }]}>Sports Preferences</Text>
+          <View style={[styles.sectionContainer, { backgroundColor: colors.background , borderColor: colors.border }]}>
+            
             
             {currentPreferences.length === 0 ? (
-              <Text style={styles.emptyMessage}>No sports added yet. Add your favorite sports below.</Text>
+              <Text style={[styles.emptyMessage, { color: colors.text }]}>No sports added yet. Add your favorite sports below.</Text>
             ) : (
               currentPreferences.map((item, index) => (
                 <SportsSkillsMenu
@@ -716,11 +723,11 @@ const ProfileSettings: React.FC = () => {
             )}
             
             {errors.preferences ? (
-              <Text style={styles.errorText}>{errors.preferences}</Text>
+              <Text style={[styles.errorText, { color: colors.text }]}>{errors.preferences}</Text>
             ) : null}
             
             <TouchableOpacity onPress={handleAddSport} style={styles.addButton}>
-              <Text style={styles.addButtonText}>Add Sport</Text>
+              <Text style={[styles.addButtonText]}>Add Sport</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -734,7 +741,7 @@ const ProfileSettings: React.FC = () => {
           onPress={handleSave}
           disabled={!isFormValid || saving}
         >
-          <Text style={styles.buttonText}>
+          <Text style={[styles.buttonText]}>
             {saving ? "Saving..." : "Save Changes"}
           </Text>
         </TouchableOpacity>
@@ -744,7 +751,7 @@ const ProfileSettings: React.FC = () => {
           style={styles.deleteButton}
           onPress={handleDeleteAccount}
         >
-          <Text style={styles.buttonText}>Delete Account</Text>
+          <Text style={[styles.buttonText]}>Delete Account</Text>
         </TouchableOpacity>
       </ScrollView>
     </View>
@@ -862,8 +869,10 @@ const styles = StyleSheet.create({
   },
   sectionContainer: {
     width: "100%",
-    marginVertical: 10,
+    //marginTop: -20,
     backgroundColor: "white",
+    borderColor: "#ccc",
+    borderWidth: 1,
     borderRadius: 8,
     padding: 15,
     shadowColor: "#000",
@@ -885,22 +894,23 @@ const styles = StyleSheet.create({
   },
   addButton: {
     backgroundColor: "#42c8f5",
-    borderRadius: 5,
+    borderRadius: 20,
     paddingVertical: 10,
-    paddingHorizontal: 15,
+    paddingHorizontal: 20,
     marginTop: 15,
     alignItems: "center",
     alignSelf: "flex-start",
   },
   addButtonText: {
-    color: "white",
+    color: "black",
     fontSize: 14,
     fontWeight: "bold",
   },
   saveButton: {
     backgroundColor: "#42c8f5",
-    borderRadius: 8,
-    paddingVertical: 14,
+    borderRadius: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
     width: "90%",
     marginTop: 30,
     alignItems: "center",
@@ -910,14 +920,15 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   buttonText: {
-    color: "white",
+    color: "black",
     fontSize: 16,
     fontWeight: "bold",
   },
   deleteButton: {
     backgroundColor: "#FF3B30",
-    borderRadius: 8,
-    paddingVertical: 14,
+    borderRadius: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
     width: "90%",
     marginTop: 15,
     marginBottom: 30,

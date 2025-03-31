@@ -15,8 +15,10 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { fetchCurrentUser } from "../utils/GetUser";
 import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
 import { API_URL } from "../config.json";
+import { useTheme } from '@/hooks/ThemeContext';
 
 export default function Login() {
+  const { colors } = useTheme();
   const router = useRouter();
   const [input, setInput] = useState(""); // email or username
   const [password, setPassword] = useState("");
@@ -60,25 +62,25 @@ export default function Login() {
   };
 
   return (
-    <View style={styles.view}>
-      <Text style={styles.heading}>Login</Text>
-      <Text style={styles.heading2}>Welcome back!</Text>
+    <View style={[styles.view, {backgroundColor: colors.background }]}>
+      <Text style={[styles.heading, { color: colors.text }]}>Login</Text>
+      <Text style={[styles.heading2, { color: colors.text }]}>Welcome back!</Text>
 
-      <View style={styles.formContainer}>
-        <Text style={styles.label}>Username or Email</Text>
+      <View style={[styles.formContainer, {backgroundColor: colors.background }]}>
+        <Text style={[styles.label, { color: colors.text }]}>Username or Email</Text>
         <TextInput
-          style={styles.input}
-          value={input}
-          placeholder="Enter your username or email"
-          placeholderTextColor="#888"
-          onChangeText={setInput}
-          autoCapitalize="none"
+           style={[styles.input, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
+           value={input}
+           placeholder="Enter your username or email"
+           placeholderTextColor="#888"
+           onChangeText={setInput}
+           autoCapitalize="none"
         />
 
-        <Text style={styles.label}>Password</Text>
-        <View style={styles.passwordContainer}>
+        <Text style={[styles.label, { color: colors.text }]}>Password</Text>
+        <View style={[styles.passwordContainer, {backgroundColor: colors.background }]}>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
             value={password}
             placeholder="Enter your password"
             placeholderTextColor="#888"
@@ -94,11 +96,11 @@ export default function Login() {
         </View>
 
         <TouchableOpacity style={styles.linkButton} onPress={() => router.push("/ForgetPassword")}>
-          <Text style={styles.linkButtonText}>Forgot Password?</Text>
+          <Text style={[styles.linkButtonText, { color: colors.text }]}>Forgot Password?</Text>
         </TouchableOpacity>
 
-        <View style={styles.signUpContainer}>
-          <Text style={styles.signUpText}>Don't have an account? </Text>
+        <View style={[styles.signUpContainer, {backgroundColor: colors.background }]}>
+          <Text style={[styles.signUpText, { color: colors.text }]}>Don't have an account? </Text>
           <TouchableOpacity onPress={() => router.push("/SignUp")}>
             <Text style={styles.linkButtonText}>Sign Up</Text>
           </TouchableOpacity>
@@ -109,15 +111,15 @@ export default function Login() {
           onPress={handleLogin}
           disabled={isLoading}
         >
-          <Text style={styles.loginButtonText}>Login</Text>
+          <Text style={[styles.loginButtonText, { color: colors.text }]}>Login</Text>
         </TouchableOpacity>
       </View>
 
       {isLoading && (
         <Modal transparent={true} animationType="fade">
-          <View style={styles.loadingOverlay}>
+          <View style={[styles.loadingOverlay, {backgroundColor: colors.background }]}>
             <ActivityIndicator size="large" color="#fff" />
-            <Text style={styles.loadingText}>Logging in...</Text>
+            <Text style={[styles.loadingText, { color: colors.text }]}>Logging in...</Text>
           </View>
         </Modal>
       )}
@@ -146,7 +148,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#ccc",
     borderRadius: 10,
-    backgroundColor: "#f9f9f9",
+    //backgroundColor: "#f9f9f9",
     alignItems: "flex-start",
   },
   label: {
@@ -157,7 +159,7 @@ const styles = StyleSheet.create({
   input: {
     height: 40,
     marginBottom: 15,
-    backgroundColor: "#fff",
+    //backgroundColor: "#fff",
     width: "100%",
     paddingHorizontal: 10,
     borderWidth: 1,
