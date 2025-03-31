@@ -7,23 +7,27 @@ import { useColorScheme } from 'react-native';
 export const lightColors = {
   background: '#f9f9f9',
   text: '#000000',
+  smalltext: "#333333",
   primary: '#42c8f5',
   secondary: '#f5a442',
   card: '#F5F5F5',
   border: '#CCCCCC',
   notification: '#FF3B30',
-  placeholder: '#888888'
+  placeholder: '#888888',
+  profilebutton: "#e0e0e0",
 };
 
 export const darkColors = {
   background: '#121212',
   text: '#FFFFFF',
+  smalltext: "#c9c9c9",
   primary: '#2196F3',
   secondary: '#FF9800',
   card: '#1E1E1E',
   border: '#333333',
   notification: '#FF453A',
-  placeholder: '#1E1E1E'
+  placeholder: '#1E1E1E',
+  profilebutton: "#1E1E1E",
 };
 
 
