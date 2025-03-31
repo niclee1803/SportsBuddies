@@ -4,13 +4,19 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fetchCurrentUser } from '@/utils/GetUser';
 import AuthLayout from '@/components/AuthLayout';
+import { useTheme } from '@/hooks/ThemeContext';
+
+
 
 const Settings = () => {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const router = useRouter();
+  
+
+  // Use the theme context
+  const { isDarkMode, toggleTheme, colors } = useTheme();
 
   // Fetch user data from API
   const fetchUserData = async () => {
@@ -88,9 +94,9 @@ const Settings = () => {
   if (loading) {
     return (
       <AuthLayout>
-        <View style={[styles.container, styles.loadingContainer]}>
-          <ActivityIndicator size="large" color="#42c8f5" />
-          <Text style={styles.loadingText}>Loading settings...</Text>
+        <View style={[styles.container, styles.loadingContainer, { backgroundColor: colors.background }]}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[styles.loadingText, { color: colors.text }]}>Loading settings...</Text>
         </View>
       </AuthLayout>
     );
@@ -98,7 +104,7 @@ const Settings = () => {
 
   return (
     <AuthLayout>
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
         {user && (
           <View style={styles.profileContainer}>
             <Image 
@@ -107,33 +113,45 @@ const Settings = () => {
               }} 
               style={styles.profileImage} 
             /> 
-            <Text style={styles.name}>{user.firstName} {user.lastName}</Text>
-            <Text style={styles.username}>@{user.username}</Text>
+            <Text style={[styles.name, { color: colors.text }]}>{user.firstName} {user.lastName}</Text>
+            <Text style={[styles.username, { color: colors.secondary }]}>@{user.username}</Text>
           </View>
         )}
 
         <TouchableOpacity style={styles.settingItem}>
           <Text 
-            style={[styles.editProfileButton, {fontWeight: 'bold'}, {fontSize: 16}]} 
+            style={[styles.editProfileButton, {fontWeight: 'bold'}, 
+              {fontSize: 16}, 
+              { backgroundColor: colors.primary},{ color: 'black' } ]} 
             onPress={gotoProfileSettings}
           >
             Edit Profile
           </Text>
         </TouchableOpacity>
 
-        <View style={styles.settingItem}>
-          <Text style={styles.settingText}>Dark Mode</Text>
-          <Switch value={darkMode} onValueChange={setDarkMode} />
+        <View style={[styles.settingItem, { borderBottomColor: colors.border }]}>
+          <Text style={[styles.settingText, { color: colors.text }]}>Dark Mode</Text>
+          <Switch 
+            value={isDarkMode} 
+            onValueChange={toggleTheme}
+            trackColor={{ false: '#767577', true: colors.primary }}
+            thumbColor={isDarkMode ? '#f5dd4b' : '#f4f3f4'} 
+          />
         </View>
 
-        <TouchableOpacity style={styles.settingItem}>
-          <Text style={styles.settingText}>Language</Text>
-          <Text>ENG</Text>
+        <TouchableOpacity style={[styles.settingItem, { borderBottomColor: colors.border }]}>
+          <Text style={[styles.settingText, { color: colors.text }]}>Language</Text>
+          <Text style={{ color: colors.secondary }}>ENG</Text>
         </TouchableOpacity>
 
-        <View style={styles.settingItem}>
-          <Text style={styles.settingText}>Notifications</Text>
-          <Switch value={notificationsEnabled} onValueChange={setNotificationsEnabled} />
+        <View style={[styles.settingItem, { borderBottomColor: colors.border }]}>
+          <Text style={[styles.settingText, { color: colors.text }]}>Notifications</Text>
+          <Switch 
+            value={notificationsEnabled} 
+            onValueChange={setNotificationsEnabled}
+            trackColor={{ false: '#767577', true: colors.primary }}
+            thumbColor={notificationsEnabled ? '#f5dd4b' : '#f4f3f4'} 
+          />
         </View>
 
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogoutConfirmation}>
@@ -145,6 +163,7 @@ const Settings = () => {
 };
 
 const styles = StyleSheet.create({
+  // Keep your existing styles
   container: {
     flex: 1,
     padding: 20,
@@ -156,7 +175,6 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 10,
     fontSize: 16,
-    color: '#333',
   },
   profileContainer: {
     alignItems: 'center',
@@ -176,7 +194,6 @@ const styles = StyleSheet.create({
   },
   username: {
     fontSize: 16,
-    color: 'gray',
   },
   settingItem: {
     flexDirection: 'row',
@@ -184,7 +201,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
   },
   settingText: {
     fontSize: 16,
@@ -198,12 +214,12 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   editProfileButton: {
-    backgroundColor: '#42c8f5',
     borderRadius: 20,
     paddingVertical: 10,
     paddingHorizontal: 20,
     marginTop: 20,
     alignItems: 'center',
+
   },
   logoutButtonText: {
     color: '#000',

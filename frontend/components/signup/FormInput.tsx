@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TextInput, TextInputProps } from 'react-native';
 import styles from './styles';
+import { useTheme } from '@/hooks/ThemeContext';
 
 interface FormInputProps extends TextInputProps {
   label: string;
@@ -17,16 +18,20 @@ export const FormInput: React.FC<FormInputProps> = ({
   error, 
   containerStyle,
   ...props 
-}) => (
-  <View style={[styles.inputContainer, containerStyle]}>
-    <Text style={styles.label}>{label}</Text>
-    <TextInput
-      style={[styles.input, error ? styles.inputError : null]}
-      value={value}
-      onChangeText={onChangeText}
-      placeholderTextColor="#888"
-      {...props}
-    />
-    {error ? <Text style={styles.errorText}>{error}</Text> : null}
-  </View>
-);
+}) => {
+  const { colors } = useTheme(); 
+
+  return (
+    <View style={[[styles.inputContainer, containerStyle], {backgroundColor: "colors.card"}]}>
+      <Text style={[styles.label, { color: colors.text}]}>{label}</Text>
+      <TextInput
+        style={[[styles.input, error ? styles.inputError : null], { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
+        value={value}
+        onChangeText={onChangeText}
+        placeholderTextColor="#888"
+        {...props}
+      />
+      {error ? <Text style={[styles.errorText, { color: colors.text}]}>{error}</Text> : null}
+    </View>
+  );
+};

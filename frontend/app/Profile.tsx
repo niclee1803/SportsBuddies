@@ -11,8 +11,11 @@ import { fetchCurrentUser } from '@/utils/GetUser';
 import ActivityCard from '@/components/activity/ActivityCard';
 import { Activity } from '@/types/activity';
 import AuthLayout from '@/components/AuthLayout';
+import { useTheme } from '@/hooks/ThemeContext';
+
 
 const Profile = () => {
+  const { colors } = useTheme();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [profilePic, setProfilePic] = useState('https://placehold.co/150');
@@ -153,7 +156,7 @@ const Profile = () => {
   return (
     <AuthLayout>
       <ScrollView 
-        style={styles.container}
+        style={[styles.container, {backgroundColor: colors.background }]}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -163,40 +166,40 @@ const Profile = () => {
           />
         }
       >
-        <View style={styles.header}>
+        <View style={[styles.header, {backgroundColor: colors.background }]}>
           <TouchableOpacity>
             <Image source={{ uri: profilePic }} style={styles.profileImage} />
           </TouchableOpacity>
-          <Text style={styles.name}>{user.firstName} {user.lastName}</Text>
-          <Text style={styles.username}>@{user.username || '...'}</Text>
+          <Text style={[styles.name, { color: colors.text}]}>{user.firstName} {user.lastName}</Text>
+          <Text style={[styles.username, { color: colors.text}]}>@{user.username || '...'}</Text>
         </View>
 
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity style={styles.button} onPress={shareProfile}>
-            <AntDesign name="sharealt" size={20} color="black" />
-            <Text style={styles.buttonText}>Share</Text>
+        <View style={[styles.buttonContainer, {backgroundColor: colors.background }]}>
+          <TouchableOpacity style={[styles.button, {backgroundColor: colors.profilebutton}]} onPress={shareProfile}>
+            <AntDesign name="sharealt" size={20} color={colors.text} />
+            <Text style={[styles.buttonText,, { color: colors.text}]}>Share</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.button} onPress={() => router.push('/ProfileSettings')}>
-            <Feather name="edit-3" size={20} color="black" />
-            <Text style={styles.buttonText}>Edit</Text>
+          <TouchableOpacity style={[styles.button, {backgroundColor: colors.profilebutton}]} onPress={() => router.push('/ProfileSettings')}>
+            <Feather name="edit-3" size={20} color={colors.text}  />
+            <Text style={[styles.buttonText,, { color: colors.text}]}>Edit</Text>
           </TouchableOpacity>
         </View>
         {/* Activity Tabs */}
-        <View style={styles.tabContainer}>
+        <View style={[styles.tabContainer, {backgroundColor: colors.profilebutton }]}>
           <TouchableOpacity 
-            style={[styles.tab, activeTab === 'created' && styles.activeTab]} 
+            style={[styles.tab, activeTab === 'created' && styles.activeTab && {backgroundColor: colors.background}]} 
             onPress={() => setActiveTab('created')}
           >
-            <Text style={[styles.tabText, activeTab === 'created' && styles.activeTabText]}>
+            <Text style={[styles.tabText, {color: colors.smalltext}, activeTab === 'created' && styles.activeTabText ]}>
               Created
             </Text>
           </TouchableOpacity>
           <TouchableOpacity 
-            style={[styles.tab, activeTab === 'joined' && styles.activeTab]} 
+            style={[styles.tab, activeTab === 'joined' && styles.activeTab && {backgroundColor: colors.background}]} 
             onPress={() => setActiveTab('joined')}
           >
-            <Text style={[styles.tabText, activeTab === 'joined' && styles.activeTabText]}>
+            <Text style={[styles.tabText,{color: colors.smalltext}, activeTab === 'joined' && styles.activeTabText]}>
               Joined
             </Text>
           </TouchableOpacity>
@@ -212,7 +215,7 @@ const Profile = () => {
                 <ActivityCard key={activity.id} activity={activity} />
               ))
             ) : (
-              <Text style={styles.noActivityText}>You haven't created any activities yet.</Text>
+              <Text style={[styles.noActivityText,{color: colors.smalltext}]}>You haven't created any activities yet.</Text>
             )
           ) : joinedActivities.length > 0 ? (
             joinedActivities.map((activity) => (

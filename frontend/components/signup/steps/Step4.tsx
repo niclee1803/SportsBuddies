@@ -4,6 +4,7 @@ import { PasswordInput } from "../PasswordInput";
 import { NavigationButtons } from "../NavigationButtons";
 import { validatePassword } from "../ValidationUtils";
 import styles from "../styles";
+import { useTheme } from '@/hooks/ThemeContext';
 
 interface Step4Props {
   password: string;
@@ -40,10 +41,11 @@ export const Step4: React.FC<Step4Props> = ({
 }) => {
   const isValid =
     !!password && !!confirmPassword && !passwordError && !confirmPasswordError;
+  const { colors } = useTheme();
 
   return (
     <>
-      <Text style={styles.subheading}>Step 4: Secure Your Account</Text>
+      <Text style={[styles.subheading, {color:colors.text}]}>Step 4: Secure Your Account</Text>
       <PasswordInput
         value={password}
         onChangeText={(text) => {

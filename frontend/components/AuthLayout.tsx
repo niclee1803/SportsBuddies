@@ -1,15 +1,17 @@
 import React, { ReactNode } from 'react';
 import { View, StyleSheet } from 'react-native';
 import NavigationBar from './NavigationBar';
+import { useTheme } from '@/hooks/ThemeContext';
 
 interface AuthLayoutProps {
   children: ReactNode;
 }
 
 const AuthLayout: React.FC<AuthLayoutProps> = ({ children }) => {
+  const { colors } = useTheme();
   return (
-    <View style={styles.container}>
-      <View style={styles.content}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.content, { backgroundColor: colors.background }]}>
         {children}
       </View>
       <NavigationBar />

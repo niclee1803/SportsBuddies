@@ -13,6 +13,7 @@ import {
 } from "../components/signup/ValidationUtils";
 import styles from "../components/signup/styles";
 import { API_URL } from "../config.json";
+import { useTheme } from '@/hooks/ThemeContext';
 
 // Import Firebase authentication
 import { getAuth, createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
@@ -22,6 +23,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 const auth = getAuth();
 
 export default function SignUp() {
+  const { colors } = useTheme();
   const router = useRouter();
   const [step, setStep] = useState<number>(1);
   const [loading, setLoading] = useState<boolean>(false);
@@ -251,20 +253,20 @@ export default function SignUp() {
   };
 
   return (
-    <View style={styles.view}>
+    <View style={[styles.view ,{backgroundColor: colors.background }]}>
       <StepIndicator currentStep={step} totalSteps={totalSteps} />
-      <View style={styles.headingContainer}>
-        <Text style={styles.heading}>Sign Up</Text>
-        <Text style={styles.heading2}>It's free and takes one minute!</Text>
+      <View style={[styles.headingContainer, {backgroundColor: colors.background }]}>
+        <Text style={[styles.heading, {color:colors.text}]}>Sign Up</Text>
+        <Text style={[styles.heading2, {color:colors.text}]}>It's free and takes one minute!</Text>
       </View>
-      <View style={styles.formContainer}>{renderStep()}</View>
+      <View style={[styles.formContainer,{backgroundColor: colors.background }]}>{renderStep()}</View>
       
       {/* Loading Overlay */}
       {loading && (
         <Modal transparent={true} animationType="fade">
-          <View style={styles.loadingOverlay}>
+          <View style={[styles.loadingOverlay,{backgroundColor: colors.background }]}>
             <ActivityIndicator size="large" color="#fff" />
-            <Text style={styles.loadingText}>Creating Account...</Text>
+            <Text style={[styles.loadingText, {color:colors.text}]}>Creating Account...</Text>
           </View>
         </Modal>
       )}

@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, Modal, ScrollView, StyleSheet, SafeAreaVi
 import Checkbox from "expo-checkbox";
 import { NavigationButtons } from '../NavigationButtons';
 import styles from '../styles';
+import { useTheme } from '@/hooks/ThemeContext';
 
 interface Step5Props {
   isChecked: boolean;
@@ -59,9 +60,11 @@ export const Step5: React.FC<Step5Props> = ({
     ? Math.min(100, ((scrollPosition + scrollViewHeight) / contentHeight) * 100) 
     : 0;
 
+  const { colors } = useTheme();
+
   return (
     <>
-      <Text style={styles.subheading}>Step 5: Accept Terms</Text>
+      <Text style={[styles.subheading, {color:colors.text}]}>Step 5: Accept Terms</Text>
       <View style={styles.termsContainer}>
         <Checkbox
           value={isChecked}
@@ -75,9 +78,9 @@ export const Step5: React.FC<Step5Props> = ({
           }}
           color={isChecked ? "#42c8f5" : undefined}
         />
-        <Text style={styles.termsText}> I accept the </Text>
+        <Text style={[styles.termsText, {color:colors.text}]}> I accept the </Text>
         <TouchableOpacity onPress={openTerms}>
-          <Text style={styles.termsLink}>Terms & Conditions</Text>
+          <Text style={[styles.termsLink, {color: colors.text}]}>Terms & Conditions</Text>
         </TouchableOpacity>
       </View>
       
@@ -87,79 +90,79 @@ export const Step5: React.FC<Step5Props> = ({
         visible={modalVisible}
         onRequestClose={closeTerms}
       >
-        <SafeAreaView style={modalStyles.centeredView}>
-          <View style={modalStyles.modalView}>
-            <Text style={modalStyles.modalTitle}>Terms and Conditions</Text>
+        <SafeAreaView style={[modalStyles.centeredView, {backgroundColor: colors.card}]}>
+          <View style={[modalStyles.modalView, {backgroundColor: colors.card}]}>
+            <Text style={[modalStyles.modalTitle, {color: colors.text}]}>Terms and Conditions</Text>
             
             <ScrollView
               ref={scrollViewRef}
-              style={modalStyles.scrollView}
+              style={[modalStyles.scrollView, {backgroundColor: colors.card}]}
               onScroll={handleScroll}
               scrollEventThrottle={16} // Update scroll position more frequently
             >
-              <Text style={modalStyles.lastUpdated}>Last Updated: March 2, 2025</Text>
+              <Text style={[modalStyles.lastUpdated, {color: colors.smalltext}]}>Last Updated: March 2, 2025</Text>
               
-              <Text style={modalStyles.sectionTitle}>1. Introduction</Text>
-              <Text style={modalStyles.paragraph}>
+              <Text style={[modalStyles.sectionTitle, {color: colors.smalltext}]}>1. Introduction</Text>
+              <Text style={[modalStyles.paragraph, {color: colors.smalltext}]}>
                 Welcome to SportsBuddies! These Terms and Conditions govern your use of the SportsBuddies mobile application ("App"). By accessing or using the App, you agree to be bound by these Terms. If you do not agree with any part of these Terms, please do not use the App.
               </Text>
               
-              <Text style={modalStyles.sectionTitle}>2. Eligibility</Text>
-              <Text style={modalStyles.paragraph}>
+              <Text style={[modalStyles.sectionTitle, {color: colors.smalltext}]}>2. Eligibility</Text>
+              <Text style={[modalStyles.paragraph, {color: colors.smalltext}]}>
                 You must be at least 18 years old or have parental/guardian consent to use the App. By using the App, you represent that you meet these requirements.
               </Text>
               
-              <Text style={modalStyles.sectionTitle}>3. Account Registration</Text>
-              <Text style={modalStyles.paragraph}>
+              <Text style={[modalStyles.sectionTitle, {color: colors.smalltext}]}>3. Account Registration</Text>
+              <Text style={[modalStyles.paragraph, {color: colors.smalltext}]}>
                 To access certain features, you may be required to register for an account. You are responsible for maintaining the confidentiality of your account credentials and for all activities that occur under your account.
               </Text>
               
-              <Text style={modalStyles.sectionTitle}>4. Use of the App</Text>
-              <Text style={modalStyles.paragraph}>
+              <Text style={[modalStyles.sectionTitle, {color: colors.smalltext}]}>4. Use of the App</Text>
+              <Text style={[modalStyles.paragraph, {color: colors.smalltext}]}>
                 You agree to use the App for lawful purposes only. Prohibited activities include, but are not limited to:
               </Text>
-              <Text style={modalStyles.bullet}>• Violating any applicable laws or regulations.</Text>
-              <Text style={modalStyles.bullet}>• Misrepresenting your identity.</Text>
-              <Text style={modalStyles.bullet}>• Harassing, threatening, or harming other users.</Text>
-              <Text style={modalStyles.bullet}>• Posting inappropriate, offensive, or misleading content.</Text>
+              <Text style={[modalStyles.bullet, {color: colors.smalltext}]}>• Violating any applicable laws or regulations.</Text>
+              <Text style={[modalStyles.bullet, {color: colors.smalltext}]}>• Misrepresenting your identity.</Text>
+              <Text style={[modalStyles.bullet, {color: colors.smalltext}]}>• Harassing, threatening, or harming other users.</Text>
+              <Text style={[modalStyles.bullet, {color: colors.smalltext}]}>• Posting inappropriate, offensive, or misleading content.</Text>
               
-              <Text style={modalStyles.sectionTitle}>5. Event Participation</Text>
-              <Text style={modalStyles.paragraph}>
+              <Text style={[modalStyles.sectionTitle, {color: colors.smalltext}]}>5. Event Participation</Text>
+              <Text style={[modalStyles.paragraph, {color: colors.smalltext}]}>
                 SportsBuddies facilitates connections between users for sports events. The App is not responsible for any injuries, accidents, or disputes that may arise from event participation. Users participate in events at their own risk.
               </Text>
               
-              <Text style={modalStyles.sectionTitle}>6. User Content</Text>
-              <Text style={modalStyles.paragraph}>
+              <Text style={[modalStyles.sectionTitle, {color: colors.smalltext}]}>6. User Content</Text>
+              <Text style={[modalStyles.paragraph, {color: colors.smalltext}]}>
                 You retain ownership of any content you submit through the App. By submitting content, you grant SportsBuddies a non-exclusive, worldwide, royalty-free license to use, display, and distribute your content for App-related purposes.
               </Text>
               
-              <Text style={modalStyles.sectionTitle}>7. Privacy Policy</Text>
-              <Text style={modalStyles.paragraph}>
+              <Text style={[modalStyles.sectionTitle, {color: colors.smalltext}]}>7. Privacy Policy</Text>
+              <Text style={[modalStyles.paragraph, {color: colors.smalltext}]}>
                 Your use of the App is also governed by our Privacy Policy, which outlines how we collect, use, and protect your personal information.
               </Text>
               
-              <Text style={modalStyles.sectionTitle}>8. Limitation of Liability</Text>
-              <Text style={modalStyles.paragraph}>
+              <Text style={[modalStyles.sectionTitle, {color: colors.smalltext}]}>8. Limitation of Liability</Text>
+              <Text style={[modalStyles.paragraph, {color: colors.smalltext}]}>
                 SportsBuddies is provided on an "as is" basis. We do not guarantee uninterrupted or error-free operation. To the fullest extent permitted by law, we are not liable for any damages, losses, or injuries resulting from the use of the App.
               </Text>
               
-              <Text style={modalStyles.sectionTitle}>9. Termination</Text>
-              <Text style={modalStyles.paragraph}>
+              <Text style={[modalStyles.sectionTitle, {color: colors.smalltext}]}>9. Termination</Text>
+              <Text style={[modalStyles.paragraph, {color: colors.smalltext}]}>
                 We reserve the right to terminate or suspend your account at our discretion if you violate these Terms.
               </Text>
               
-              <Text style={modalStyles.sectionTitle}>10. Acceptance of Terms</Text>
-              <Text style={modalStyles.paragraph}>
+              <Text style={[modalStyles.sectionTitle, {color: colors.smalltext}]}>10. Acceptance of Terms</Text>
+              <Text style={[modalStyles.paragraph, {color: colors.smalltext}]}>
                 To proceed, you must read and accept the Terms & Conditions. Within the SportsBuddies app, users must open and review the Terms before they can check the acceptance box.
               </Text>
               
-              <Text style={modalStyles.sectionTitle}>11. Changes to Terms</Text>
-              <Text style={modalStyles.paragraph}>
+              <Text style={[modalStyles.sectionTitle, {color: colors.smalltext}]}>11. Changes to Terms</Text>
+              <Text style={[modalStyles.paragraph, {color: colors.smalltext}]}>
                 We may update these Terms from time to time. Continued use of the App after changes constitute acceptance of the revised Terms.
               </Text>
               
-              <Text style={modalStyles.sectionTitle}>12. Contact Us</Text>
-              <Text style={modalStyles.paragraph}>
+              <Text style={[modalStyles.sectionTitle, {color: colors.smalltext}]}>12. Contact Us</Text>
+              <Text style={[modalStyles.paragraph, {color: colors.smalltext}]}>
                 If you have any questions about these Terms, please contact us at trevsweproj@gmail.com
               </Text>
               
@@ -171,7 +174,8 @@ export const Step5: React.FC<Step5Props> = ({
               <View 
                 style={[
                   modalStyles.progressBar, 
-                  { width: `${scrollProgress}%` }
+                  { width: `${scrollProgress}%` },
+                  { backgroundColor: colors.card},
                 ]} 
               />
             </View>
@@ -306,7 +310,7 @@ const modalStyles = StyleSheet.create({
     backgroundColor: '#e0e0e0',
   },
   buttonText: {
-    color: 'white',
+    color: 'black',
     fontWeight: 'bold',
     textAlign: 'center',
   },

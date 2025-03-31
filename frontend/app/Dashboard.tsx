@@ -4,8 +4,10 @@ import { useRouter } from 'expo-router';
 import { FontAwesome5, MaterialIcons, Ionicons } from '@expo/vector-icons';
 import AuthLayout from '@/components/AuthLayout';
 import { fetchCurrentUser } from '@/utils/GetUser';
+import { useTheme } from '@/hooks/ThemeContext';
 
 const Dashboard = () => {
+  const { colors } = useTheme();
   const router = useRouter();
   const [userName, setUserName] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
@@ -61,30 +63,30 @@ const Dashboard = () => {
 
   return (
     <AuthLayout>
-      <View style={styles.container}>
-        <Text style={styles.title}>Dashboard</Text>
+      <View style={[styles.container, {backgroundColor: colors.background }]}>
+        <Text style={[styles.title, { color: colors.text }]}>Dashboard</Text>
         
         {loading ? (
-          <ActivityIndicator size="small" color="#42c8f5" style={styles.loader} />
+          <ActivityIndicator size="small" color={colors.smalltext} style={styles.loader} />
         ) : (
-          <Text style={styles.subtitle}>
+          <Text style={[styles.subtitle,{color:colors.smalltext}]}>
             {userName ? `Welcome back, ${userName}!` : 'Welcome to SportsBuddies!'}
           </Text>
         )}
 
-        <View style={styles.optionsGrid}>
+        <View style={[styles.optionsGrid, {backgroundColor: colors.background}]}>
           {navigationOptions.map(option => (
             <TouchableOpacity
               key={option.id}
-              style={styles.optionCard}
+              style={[styles.optionCard, {backgroundColor: colors.card}]}
               onPress={option.onPress}
               activeOpacity={0.7}
             >
               <View style={styles.iconContainer}>
                 {option.icon}
               </View>
-              <Text style={styles.optionLabel}>{option.label}</Text>
-              <Text style={styles.optionDescription}>{option.description}</Text>
+              <Text style={[styles.optionLabel, {color:colors.text}]}>{option.label}</Text>
+              <Text style={[styles.optionDescription, {color:colors.smalltext}]}>{option.description}</Text>
             </TouchableOpacity>
           ))}
         </View>

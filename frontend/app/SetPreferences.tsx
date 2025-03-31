@@ -15,8 +15,10 @@ import { API_URL } from "../config.json";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import SportsSkillsMenu, { SPORTS_LIST, SKILL_LEVELS, SportsSkill } from "../components/preferences/SportsSkillsMenu";
 import { Ionicons } from "@expo/vector-icons";
+import { useTheme } from '@/hooks/ThemeContext';
 
 export default function SetPreferences() {
+  const { colors } = useTheme();
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(false);
@@ -155,7 +157,7 @@ export default function SetPreferences() {
   };
 
   const renderSportItem = ({ item, index }: { item: SportsSkill, index: number }) => (
-    <View style={styles.sportItemContainer}>
+    <View style={[styles.sportItemContainer,, {backgroundColor: colors.background }]}>
       <SportsSkillsMenu
         item={item}
         index={index}
@@ -181,19 +183,19 @@ export default function SetPreferences() {
 
   if (!user) {
     return (
-      <SafeAreaView style={styles.loadingContainer}>
+      <SafeAreaView style={[styles.loadingContainer, {backgroundColor: colors.background }]}>
         <ActivityIndicator size="large" color="#42c8f5" />
-        <Text style={styles.loadingText}>Loading user data...</Text>
+        <Text style={[styles.loadingText, { color: colors.text }]}>Loading user data...</Text>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={[styles.safeArea, {backgroundColor: colors.background }]}>
       <View style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.heading}>Sports Preferences</Text>
-          <Text style={styles.subHeading}>
+          <Text style={[styles.heading, { color: colors.text }]}>Sports Preferences</Text>
+          <Text style={[styles.subHeading, { color: colors.smalltext }]}>
             Welcome, {user?.firstName || ""}!
             {"\n"}Select your favorite sports and skill levels:
           </Text>
@@ -215,7 +217,7 @@ export default function SetPreferences() {
             disabled={sportsSkills.length >= SPORTS_LIST.length}
             activeOpacity={0.7}
           >
-            <Ionicons name="add-circle-outline" size={20} color="white" />
+            <Ionicons name="add-circle-outline" size={20} color="black" />
             <Text style={styles.addButtonText}>Add Another Sport</Text>
           </TouchableOpacity>
           
@@ -297,23 +299,24 @@ const styles = StyleSheet.create({
   },
   addButton: {
     backgroundColor: "#42c8f5",
-    paddingVertical: 12,
-    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 20,
     marginBottom: 16,
     alignItems: "center",
     flexDirection: "row",
     justifyContent: "center",
   },
   addButtonText: {
-    color: "#fff",
+    color: "black",
     fontSize: 16,
     fontWeight: "600",
     marginLeft: 8,
   },
   submitButton: {
-    height: 50,
+    
     backgroundColor: "#42c8f5",
-    borderRadius: 8,
+    borderRadius: 20,
     justifyContent: "center",
     alignItems: "center",
     shadowColor: "#000",
@@ -321,12 +324,16 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 3,
     elevation: 2,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+  
+    
   },
   disabledButton: {
     backgroundColor: "#a0dcf5",
   },
   submitButtonText: {
-    color: "#ffffff",
+    color: "black",
     fontSize: 16,
     fontWeight: "bold",
   },

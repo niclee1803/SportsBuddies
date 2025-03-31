@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from "react-native";
 import DropDownPicker from "react-native-dropdown-picker";
 import { API_URL } from "../../config.json";
+import { useTheme } from "@/hooks/ThemeContext";
 
 export interface SportsSkill {
   sport: string;
@@ -50,6 +51,8 @@ const SportsSkillsMenu = ({
   // Local state for API-fetched sports list
   const [sportsList, setSportsList] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const { colors } = useTheme();
+
 
   
 
@@ -92,8 +95,8 @@ const SportsSkillsMenu = ({
                     SKILL_LEVELS.map(skill => ({ label: skill, value: skill }));
 
   return (
-    <View style={styles.sportContainer}>
-      <Text style={styles.labelText}>Sport:</Text>
+    <View style={[styles.sportContainer, { backgroundColor: colors.background }]}>
+      <Text style={[styles.labelText, { color: colors.text }]}>Sport:</Text>
       <DropDownPicker
         open={isDropdownOpen('sport', index)}
         value={item.sport}
@@ -102,8 +105,10 @@ const SportsSkillsMenu = ({
         setValue={(callback) => {
           handleSportChange(index, callback(item.sport));
         }}
-        style={styles.dropdownPicker}
-        dropDownContainerStyle={styles.dropdownContainer}
+        style={[styles.dropdownPicker, { backgroundColor: colors.card, borderColor: colors.border }]}
+        dropDownContainerStyle={[styles.dropdownContainer, { backgroundColor: colors.card, borderColor: colors.border }]}
+        textStyle={{ color: colors.text }}
+        labelStyle={{ color: colors.text }}
         zIndex={5000 - (index * 20)} // Higher base z-index for sports
         zIndexInverse={1000 + (index * 20)}
         listMode={Platform.OS === "ios" ? "SCROLLVIEW" : "FLATLIST"}
@@ -114,7 +119,7 @@ const SportsSkillsMenu = ({
         placeholder={loading ? "Loading sports..." : "Select a sport"}
       />
       
-      <Text style={[styles.labelText, { marginTop: 15 }]}>Skill Level:</Text>
+      <Text style={[styles.labelText, { marginTop: 15 }, { color: colors.text }]}>Skill Level:</Text>
       <DropDownPicker
         open={isDropdownOpen('skill', index)}
         value={item.skill_level}
@@ -123,8 +128,11 @@ const SportsSkillsMenu = ({
         setValue={(callback) => {
           handleSkillLevelChange(index, callback(item.skill_level));
         }}
-        style={styles.dropdownPicker}
-        dropDownContainerStyle={styles.dropdownContainer}
+        style={[styles.dropdownPicker,{ backgroundColor: colors.card, borderColor: colors.border }]}
+        dropDownContainerStyle={[styles.dropdownContainer, { backgroundColor: colors.card, borderColor: colors.border }]}
+        textStyle={{ color: colors.text }}
+        labelStyle={{ color: colors.text }}
+  
         zIndex={4000 - (index * 20)} // Lower base z-index for skills
         zIndexInverse={2000 + (index * 20)}
         listMode={Platform.OS === "ios" ? "SCROLLVIEW" : "FLATLIST"}
@@ -138,7 +146,7 @@ const SportsSkillsMenu = ({
         style={styles.removeButton} 
         onPress={() => handleRemoveSport(index)}
       >
-        <Text style={styles.removeButtonText}>Remove</Text>
+        <Text style={[styles.removeButtonText]}>Remove</Text>
       </TouchableOpacity>
     </View>
   );
@@ -169,14 +177,14 @@ const styles = StyleSheet.create({
   },
   removeButton: {
     backgroundColor: "#dc3545",
-    paddingVertical: 8,
-    paddingHorizontal: 15,
-    borderRadius: 5,
+    borderRadius: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
     alignSelf: "flex-end",
     marginTop: 5,
   },
   removeButtonText: {
-    color: "#fff",
+    color: "black",
     fontSize: 14,
     fontWeight: "bold",
   },
