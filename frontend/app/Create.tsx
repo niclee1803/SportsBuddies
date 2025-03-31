@@ -10,10 +10,13 @@ import DateTimeInput from "@/components/activity/DateTimeInput";
 import BannerPicker from "@/components/activity/BannerPicker";
 import {handleUploadActivity,pickImage,cancelUpload,handleSubmitActivity,} from "../utils/createactivityhelpers";
 import MapSelector from "@/components/activity/MapSelector";
+import { useTheme } from "@/hooks/ThemeContext";
+import { Colors } from 'react-native/Libraries/NewAppScreen';
 
 
 
 const Create = () => {
+  const { colors } = useTheme();
   const router = useRouter();
   const [activityName, setActivityName] = useState("");
   const [location, setLocation] = useState("");
@@ -81,14 +84,16 @@ const Create = () => {
             contentContainerStyle={styles.scrollContainer}
             keyboardShouldPersistTaps="handled"
           >
-            <View style={styles.container}>
+            <View style={[styles.container, {backgroundColor: colors.background }]}>
 
               
-              <Text style={styles.title}>Create Activity</Text>
+              <Text style={[styles.title, {color: colors.text}]}>Create Activity</Text>
 
-              <View style={styles.formWrapper}>
+              <View style={[styles.formWrapper]}>
                 <TextInput
-                  style={styles.inputField}
+                  style={[styles.inputField,
+                    { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]
+                  }
                   placeholder="Activity Name"
                   placeholderTextColor={styles.placeholder.color}
                   value={activityName}
@@ -167,7 +172,9 @@ const Create = () => {
                 />
 
                 <TextInput
-                  style={styles.textarea}
+                  style={[styles.textarea,
+                    { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]
+                  }
                   placeholder="Activity Description"
                   placeholderTextColor={styles.placeholder.color}
                   value={activityDescription}
@@ -175,7 +182,9 @@ const Create = () => {
                   multiline
                 />
                 <TextInput
-                  style={styles.inputField}
+                   style={[styles.inputField,
+                    { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]
+                  }
                   placeholder="Max Participants"
                   placeholderTextColor={styles.placeholder.color}
                   value={maxParticipants}
@@ -292,13 +301,14 @@ const styles = StyleSheet.create({
   },
   uploadButton: {
     backgroundColor: "#42c8f5",
-    paddingVertical: 16,
-    borderRadius: 8,
-    alignItems: "center",
+    borderRadius: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
     marginTop: 20,
+    alignItems: 'center',
   },
   uploadButtonText: {
-    color: "#fff",
+    color: "black",
     fontSize: 16,
     fontWeight: "bold",
   },
