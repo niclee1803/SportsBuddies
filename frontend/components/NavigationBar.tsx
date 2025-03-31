@@ -77,7 +77,7 @@ const NavigationBar: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    //justifyContent: 'space-evenly',
     alignItems: 'center',
     backgroundColor: 'white',
     borderTopWidth: 1,
@@ -85,18 +85,21 @@ const styles = StyleSheet.create({
     height: 80,
     paddingBottom: 20, // Add bottom padding for home indicator on newer iPhones
     paddingTop: 10,
+    gap: -10, // Adjust this number to control the spacing
+    
   },
   item: {
     alignItems: 'center',
     justifyContent: 'center',
     flex: 1,
+    paddingLeft: 8,
   },
   activeItem: {
     // You can add special styling for active items if needed
   },
   itemText: {
     color: 'black',
-    fontSize: 12,
+    fontSize: 9,
     marginTop: 4,
   },
   activeText: {
