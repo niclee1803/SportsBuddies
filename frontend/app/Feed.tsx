@@ -61,7 +61,8 @@ export default function Feed() {
   // Fetch activities from the /activity/search endpoint with applied filters
   const fetchActivities = async (
     isRefresh = false,
-    customFilters?: FilterOptions
+    customFilters?: FilterOptions,
+    customSearchTerm?: string
   ) => {
     if (isRefresh) {
       setRefreshing(true);
@@ -69,7 +70,7 @@ export default function Feed() {
       setLoading(true);
     }
     setError(null);
-
+  
     try {
       // Retrieve the token from AsyncStorage
       const token = await AsyncStorage.getItem("token");
@@ -81,25 +82,28 @@ export default function Feed() {
         setRefreshing(false);
         return;
       }
-
+  
       // Use customFilters if provided, otherwise use activeFilters from state
       const filtersToApply = customFilters || activeFilters;
-
+      
+      // Use customSearchTerm if provided, otherwise use searchTerm from state
+      const searchTermToApply = customSearchTerm !== undefined ? customSearchTerm : searchTerm;
+  
       // Build query parameters
       const params = new URLSearchParams();
-
-      if (searchTerm) {
-        params.append("query", searchTerm);
+  
+      if (searchTermToApply) {
+        params.append("query", searchTermToApply);
       }
-
+  
       if (filtersToApply.sport) {
         params.append("sport", filtersToApply.sport);
       }
-
+  
       if (filtersToApply.skillLevel) {
         params.append("skillLevel", filtersToApply.skillLevel);
       }
-
+  
       if (filtersToApply.dateFrom) {
         const dateFrom = new Date(filtersToApply.dateFrom);
         dateFrom.setHours(0, 0, 0, 0);
@@ -111,15 +115,15 @@ export default function Feed() {
         dateTo.setHours(23, 59, 59, 999);
         params.append("dateTo", dateTo.toISOString().split('T')[0]);
       }
-
+  
       if (filtersToApply.activityType) {
         params.append("activityType", filtersToApply.activityType);
       }
-
+  
       if (filtersToApply.location) {
         params.append("placeName", filtersToApply.location);
       }
-
+  
       // Add coordinates if available
       if (filtersToApply.locationCoordinates) {
         params.append(
@@ -131,14 +135,14 @@ export default function Feed() {
           filtersToApply.locationCoordinates[0].toString()
         );
       }
-
+  
       // Construct the final URL using API_URL
       const baseUrl = `${API_URL}/activity/search`;
       const queryString = params.toString();
       const url = queryString ? `${baseUrl}?${queryString}` : baseUrl;
-
+  
       console.log("Fetching activities from:", url);
-
+  
       // Make the GET request with fetch
       const response = await fetch(url, {
         method: "GET",
@@ -147,19 +151,19 @@ export default function Feed() {
           Authorization: `Bearer ${token}`,
         },
       });
-
+  
       if (!response.ok) {
         const errorData = await response.text();
         console.error("API Error:", errorData);
         throw new Error(`Request failed with status ${response.status}`);
       }
-
+  
       const data = await response.json();
       console.log(`Found ${data.length} activities`);
-
+  
       // Check if we have results
       setNoResults(data.length === 0);
-
+  
       // Assume the backend returns an array of Activity objects that match your Activity type.
       setActivities(data);
     } catch (err: any) {
@@ -202,7 +206,7 @@ export default function Feed() {
     setActiveFilters(emptyFilters);
 
     // Fetch activities with explicitly empty filters to avoid using stale state
-    fetchActivities(false, emptyFilters);
+    fetchActivities(true, emptyFilters, "");
   };
 
   const handleApplyFilters = (filters: FilterOptions) => {
@@ -309,7 +313,7 @@ export default function Feed() {
                 onPress={() => {
                   setSearchTerm("");
                   // Only auto-search if there was a previous search term
-                  fetchActivities();
+                  fetchActivities(false, activeFilters, "");
                 }}
               >
                 <Ionicons name="close-circle" size={18} color="#aaa" />
