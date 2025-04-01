@@ -432,7 +432,7 @@ export default function ActivityDetail() {
   };
 
   const navigateToProfile = (userId: string) => {
-    //router.push(`/UserProfile?id=${userId}`);
+    router.push(`/PublicProfile?id=${userId}`);
   };
 
   if (loading) {

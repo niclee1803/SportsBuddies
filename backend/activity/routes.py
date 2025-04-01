@@ -230,6 +230,19 @@ async def get_my_activities(
     """
     return activity_controller.get_my_activities(current_user["uid"])
 
+@router.get("/{user_id}/created", summary="Get user's created activities", response_model=List[Dict])
+async def get_my_activities(
+    user_id: str = Path(..., description="The user ID of the creator"),
+    current_user: dict = Depends(AuthService.get_current_user)
+):
+    """
+    Returns all activities created by the specified user.
+    This endpoint is useful for displaying activities on a user's public profile.
+    
+    The activities are sorted with active ones first, then past/expired activities.
+    """
+    return activity_controller.get_activities_by_creator(user_id)
+
 @router.get("/my/participating", summary="Get activities I'm participating in", response_model=List[Dict])
 async def get_my_participations(
     current_user: dict = Depends(AuthService.get_current_user)

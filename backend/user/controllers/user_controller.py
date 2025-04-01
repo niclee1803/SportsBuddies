@@ -182,7 +182,7 @@ class UserController:
                 raise HTTPException(status_code=404, detail=f"User {user_id} not found")
             
             # Create response with only required fields - safer approach
-            response = {
+            response = {    
                 "id": user_id,  
                 "username": getattr(user, "username", ""),
                 "firstName": getattr(user, "first_name", ""),
@@ -190,17 +190,21 @@ class UserController:
                 "profilePicUrl": getattr(user, "profile_pic_url", "")
             }
             
-            # Only add preferences if they exist - using a safer approach
-            if hasattr(user, "preferences") and user.preferences:
-                try:
-                    response["preferences"] = user.preferences
-                except Exception:
-                    response["preferences"] = []
+            # Get preferences directly from repository
+            preferences = self.repository.get_preferences(user_id)
+            if preferences:
+                # Format preferences correctly - ensure it follows the schema expected by frontend
+                response["preferences"] = {
+                    "sports_skills": preferences.get("sports_skills", [])
+                }
             else:
-                response["preferences"] = []
+                # Add empty preferences if none found
+                response["preferences"] = {
+                    "sports_skills": []
+                }
                 
             return response
+                
         except Exception as e:
-            # Log the actual error for debugging
-            print(f"Error in get_public_profile: {str(e)}")
-            raise HTTPException(status_code=500, detail="Failed to retrieve user profile")
+            print(f"Error getting public profile: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Error retrieving user profile: {str(e)}")

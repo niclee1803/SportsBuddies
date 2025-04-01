@@ -8,6 +8,8 @@ from fastapi import HTTPException
 from activity.repository.activity_repository import ActivityRepository, FirestoreError
 from activity.models.activity import Activity, ActivityStatus, Location
 
+from datetime import datetime
+
 class ActivityController:
     """
     Encapsulates the main business logic for creating, updating,
@@ -269,6 +271,60 @@ class ActivityController:
             return [a.to_dict() for a in activities]
         except FirestoreError as e:
             raise HTTPException(status_code=500, detail=str(e))
+        
+    def get_activities_by_creator(self, creator_id: str) -> List[Dict]:
+        """
+        Gets all activities created by a specific user.
+        
+        Args:
+            creator_id: The user ID of the creator
+            
+        Returns:
+            List of activities as dictionaries
+        """
+        try:
+            # Get activities from repository - we already have list_by_creator
+            activities = self.repo.list_by_creator(creator_id)
+            
+            # Convert to dict before sorting
+            activity_dicts = [a.to_dict() for a in activities]
+            
+            # Sort activities: active first, then expired
+            current_time = datetime.now()
+            
+            # Make sure we handle datetime properly
+            def activity_date(activity):
+                if not activity["dateTime"]:
+                    return current_time  # Default to current time if missing
+                
+                # Try to parse the date string safely
+                try:
+                    # If the datetime string has timezone info, convert to naive datetime
+                    dt = datetime.fromisoformat(activity["dateTime"].replace('Z', '+00:00'))
+                    if dt.tzinfo is not None:
+                        dt = dt.replace(tzinfo=None)
+                    return dt
+                except Exception:
+                    # Fall back to current time if parsing fails
+                    return current_time
+            
+            # Sort with active first, expired last
+            sorted_activities = sorted(
+                activity_dicts,
+                key=lambda a: (
+                    # Primary sort: active (True) before expired (False)
+                    activity_date(a) < current_time,
+                    # Secondary sort: 
+                    # - For active: newest first
+                    # - For expired: oldest first
+                    -activity_date(a).timestamp() if activity_date(a) >= current_time else activity_date(a).timestamp()
+                )
+            )
+            
+            return sorted_activities
+        except Exception as e:
+            print(f"Error getting activities by creator: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Error retrieving activities: {str(e)}")
     
     def get_my_participations(self, user_id: str) -> List[Dict]:
         """
