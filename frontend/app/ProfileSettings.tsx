@@ -679,7 +679,7 @@ const ProfileSettings: React.FC = () => {
               placeholder="Enter mobile number"
             />
             {errors.phone ? (
-              <Text style={[styles.errorText, { color: colors.text }]}>{errors.phone}</Text>
+              <Text style={styles.errorText}>{errors.phone}</Text>
             ) : null}
           </View>
 
@@ -696,7 +696,7 @@ const ProfileSettings: React.FC = () => {
               autoCapitalize="none"
             />
             {errors.email ? (
-              <Text style={[styles.errorText, { color: colors.text }]}>{errors.email}</Text>
+              <Text style={styles.errorText}>{errors.email}</Text>
             ) : null}
           </View>
          
@@ -723,7 +723,7 @@ const ProfileSettings: React.FC = () => {
             )}
             
             {errors.preferences ? (
-              <Text style={[styles.errorText, { color: colors.text }]}>{errors.preferences}</Text>
+              <Text style={styles.errorText}>{errors.preferences}</Text>
             ) : null}
             
             <TouchableOpacity onPress={handleAddSport} style={styles.addButton}>
