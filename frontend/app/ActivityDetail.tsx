@@ -326,8 +326,14 @@ export default function ActivityDetail() {
     );
   };
 
-  const handleManageActivity = () => {
-    //router.push(`/ManageActivity?id=${activity?.id}`);
+  const handleUpdateActivity = () => {
+    if (!activity) return;
+    //router.push(`/UpdateActivity?id=${activity.id}`);
+  };
+  
+  const handleManageParticipants = () => {
+    if (!activity) return;
+    //router.push(`/ManageParticipants?id=${activity.id}`);
   };
 
   const renderActionButton = () => {
@@ -347,17 +353,27 @@ export default function ActivityDetail() {
       );
     }
     
-    // If current user is the creator
-    if (activity.creator_id === currentUserId) {
-      return (
-        <TouchableOpacity
-          style={[styles.actionButton, { backgroundColor: "#4a6fa1" }]}
-          onPress={handleManageActivity}
-        >
-          <Text style={styles.actionButtonText}>Manage Activity</Text>
-        </TouchableOpacity>
-      );
-    }
+      // If current user is the creator, show management options
+      if (activity.creator_id === currentUserId) {
+        return (
+          <View style={styles.creatorButtonsContainer}>
+            <TouchableOpacity
+              style={[styles.creatorButton, { backgroundColor: "#4a6fa1" }]}
+              onPress={handleUpdateActivity}
+            >
+              <Ionicons name="create-outline" size={16} color="#fff" style={styles.buttonIcon} />
+              <Text style={styles.creatorButtonText}>Update</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.creatorButton, { backgroundColor: "#28a745" }]}
+              onPress={handleManageParticipants}
+            >
+              <Ionicons name="people" size={16} color="#fff" style={styles.buttonIcon} />
+              <Text style={styles.creatorButtonText}>Participants</Text>
+            </TouchableOpacity>
+          </View>
+        );
+      }
   
     // If user is already a participant
     if (activity.participants?.includes(currentUserId)) {
@@ -487,17 +503,17 @@ export default function ActivityDetail() {
             {activity.creator_id === currentUserId ? (
               <View style={styles.userStatusBadge}>
                 <Ionicons name="star" size={14} color="#fff" />
-                <Text style={[styles.userStatusText, , {color:colors.text}]}>Creator</Text>
+                <Text style={styles.userStatusText}>Creator</Text>
               </View>
             ) : activity.participants?.includes(currentUserId) ? (
               <View style={[styles.userStatusBadge, { backgroundColor: '#28a745' }]}>
                 <Ionicons name="checkmark-circle" size={14} color="#fff" />
-                <Text style={[styles.userStatusText, {color:colors.text}]}>Participating</Text>
+                <Text style={styles.userStatusText}>Participating</Text>
               </View>
             ) : activity.joinRequests?.includes(currentUserId) || joinRequestSent ? (
               <View style={[styles.userStatusBadge, { backgroundColor: '#f0ad4e' }]}>
                 <Ionicons name="time" size={14} color="#fff" />
-                <Text style={[styles.userStatusText, {color:colors.text}]}>Pending Request</Text>
+                <Text style={styles.userStatusText}>Pending Request</Text>
               </View>
             ) : null}
           </View>
@@ -716,6 +732,28 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 14,
     fontWeight: "bold",
+  },
+  creatorButtonsContainer: {
+    flexDirection: 'column',
+    justifyContent: 'flex-end',
+    gap: 8,
+  },
+  creatorButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: "#0066cc",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 5,
+    justifyContent: 'center',
+  },
+  creatorButtonText: {
+    color: "white",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  buttonIcon: {
+    marginRight: 4,
   },
   tagRow: {
     flexDirection: "row",

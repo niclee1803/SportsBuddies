@@ -5,11 +5,11 @@ import { useColorScheme } from 'react-native';
 
 // Define your color themes
 export const lightColors = {
-  background: '#f9f9f9',
+  background: '#f0f0f0',
   text: '#000000',
   smalltext: "#333333",
   primary: '#42c8f5',
-  secondary: '#f5a442',
+  secondary: '#737373',
   card: '#F5F5F5',
   border: '#CCCCCC',
   notification: '#FF3B30',
@@ -23,7 +23,7 @@ export const darkColors = {
   text: '#FFFFFF',
   smalltext: "#c9c9c9",
   primary: '#2196F3',
-  secondary: '#FF9800',
+  secondary: '#b0b0b0',
   card: '#1E1E1E',
   border: '#333333',
   notification: '#FF453A',

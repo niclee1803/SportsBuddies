@@ -118,7 +118,7 @@ export default function Login() {
       {isLoading && (
         <Modal transparent={true} animationType="fade">
           <View style={[styles.loadingOverlay, {backgroundColor: colors.background }]}>
-            <ActivityIndicator size="large" color="#fff" />
+            <ActivityIndicator size="large" color="#42c8f5" />
             <Text style={[styles.loadingText, { color: colors.text }]}>Logging in...</Text>
           </View>
         </Modal>

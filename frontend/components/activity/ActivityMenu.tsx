@@ -1,11 +1,64 @@
-import React, { useState }from "react";
+import React, { useState, useEffect } from "react";
 import DropDownPicker from "react-native-dropdown-picker";
 import { useTheme } from "@/hooks/ThemeContext";
+import { API_URL } from "@/config.json";
+export const SKILL_LEVELS = [
+  "Beginner",
+  "Intermediate",
+  "Advanced",
+  "Expert",
+  "Professional"
+];
 
+// Visibility option 
+export const ROLE = [
+  "Organiser",
+  "Coach"
+];
 
+// Custom hook to fetch sports list from API
+export const useSportsList = () => {
+  const [sportsList, setSportsList] = useState<string[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
-// Predefined list of sports
-export const SPORTS_LIST = [
+  useEffect(() => {
+    const fetchSportsList = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(`${API_URL}/utils/sports_list`);
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch sports list: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (Array.isArray(data)) {
+          setSportsList(data);
+        } else {
+          // If API returns object with sports array
+          setSportsList(data.sports || []);
+        }
+        
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to fetch sports list');
+        console.error('Error fetching sports list:', err);
+        // Fallback to default list if API fails
+        setSportsList(DEFAULT_SPORTS_LIST);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchSportsList();
+  }, []);
+  
+  return { sportsList, loading, error };
+};
+
+// Default sports list as fallback
+export const DEFAULT_SPORTS_LIST = [
   "Basketball",
   "Football",
   "Soccer",
@@ -25,23 +78,6 @@ export const SPORTS_LIST = [
   "Surfing"
 ];
 
-
-// Skill level options
-export const SKILL_LEVELS = [
-  "Beginner",
-  "Intermediate",
-  "Advanced",
-  "Expert",
-  "Professional"
-];
-
-// Visibility option 
-export const ROLE=[
-
-  "Organiser",
-  "Coach"
-]
-
 interface DropdownProps {
   items: { label: string; value: string }[];
   value: string;
@@ -49,8 +85,9 @@ interface DropdownProps {
   placeholder: string;
   searchable?: boolean;
   searchablePlaceholder?: string;
+  zIndex?: number;
+  zIndexInverse?: number;
 }
-
 
 const Dropdown: React.FC<DropdownProps> = ({
   items,
@@ -59,15 +96,15 @@ const Dropdown: React.FC<DropdownProps> = ({
   placeholder,
   searchable = false,
   searchablePlaceholder = 'Search...',
+  zIndex,
+  zIndexInverse,
 }) => {
   const [open, setOpen] = useState(false);
   const [dropdownItems, setDropdownItems] = useState(items);
-  const { isDarkMode } = useTheme();
   const { colors } = useTheme();
 
   return (
     <DropDownPicker
-   
       open={open}
       value={value}
       items={dropdownItems}
@@ -89,23 +126,20 @@ const Dropdown: React.FC<DropdownProps> = ({
         borderColor: colors.border,
         borderRadius: 5,
       }}
+      dropDownContainerStyle={{
+        backgroundColor: colors.card,
+        borderColor: colors.border,
+      }}
       textStyle={{ color: colors.text }}
       labelStyle={{ color: colors.text }}
+      listMode="SCROLLVIEW"
+      scrollViewProps={{
+        nestedScrollEnabled: true,
+      }}
+      zIndex={zIndex || 1000}
+      zIndexInverse={zIndexInverse || 3000}
     />
   );
 };
-
-
-// const Dropdown: React.FC<DropdownProps> = ({ items, value, onChangeItem, placeholder }) => {
-//   return (
-//     <DropDownPicker
-//       items={items}
-//       value={value}
-//       onChangeItem={onChangeItem}
-//       style={{ marginBottom: 15, backgroundColor: "#fff", borderColor: "#ddd", borderRadius: 5 }}
-//       placeholder={placeholder}
-//     />
-//   );
-// };
 
 export default Dropdown;

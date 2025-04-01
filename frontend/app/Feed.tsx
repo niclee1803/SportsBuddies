@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
   Dimensions,
   Platform,
-  ScrollView
+  ScrollView,
 } from "react-native";
 import AuthLayout from "@/components/AuthLayout";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -21,7 +21,7 @@ import { showAlert } from "@/utils/alertUtils";
 import { useRouter } from "expo-router";
 import { format } from "date-fns";
 import FilterModal, { FilterOptions } from "@/components/activity/FilterModal";
-import { useTheme } from '@/hooks/ThemeContext';
+import { useTheme } from "@/hooks/ThemeContext";
 
 export default function Feed() {
   const { colors } = useTheme();
@@ -32,10 +32,10 @@ export default function Feed() {
   const [refreshing, setRefreshing] = useState(false);
   const [noResults, setNoResults] = useState(false);
   const [filterModalVisible, setFilterModalVisible] = useState(false);
-  
+
   // Search params
   const [searchTerm, setSearchTerm] = useState("");
-  
+
   // Current active filters
   const [activeFilters, setActiveFilters] = useState<FilterOptions>({
     sport: "",
@@ -43,9 +43,9 @@ export default function Feed() {
     activityType: "",
     dateFrom: null,
     dateTo: null,
-    location: ""
+    location: "",
   });
-  
+
   // Whether any filters are currently active
   const hasActiveFilters = () => {
     return (
@@ -57,57 +57,79 @@ export default function Feed() {
       activeFilters.location !== ""
     );
   };
-  
+
   // Fetch activities from the /activity/search endpoint with applied filters
-  const fetchActivities = async (isRefresh = false) => {
+  const fetchActivities = async (
+    isRefresh = false,
+    customFilters?: FilterOptions
+  ) => {
     if (isRefresh) {
       setRefreshing(true);
     } else {
       setLoading(true);
     }
     setError(null);
-    
+
     try {
       // Retrieve the token from AsyncStorage
       const token = await AsyncStorage.getItem("token");
       if (!token) {
         showAlert("Authentication Error", "No token found. Please log in.", [
-          { text: "Log In", onPress: () => router.push("/Login") }
+          { text: "Log In", onPress: () => router.push("/Login") },
         ]);
         setLoading(false);
         setRefreshing(false);
         return;
       }
 
+      // Use customFilters if provided, otherwise use activeFilters from state
+      const filtersToApply = customFilters || activeFilters;
+
       // Build query parameters
       const params = new URLSearchParams();
-      
+
       if (searchTerm) {
         params.append("query", searchTerm);
       }
-      
-      if (activeFilters.sport) {
-        params.append("sport", activeFilters.sport);
+
+      if (filtersToApply.sport) {
+        params.append("sport", filtersToApply.sport);
+      }
+
+      if (filtersToApply.skillLevel) {
+        params.append("skillLevel", filtersToApply.skillLevel);
+      }
+
+      if (filtersToApply.dateFrom) {
+        const dateFrom = new Date(filtersToApply.dateFrom);
+        dateFrom.setHours(0, 0, 0, 0);
+        params.append("dateFrom", dateFrom.toISOString().split('T')[0]);
       }
       
-      if (activeFilters.skillLevel) {
-        params.append("skillLevel", activeFilters.skillLevel);
+      if (filtersToApply.dateTo) {
+        const dateTo = new Date(filtersToApply.dateTo);
+        dateTo.setHours(23, 59, 59, 999);
+        params.append("dateTo", dateTo.toISOString().split('T')[0]);
       }
-      
-      if (activeFilters.dateFrom) {
-        params.append("dateFrom", activeFilters.dateFrom.toISOString());
+
+      if (filtersToApply.activityType) {
+        params.append("activityType", filtersToApply.activityType);
       }
-      
-      if (activeFilters.dateTo) {
-        params.append("dateTo", activeFilters.dateTo.toISOString());
+
+      if (filtersToApply.location) {
+        params.append("placeName", filtersToApply.location);
       }
-      
-      if (activeFilters.activityType) {
-        params.append("activityType", activeFilters.activityType);
-      }
-      
-      if (activeFilters.location) {
-        params.append("placeName", activeFilters.location);
+
+      // Add coordinates if available
+      if (filtersToApply.locationCoordinates) {
+        params.append(
+          "latitude",
+          filtersToApply.locationCoordinates[1].toString()
+        );
+        params.append(
+          "longitude",
+          filtersToApply.locationCoordinates[0].toString()
+        );
       }
 
       // Construct the final URL using API_URL
@@ -116,7 +138,7 @@ export default function Feed() {
       const url = queryString ? `${baseUrl}?${queryString}` : baseUrl;
 
       console.log("Fetching activities from:", url);
-      
+
       // Make the GET request with fetch
       const response = await fetch(url, {
         method: "GET",
@@ -134,10 +156,10 @@ export default function Feed() {
 
       const data = await response.json();
       console.log(`Found ${data.length} activities`);
-      
+
       // Check if we have results
       setNoResults(data.length === 0);
-      
+
       // Assume the backend returns an array of Activity objects that match your Activity type.
       setActivities(data);
     } catch (err: any) {
@@ -154,52 +176,60 @@ export default function Feed() {
   }, []);
 
   const handleSearch = () => {
-    fetchActivities();
+    const currentFilters = { ...activeFilters };
+    fetchActivities(false, currentFilters);
   };
-  
+
   const handleRefresh = () => {
-    fetchActivities(true);
+    fetchActivities(true, activeFilters);
   };
-  
+
   const clearFilters = () => {
-    setSearchTerm("");
-    setActiveFilters({
+    // Create empty filters object
+    const emptyFilters = {
       sport: "",
       skillLevel: "",
       activityType: "",
       dateFrom: null,
       dateTo: null,
-      location: ""
-    });
-    
-    // Fetch activities without filters
-    fetchActivities();
+      location: "",
+    };
+
+    // Clear search term
+    setSearchTerm("");
+
+    // Apply the empty filters to state
+    setActiveFilters(emptyFilters);
+
+    // Fetch activities with explicitly empty filters to avoid using stale state
+    fetchActivities(false, emptyFilters);
   };
-  
+
   const handleApplyFilters = (filters: FilterOptions) => {
+    fetchActivities(false, filters);
     setActiveFilters(filters);
-    
-    // Fetch with new filters
-    setTimeout(() => {
-      fetchActivities();
-    }, 100);
   };
 
   const renderActivityItem = ({ item }: { item: Activity }) => (
     <ActivityCard activity={item} />
   );
-  
+
   const renderEmptyList = () => {
     if (loading && !refreshing) return null;
-    
+
     return (
       <View style={[styles.emptyContainer]}>
         {noResults ? (
           <>
             <Ionicons name="search-outline" size={64} color="#ccc" />
-            <Text style={styles.emptyText}>No activities found matching your search.</Text>
+            <Text style={styles.emptyText}>
+              No activities found matching your search.
+            </Text>
             {(hasActiveFilters() || searchTerm) && (
-              <TouchableOpacity style={styles.clearButton} onPress={clearFilters}>
+              <TouchableOpacity
+                style={styles.clearButton}
+                onPress={clearFilters}
+              >
                 <Text style={styles.clearButtonText}>Clear Filters</Text>
               </TouchableOpacity>
             )}
@@ -207,12 +237,14 @@ export default function Feed() {
         ) : (
           <>
             <FontAwesome5 name="calendar-alt" size={64} color="#ccc" />
-            <Text style={[styles.emptyText, {color:colors.text}]}>No activities available.</Text>
-            <Text style={[styles.emptySubText,{color:colors.text}]}>
+            <Text style={[styles.emptyText, { color: colors.text }]}>
+              No activities available.
+            </Text>
+            <Text style={[styles.emptySubText, { color: colors.text }]}>
               Be the first to create an activity!
             </Text>
-            <TouchableOpacity 
-              style={styles.createButton} 
+            <TouchableOpacity
+              style={styles.createButton}
               onPress={() => router.push("/Create")}
             >
               <Text style={styles.createButtonText}>Create Activity</Text>
@@ -236,10 +268,12 @@ export default function Feed() {
 
   return (
     <AuthLayout>
-      <View style={[styles.container, {backgroundColor: colors.background }]}>
-        <View style={[styles.header, {backgroundColor: colors.background }]}>
-          <Text style={[styles.feedTitle, {color: colors.text }]}>Discover Activities</Text>
-          <TouchableOpacity 
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={[styles.header, { backgroundColor: colors.background }]}>
+          <Text style={[styles.feedTitle, { color: colors.text }]}>
+            Discover Activities
+          </Text>
+          <TouchableOpacity
             style={styles.createActivityButton}
             onPress={() => router.push("/Create")}
           >
@@ -248,8 +282,18 @@ export default function Feed() {
         </View>
 
         <View style={styles.searchRow}>
-          <View style={[styles.searchInputContainer,{backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Ionicons name="search" size={20} color="#aaa" style={styles.searchIcon} />
+          <View
+            style={[
+              styles.searchInputContainer,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
+          >
+            <Ionicons
+              name="search"
+              size={20}
+              color="#aaa"
+              style={styles.searchIcon}
+            />
             <TextInput
               placeholder="Search activities..."
               value={searchTerm}
@@ -260,7 +304,7 @@ export default function Feed() {
               onSubmitEditing={handleSearch}
             />
             {searchTerm ? (
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.clearSearchButton}
                 onPress={() => {
                   setSearchTerm("");
@@ -272,87 +316,128 @@ export default function Feed() {
               </TouchableOpacity>
             ) : null}
           </View>
-          
-          <TouchableOpacity 
+
+          <TouchableOpacity
             style={[
-              styles.filterButton, 
+              styles.filterButton,
               activeFilterCount() > 0 ? styles.activeFilterButton : {},
-              {backgroundColor: colors.card, borderColor: colors.border }
-            ]} 
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
             onPress={() => setFilterModalVisible(true)}
           >
             <Ionicons name="options" size={22} color={colors.smalltext} />
             {activeFilterCount() > 0 && (
               <View style={styles.filterBadge}>
-                <Text style={styles.filterBadgeText}>{activeFilterCount()}</Text>
+                <Text style={styles.filterBadgeText}>
+                  {activeFilterCount()}
+                </Text>
               </View>
             )}
           </TouchableOpacity>
         </View>
-        
+
         {/* Active Filters Pills Row */}
         {hasActiveFilters() && (
-          <ScrollView 
-            horizontal 
+          <View style={{height: 40, marginBottom: 8}}>
+          <ScrollView
+            horizontal
             showsHorizontalScrollIndicator={false}
-            style={[styles.filtersRow, {backgroundColor: colors.background }]}
-            contentContainerStyle={[styles.filtersRowContent, { backgroundColor: colors.background }]}
+            style={styles.filtersRow}
+            contentContainerStyle={styles.filtersRowContent}
+            bounces ={false}
           >
             {activeFilters.sport && (
               <View style={styles.filterPill}>
-                <Text style={styles.filterPillText}>{activeFilters.sport}</Text>
+                <Text
+                  style={styles.filterPillText}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  {activeFilters.sport}
+                </Text>
               </View>
             )}
-            
+
             {activeFilters.skillLevel && (
               <View style={styles.filterPill}>
-                <Text style={styles.filterPillText}>{activeFilters.skillLevel}</Text>
+                <Text
+                  style={styles.filterPillText}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  {activeFilters.skillLevel}
+                </Text>
               </View>
             )}
-            
+
             {activeFilters.activityType && (
               <View style={styles.filterPill}>
-                <Text style={styles.filterPillText}>
-                  {activeFilters.activityType === "event" ? "Events" : "Coaching"}
+                <Text
+                  style={styles.filterPillText}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  {activeFilters.activityType === "event"
+                    ? "Events"
+                    : "Coaching"}
                 </Text>
               </View>
             )}
-            
+
             {activeFilters.dateFrom && (
               <View style={styles.filterPill}>
-                <Text style={styles.filterPillText}>
-                  From: {format(activeFilters.dateFrom, 'MMM d')}
+                <Text
+                  style={styles.filterPillText}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  From: {format(activeFilters.dateFrom, "MMM d")}
                 </Text>
               </View>
             )}
-            
+
             {activeFilters.dateTo && (
               <View style={styles.filterPill}>
-                <Text style={styles.filterPillText}>
-                  To: {format(activeFilters.dateTo, 'MMM d')}
+                <Text
+                  style={styles.filterPillText}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  To: {format(activeFilters.dateTo, "MMM d")}
                 </Text>
               </View>
             )}
-            
+
             {activeFilters.location && (
               <View style={styles.filterPill}>
-                <Text style={styles.filterPillText}>
-                  {activeFilters.location}
+                <Text
+                  style={styles.filterPillText}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  {activeFilters.location.length > 15
+                    ? activeFilters.location.substring(0, 15) + "..."
+                    : activeFilters.location}
                 </Text>
               </View>
             )}
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               style={[styles.filterPill, styles.clearFilterPill]}
               onPress={clearFilters}
             >
               <Text style={styles.clearFilterPillText}>Clear All</Text>
             </TouchableOpacity>
           </ScrollView>
+          </View>
         )}
 
         {loading && !refreshing ? (
-          <ActivityIndicator size="large" color="#42c8f5" style={styles.loader} />
+          <ActivityIndicator
+            size="large"
+            color="#42c8f5"
+            style={styles.loader}
+          />
         ) : error ? (
           <View style={styles.errorContainer}>
             <Ionicons name="alert-circle-outline" size={48} color="#ff5252" />
@@ -368,14 +453,14 @@ export default function Feed() {
             renderItem={renderActivityItem}
             contentContainerStyle={[
               styles.listContent,
-              activities.length === 0 && styles.emptyList
+              activities.length === 0 && styles.emptyList,
             ]}
             refreshing={refreshing}
             onRefresh={handleRefresh}
             ListEmptyComponent={renderEmptyList}
           />
         )}
-        
+
         <FilterModal
           visible={filterModalVisible}
           onClose={() => setFilterModalVisible(false)}
@@ -394,9 +479,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginTop: 20,
     marginBottom: 16,
   },
@@ -410,8 +495,8 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     elevation: 2,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
@@ -421,12 +506,12 @@ const styles = StyleSheet.create({
   searchRow: {
     flexDirection: "row",
     marginBottom: 12,
-    alignItems: 'center',
+    alignItems: "center",
   },
   searchInputContainer: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: "#fff",
     borderRadius: 12,
     paddingHorizontal: 12,
@@ -452,57 +537,67 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f0f0f0',
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f0f0f0",
     borderWidth: 1,
-    borderColor: '#e0e0e0',
-    position: 'relative',
+    borderColor: "#e0e0e0",
+    position: "relative",
   },
   activeFilterButton: {
-    backgroundColor: '#42c8f5',
-    borderColor: '#42c8f5',
+    backgroundColor: "#42c8f5",
+    borderColor: "#42c8f5",
   },
   filterBadge: {
-    position: 'absolute',
+    position: "absolute",
     top: -5,
     right: -5,
-    backgroundColor: '#ff6b6b',
+    backgroundColor: "#ff6b6b",
     width: 20,
     height: 20,
     borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   filterBadgeText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 12,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   filtersRow: {
-    marginBottom: 12,
+    marginBottom: 8,
+    height: 36,
   },
   filtersRowContent: {
     flexDirection: 'row',
     paddingHorizontal: 4,
+    alignItems: 'center',
   },
   filterPill: {
     backgroundColor: '#e8f4fd',
     borderRadius: 16,
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 3,
     marginRight: 8,
+    minWidth: 70,
+    maxWidth: 150,
+    height: 30,
+    justifyContent: 'center', 
+    alignItems: 'center',
   },
   filterPillText: {
     color: '#42c8f5',
     fontSize: 14,
     fontWeight: '500',
+    textAlign: 'center',
   },
   clearFilterPill: {
     backgroundColor: '#f0f0f0',
+    minWidth: 80,
   },
   clearFilterPillText: {
     color: '#666',
+    fontWeight: '500',
   },
   loader: {
     marginTop: 40,
@@ -535,13 +630,13 @@ const styles = StyleSheet.create({
   },
   emptyList: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   emptyContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingHorizontal: 24,
     paddingTop: 40,
     paddingBottom: 40,
@@ -549,22 +644,22 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 18,
-    fontWeight: '500',
-    color: '#666',
+    fontWeight: "500",
+    color: "#666",
     marginTop: 16,
-    textAlign: 'center',
+    textAlign: "center",
   },
   emptySubText: {
     fontSize: 16,
-    color: '#999',
+    color: "#999",
     marginTop: 8,
-    textAlign: 'center',
+    textAlign: "center",
   },
   createButton: {
     marginTop: 24,
     paddingVertical: 12,
     paddingHorizontal: 24,
-    backgroundColor: '#42c8f5',
+    backgroundColor: "#42c8f5",
     borderRadius: 12,
     elevation: 2,
     shadowColor: "#000",
@@ -573,8 +668,8 @@ const styles = StyleSheet.create({
     shadowRadius: 1.5,
   },
   createButtonText: {
-    color: '#fff',
-    fontWeight: '600',
+    color: "#fff",
+    fontWeight: "600",
     fontSize: 16,
   },
   clearButton: {
@@ -582,11 +677,11 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: "#e0e0e0",
     borderRadius: 12,
   },
   clearButtonText: {
-    color: '#666',
-    fontWeight: '500',
+    color: "#666",
+    fontWeight: "500",
   },
 });

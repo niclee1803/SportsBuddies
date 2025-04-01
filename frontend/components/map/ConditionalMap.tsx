@@ -9,17 +9,22 @@ interface MapProps {
 }
 
 const ConditionalMap = ({ latitude, longitude, placeName }: MapProps) => {
-  // OpenStreetMap static image URL
-  const mapUrl = `https://maps.wikimedia.org/img/osm-intl,15,${latitude},${longitude},600x200.png`;
+  // Using Wikimedia Maps API for static map image
+  const mapUrl = `https://maps.wikimedia.org/img/osm-intl,${latitude},${longitude},15,600x200.png?lang=en`;
   
+  console.log('Map URL:', mapUrl);
+  
+  // Add error handling for image loading
+  const [imageError, setImageError] = React.useState(false);
+
   // URL for opening in maps app when clicked
   const getDirectionsUrl = () => {
     if (Platform.OS === 'ios') {
-      return `maps:0,0?q=${placeName}@${latitude},${longitude}`;
+      return `maps:0,0?q=${encodeURIComponent(placeName)}@${latitude},${longitude}`;
     } else if (Platform.OS === 'android') {
-      return `geo:0,0?q=${latitude},${longitude}(${encodeURI(placeName)})`;
+      return `geo:0,0?q=${latitude},${longitude}(${encodeURIComponent(placeName)})`;
     } else {
-      return `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`;
+      return `https://www.openstreetmap.org/?mlat=${latitude}&mlon=${longitude}&zoom=15`;
     }
   };
 
@@ -30,17 +35,32 @@ const ConditionalMap = ({ latitude, longitude, placeName }: MapProps) => {
   return (
     <View style={styles.container}>
       <TouchableOpacity onPress={handleOpenMaps} style={styles.mapContainer}>
-        <Image 
-          source={{ uri: mapUrl }} 
-          style={styles.mapImage}
-          resizeMode="cover"
-        />
+        {!imageError ? (
+          <Image 
+            source={{ uri: mapUrl }} 
+            style={styles.mapImage}
+            resizeMode="cover"
+            onError={(e) => {
+              console.log('Map image loading error:', e.nativeEvent.error);
+              setImageError(true);
+            }}
+            onLoad={() => console.log('Map image loaded successfully')}
+          />
+        ) : (
+          <View style={styles.fallbackContainer}>
+            <MaterialIcons name="map" size={48} color="#999" />
+            <Text style={styles.fallbackText}>Map unavailable</Text>
+          </View>
+        )}
+        
         {/* Custom marker overlay positioned in the center */}
-        <View style={styles.markerContainer}>
-          <MaterialIcons name="location-pin" size={36} color="#e74c3c" />
-          {/* Shadow effect for the pin */}
-          <View style={styles.markerShadow} />
-        </View>
+        {!imageError && (
+          <View style={styles.markerContainer}>
+            <MaterialIcons name="location-pin" size={36} color="#e74c3c" />
+            {/* Shadow effect for the pin */}
+            <View style={styles.markerShadow} />
+          </View>
+        )}
         
         <View style={styles.overlay}>
           <Ionicons name="navigate" size={24} color="white" />
@@ -73,8 +93,8 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: '50%',
     left: '50%',
-    marginLeft: -18,  // Half the icon width
-    marginTop: -36,   // Full icon height to align the pin bottom with location
+    marginLeft: -18,
+    marginTop: -36,  
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -108,6 +128,18 @@ const styles = StyleSheet.create({
   },
   coordinates: {
     fontSize: 12,
+    color: '#777',
+  },
+  fallbackContainer: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#f0f0f0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  fallbackText: {
+    marginTop: 8,
+    fontSize: 16,
     color: '#777',
   },
 });
