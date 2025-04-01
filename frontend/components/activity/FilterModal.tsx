@@ -202,7 +202,7 @@ const FilterModal: React.FC<FilterModalProps> = ({
               <Dropdown
                 items={sportsList.map(sportItem => ({
                   label: sportItem,
-                  value: sportItem.toLowerCase(),
+                  value: sportItem,
                 }))}
                 value={sport}
                 onChangeItem={(item) => setSport(item.value)}
