@@ -165,8 +165,22 @@ const ManageActivity = () => {
         setActivityName(fetchedActivity.activityName);
         setDescription(fetchedActivity.description || "");
         setSport(fetchedActivity.sport);
-        setSkillLevel(fetchedActivity.skillLevel);
-        setType(fetchedActivity.type);
+
+        // Find the correctly cased skillLevel from SKILL_LEVELS
+        const backendSkillLevel = fetchedActivity.skillLevel;
+        const frontendSkillLevel =
+          SKILL_LEVELS.find(
+            (level) => level.toLowerCase() === backendSkillLevel?.toLowerCase()
+          ) || null;
+        setSkillLevel(frontendSkillLevel);
+
+        // Find the correctly cased type from TYPE
+        const backendType = fetchedActivity.type;
+        const frontendType =
+          TYPE.find((t) => t.toLowerCase() === backendType?.toLowerCase()) ||
+          null;
+        setType(frontendType);
+
         // Use existingBannerUrl for the initial state, bannerUri for local changes
         setExistingBannerUrl(fetchedActivity.bannerImageUrl || null);
         setBannerUri(null); // Reset local banner URI on load
