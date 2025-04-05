@@ -93,4 +93,22 @@ export class AlertService {
       return false;
     }
   }
+
+  static async setResponseStatus(token: string, alertId: string, status: 'accepted' | 'rejected'): Promise<boolean> {
+    try {
+      const response = await fetch(`${API_URL}/user/alerts/${alertId}/respond`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ status })
+      });
+  
+      return response.ok;
+    } catch (error) {
+      console.error(`Error setting alert response status to ${status}:`, error);
+      return false;
+    }
+  }
 }

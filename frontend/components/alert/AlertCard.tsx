@@ -19,6 +19,8 @@ interface AlertCardProps {
   onReject?: (alert: AlertType) => void;
   isProcessing?: boolean;
   processingAlertId?: string | null;
+  // Add response status map to track responses
+  responseStatusMap?: Record<string, 'accepted' | 'rejected'>;
 }
 
 const AlertCard: React.FC<AlertCardProps> = ({
@@ -27,7 +29,8 @@ const AlertCard: React.FC<AlertCardProps> = ({
   onAccept,
   onReject,
   isProcessing,
-  processingAlertId
+  processingAlertId,
+  responseStatusMap = {}
 }) => {
   const { colors } = useTheme();
   const router = useRouter();
@@ -74,6 +77,10 @@ const AlertCard: React.FC<AlertCardProps> = ({
   const isJoinRequest = alert.type === 'join_request';
   const isProcessingThis = isProcessing && processingAlertId === alert.id;
   
+  // Check if this alert has a response status
+  const responseStatus = responseStatusMap[alert.id];
+  const hasResponse = !!responseStatus;
+  
   // Handler for profile image click - navigate to user profile
   const handleProfileClick = () => {
     if (alert.sender_id) {
@@ -91,11 +98,38 @@ const AlertCard: React.FC<AlertCardProps> = ({
       // router.push(`/Messages?userId=${alert.sender_id}`);
     }
   };
+  
+  // Response status UI for accepted/rejected requests
+  const renderResponseStatus = () => {
+    if (!responseStatus) return null;
+    
+    if (responseStatus === 'accepted') {
+      return (
+        <View style={styles.responseStatusContainer}>
+          <Ionicons name="checkmark-circle" size={16} color="#4CAF50" />
+          <Text style={[styles.responseStatusText, { color: "#4CAF50" }]}>
+            You accepted this request
+          </Text>
+        </View>
+      );
+    } else {
+      return (
+        <View style={styles.responseStatusContainer}>
+          <Ionicons name="close-circle" size={16} color="#F44336" />
+          <Text style={[styles.responseStatusText, { color: "#F44336" }]}>
+            You rejected this request
+          </Text>
+        </View>
+      );
+    }
+  };
 
   return (
     <View style={[
       styles.notificationItem,
       !alert.read && styles.unreadNotification,
+      responseStatus === 'accepted' && styles.acceptedNotification,
+      responseStatus === 'rejected' && styles.rejectedNotification,
       { backgroundColor: colors.card, borderColor: colors.border }
     ]}>
       {/* Profile image - clickable to view user profile */}
@@ -137,9 +171,11 @@ const AlertCard: React.FC<AlertCardProps> = ({
             {formatAlertTime(alert.created_at)}
           </Text>
           
+          {/* Show response status if available */}
+          {hasResponse && renderResponseStatus()}
           
-          {/* Action buttons for join requests */}
-          {isJoinRequest && onAccept && onReject && (
+          {/* Action buttons for join requests - only if no response yet */}
+          {isJoinRequest && onAccept && onReject && !hasResponse && (
             <View style={styles.actionButtonsContainer}>
               <TouchableOpacity 
                 style={[styles.actionButton, styles.acceptButton]}
@@ -187,6 +223,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#e6f7ff',
     borderColor: '#b3e5fc',
   },
+  acceptedNotification: {
+    backgroundColor: 'rgba(76, 175, 80, 0.1)', // Light green background
+    borderColor: '#4CAF50',
+  },
+  rejectedNotification: {
+    backgroundColor: 'rgba(244, 67, 54, 0.1)', // Light red background
+    borderColor: '#F44336',
+  },
   profileImageContainer: {
     marginRight: 14,
   },
@@ -221,6 +265,18 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#757575',
     marginBottom: 4,
+  },
+  responseStatusContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 6,
+    marginBottom: 4,
+  },
+  responseStatusText: {
+    fontSize: 14,
+    fontStyle: 'italic',
+    marginLeft: 6,
+    fontWeight: '500',
   },
   navigationHintsContainer: {
     flexDirection: 'row',

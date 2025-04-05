@@ -87,3 +87,21 @@ class AlertRepository:
         """Get count of unread alerts for a user."""
         query = self.collection.where("user_id", "==", user_id).where("read", "==", False)
         return len(list(query.stream()))
+    
+    def set_response_status(self, alert_id: str, status: str) -> bool:
+        """
+        Set the response status for an alert.
+        
+        Args:
+            alert_id: The alert ID
+            status: 'accepted' or 'rejected'
+            
+        Returns:
+            True if successful, False otherwise
+        """
+        doc_ref = self.collection.document(alert_id)
+        doc_ref.update({
+            "response_status": status,
+            "read": True
+        })
+        return True

@@ -20,4 +20,5 @@ export interface Alert {
   created_at: string; // ISO string
   read: boolean;
   data?: Record<string, any>;
+  response_status?: 'accepted' | 'rejected';
 }

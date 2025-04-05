@@ -27,7 +27,8 @@ class Alert:
         sender_profile_pic: Optional[str] = None,
         created_at: datetime = None,
         read: bool = False,
-        data: Dict[str, Any] = None
+        data: Dict[str, Any] = None,
+        response_status: Optional[str] = None,
     ):
         self.id = id
         self.user_id = user_id  # ID of user receiving the alert
@@ -41,6 +42,7 @@ class Alert:
         self.created_at = created_at or datetime.now(timezone.utc)
         self.read = read
         self.data = data or {}  # Additional data specific to alert type
+        self.response_status = response_status
     
     @classmethod
     def from_dict(cls, id: str, data: Dict) -> 'Alert':
@@ -57,7 +59,8 @@ class Alert:
             sender_profile_pic=data.get('sender_profile_pic'),
             created_at=data.get('created_at'),
             read=data.get('read', False),
-            data=data.get('data', {})
+            data=data.get('data', {}),
+            response_status=data.get('response_status')
         )
     
     def to_dict(self) -> Dict:
@@ -74,5 +77,6 @@ class Alert:
             'sender_profile_pic': self.sender_profile_pic,
             'created_at': self.created_at,
             'read': self.read,
-            'data': self.data
+            'data': self.data,
+            'response_status': self.response_status
         }

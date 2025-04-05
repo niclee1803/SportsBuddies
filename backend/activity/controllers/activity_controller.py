@@ -180,6 +180,20 @@ class ActivityController:
                 
             self.repo.update_activity_with_transaction(activity_id, update_func)
 
+            # Find and update the join request alert
+            # Get alerts for the current user that match this activity and sender
+            alerts_query = self.alert_service.repository.collection.where("user_id", "==", current_user)\
+                                            .where("sender_id", "==", new_user_id)\
+                                            .where("activity_id", "==", activity_id)\
+                                            .where("type", "==", "join_request")\
+                                            .limit(1)
+            
+            alerts = list(alerts_query.stream())
+            if alerts:
+                alert_id = alerts[0].id
+                # Update the alert status
+                self.alert_service.repository.set_response_status(alert_id, "accepted")
+
             # Create alert for requester
             self.alert_service.create_request_response_alert(
                 user_id=new_user_id,
@@ -189,12 +203,6 @@ class ActivityController:
                 approved=True
             )
 
-            # Delete the join request alert sent to the creator
-            self.alert_service.delete_join_request_alert(
-                creator_id=current_user,
-                requester_id=new_user_id,
-                activity_id=activity_id
-            )
 
             return {"message": "Join request approved successfully"}
         except FirestoreError as e:
@@ -223,6 +231,20 @@ class ActivityController:
                 
             self.repo.update_activity_with_transaction(activity_id, update_func)
 
+            # Find and update the join request alert
+            # Get alerts for the current user that match this activity and sender
+            alerts_query = self.alert_service.repository.collection.where("user_id", "==", current_user)\
+                                            .where("sender_id", "==", new_user_id)\
+                                            .where("activity_id", "==", activity_id)\
+                                            .where("type", "==", "join_request")\
+                                            .limit(1)
+            
+            alerts = list(alerts_query.stream())
+            if alerts:
+                alert_id = alerts[0].id
+                # Update the alert status
+                self.alert_service.repository.set_response_status(alert_id, "accepted")
+
             # Create alert for requester
             self.alert_service.create_request_response_alert(
                 user_id=user_id,
@@ -230,13 +252,6 @@ class ActivityController:
                 activity_id=activity_id,
                 activity_name=activity.activityName,
                 approved=False
-            )
-
-            # Delete the join request alert sent to the creator
-            self.alert_service.delete_join_request_alert(
-                creator_id=current_user,
-                requester_id=user_id,
-                activity_id=activity_id
             )
 
             return {"message": "Join request rejected successfully"}
