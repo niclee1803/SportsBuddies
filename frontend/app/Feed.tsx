@@ -22,6 +22,9 @@ import { useRouter } from "expo-router";
 import { format } from "date-fns";
 import FilterModal, { FilterOptions } from "@/components/activity/FilterModal";
 import { useTheme } from "@/hooks/ThemeContext";
+import { getValidToken } from "@/utils/getValidToken"; // 👈 Add this at top
+
+
 
 export default function Feed() {
   const { colors } = useTheme();
@@ -73,7 +76,7 @@ export default function Feed() {
   
     try {
       // Retrieve the token from AsyncStorage
-      const token = await AsyncStorage.getItem("token");
+      const token = await getValidToken();
       if (!token) {
         showAlert("Authentication Error", "No token found. Please log in.", [
           { text: "Log In", onPress: () => router.push("/Login") },

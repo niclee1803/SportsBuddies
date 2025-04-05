@@ -8,9 +8,9 @@ import {
   ScrollView,
   ActivityIndicator,
   Platform,
-  Share
+  Share,
 } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
 import { Ionicons, FontAwesome5 } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { API_URL } from "../config.json";
@@ -38,78 +38,93 @@ export default function ActivityDetail() {
   const [buttonLoading, setButtonLoading] = useState(false);
   const { colors } = useTheme();
 
-
-  useEffect(() => {
-    const fetchActivityAndUser = async () => {
-      try {
-        // Get the auth token
-        const token = await AsyncStorage.getItem("token");
-        if (!token) {
-          showAlert(
-            "Authentication Error",
-            "You need to be logged in to view activity details.",
-            [{ text: "OK", onPress: () => router.push("/Login") }]
-          );
-          return;
-        }
-
-        // Fetch the current user ID
-        const userResponse = await fetch(`${API_URL}/user/current_user`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (userResponse.ok) {
-          const userData = await userResponse.json();
-          console.log(userData);
-          setCurrentUserId(userData.id);
-        }
-
-        // Fetch the activity details
-        const activityResponse = await fetch(`${API_URL}/activity/${id}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (!activityResponse.ok) {
-          throw new Error("Failed to fetch activity details");
-        }
-
-        const activityData = await activityResponse.json();
-        setActivity(activityData);
-      } catch (err: any) {
-        setError(err.message || "An error occurred");
-        showAlert("Error", "Failed to load activity details");
-      } finally {
-        setLoading(false);
+  const fetchActivityAndUser = async () => {
+    try {
+      setLoading(true);
+      // Get the auth token
+      const token = await AsyncStorage.getItem("token");
+      if (!token) {
+        showAlert(
+          "Authentication Error",
+          "You need to be logged in to view activity details.",
+          [{ text: "OK", onPress: () => router.push("/Login") }]
+        );
+        return;
       }
-    };
 
+      // Fetch the current user ID
+      const userResponse = await fetch(`${API_URL}/user/current_user`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (userResponse.ok) {
+        const userData = await userResponse.json();
+        console.log(userData);
+        setCurrentUserId(userData.id);
+      }
+
+      // Fetch the activity details
+      const activityResponse = await fetch(`${API_URL}/activity/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!activityResponse.ok) {
+        throw new Error("Failed to fetch activity details");
+      }
+
+      const activityData = await activityResponse.json();
+      setActivity(activityData);
+    } catch (err: any) {
+      setError(err.message || "An error occurred");
+      showAlert("Error", "Failed to load activity details");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Initial fetch on mount
+  useEffect(() => {
     fetchActivityAndUser();
   }, [id]);
 
+  // Refetch when screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      if (id) {
+        console.log("[DEBUG] Activity screen in focus, refetching data...");
+        fetchActivityAndUser();
+      }
+    }, [id])
+  );
+
+  // Fetch creator info when activity changes
   useEffect(() => {
     const fetchCreatorInfo = async () => {
       if (!activity || !activity.creator_id) return;
-      
+
       setCreatorLoading(true);
       try {
         const token = await AsyncStorage.getItem("token");
         if (!token) return;
-        
-        const response = await fetch(`${API_URL}/user/public/${activity.creator_id}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        
+
+        const response = await fetch(
+          `${API_URL}/user/public/${activity.creator_id}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
         if (!response.ok) {
           console.error("Failed to fetch creator info:", response.status);
           return;
         }
-        
+
         const creatorData = await response.json();
         setCreatorInfo(creatorData);
       } catch (err) {
@@ -118,7 +133,7 @@ export default function ActivityDetail() {
         setCreatorLoading(false);
       }
     };
-    
+
     fetchCreatorInfo();
   }, [activity]);
 
@@ -135,33 +150,40 @@ export default function ActivityDetail() {
 
   const handleShareActivity = async () => {
     if (!activity) return;
-    
+
     try {
       // Create share content based on activity details
       const title = activity.activityName;
-      const message = `Join me for ${activity.activityName}!\n\n${activity.sport} (${activity.skillLevel})\nDate: ${format(new Date(activity.dateTime), "EEEE, MMMM d, yyyy")}\nTime: ${format(new Date(activity.dateTime), "h:mm a")}\nLocation: ${activity.placeName}\n\n${activity.description}`;
-      
+      const message = `Join me for ${activity.activityName}!\n\n${
+        activity.sport
+      } (${activity.skillLevel})\nDate: ${format(
+        new Date(activity.dateTime),
+        "EEEE, MMMM d, yyyy"
+      )}\nTime: ${format(new Date(activity.dateTime), "h:mm a")}\nLocation: ${
+        activity.placeName
+      }\n\n${activity.description}`;
+
       // Include a URL to your app or website if available
       const url = `https://sportsbuddies.app/activity/${activity.id}`;
-      
+
       // Call share API
       const result = await Share.share({
         title: title,
-        message: Platform.OS === 'ios' ? message : message + "\n\n" + url,
-        url: Platform.OS === 'ios' ? url : undefined,
+        message: Platform.OS === "ios" ? message : message + "\n\n" + url,
+        url: Platform.OS === "ios" ? url : undefined,
       });
-      
+
       if (result.action === Share.sharedAction) {
         if (result.activityType) {
           // shared with activity type
           console.log(`Shared with ${result.activityType}`);
         } else {
           // shared
-          console.log('Shared');
+          console.log("Shared");
         }
       } else if (result.action === Share.dismissedAction) {
         // dismissed
-        console.log('Share dismissed');
+        console.log("Share dismissed");
       }
     } catch (error) {
       console.error("Error sharing:", error);
@@ -170,7 +192,7 @@ export default function ActivityDetail() {
   };
 
   const handleJoinRequest = async () => {
-    if (!activity) return;
+    if (!activity?.id) return;
 
     try {
       setButtonLoading(true);
@@ -189,16 +211,16 @@ export default function ActivityDetail() {
       if (response.ok) {
         // Update only the local state instead of refetching everything
         setJoinRequestSent(true);
-        
+
         // If the activity has joinRequests array, update it
         if (activity.joinRequests) {
           const updatedActivity = {
             ...activity,
-            joinRequests: [...activity.joinRequests, currentUserId as string]
+            joinRequests: [...activity.joinRequests, currentUserId as string],
           };
           setActivity(updatedActivity);
         }
-        
+
         showAlert("Success", "Join request sent successfully!");
       } else {
         showAlert("Error", data.detail || "Failed to send join request");
@@ -212,15 +234,15 @@ export default function ActivityDetail() {
 
   const handleLeaveActivity = async () => {
     if (!activity) return;
-  
+
     // Show confirmation dialog first
     showAlert(
-      "Leave Activity", 
+      "Leave Activity",
       "Are you sure you want to leave this activity?",
       [
         {
           text: "Cancel",
-          style: "cancel"
+          style: "cancel",
         },
         {
           text: "Leave",
@@ -229,17 +251,20 @@ export default function ActivityDetail() {
             try {
               setButtonLoading(true);
               const token = await AsyncStorage.getItem("token");
-  
-              const response = await fetch(`${API_URL}/activity/${activity.id}/leave`, {
-                method: "POST",
-                headers: {
-                  Authorization: `Bearer ${token}`,
-                  "Content-Type": "application/json",
-                },
-              });
-  
+
+              const response = await fetch(
+                `${API_URL}/activity/${activity.id}/leave`,
+                {
+                  method: "POST",
+                  headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                  },
+                }
+              );
+
               const data = await response.json();
-  
+
               if (response.ok) {
                 // Update local state instead of refetching
                 if (activity.participants) {
@@ -251,33 +276,36 @@ export default function ActivityDetail() {
                   };
                   setActivity(updatedActivity);
                 }
-                
+
                 showAlert("Success", "You have left this activity.");
               } else {
-                showAlert("Error", data.detail || "Failed to leave the activity");
+                showAlert(
+                  "Error",
+                  data.detail || "Failed to leave the activity"
+                );
               }
             } catch (err: any) {
               showAlert("Error", err.message || "An error occurred");
             } finally {
               setButtonLoading(false);
             }
-          }
-        }
+          },
+        },
       ]
     );
   };
 
   const handleCancelJoinRequest = async () => {
     if (!activity) return;
-  
+
     // Show confirmation dialog first
     showAlert(
-      "Cancel Request", 
+      "Cancel Request",
       "Are you sure you want to cancel your join request?",
       [
         {
           text: "No",
-          style: "cancel"
+          style: "cancel",
         },
         {
           text: "Yes",
@@ -286,21 +314,24 @@ export default function ActivityDetail() {
             try {
               setButtonLoading(true);
               const token = await AsyncStorage.getItem("token");
-  
-              const response = await fetch(`${API_URL}/activity/${activity.id}/cancel-request`, {
-                method: "POST",
-                headers: {
-                  Authorization: `Bearer ${token}`,
-                  "Content-Type": "application/json",
-                },
-              });
-  
+
+              const response = await fetch(
+                `${API_URL}/activity/${activity.id}/cancel-request`,
+                {
+                  method: "POST",
+                  headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                  },
+                }
+              );
+
               const data = await response.json();
-  
+
               if (response.ok) {
                 // Update local state instead of refetching
                 setJoinRequestSent(false);
-                
+
                 if (activity.joinRequests) {
                   const updatedActivity = {
                     ...activity,
@@ -310,40 +341,44 @@ export default function ActivityDetail() {
                   };
                   setActivity(updatedActivity);
                 }
-                
+
                 showAlert("Success", "Join request cancelled successfully.");
               } else {
-                showAlert("Error", data.detail || "Failed to cancel join request");
+                showAlert(
+                  "Error",
+                  data.detail || "Failed to cancel join request"
+                );
               }
             } catch (err: any) {
               showAlert("Error", err.message || "An error occurred");
             } finally {
               setButtonLoading(false);
             }
-          }
-        }
+          },
+        },
       ]
     );
   };
 
-  const handleUpdateActivity = () => {
-    if (!activity) return;
-    //router.push(`/UpdateActivity?id=${activity.id}`);
+  const handleUpdate = () => {
+    if (!activity?.id) return;
+    router.push(`/ManageActivity?id=${activity.id}`);
   };
-  
+
   const handleManageParticipants = () => {
     if (!activity) return;
     router.push(`/ManageParticipants?id=${activity.id}`);
   };
 
   const renderActionButton = () => {
-    if (!activity || !currentUserId) return null;
-  
+    if (!activity?.id || !currentUserId) return null;
+
     // Check if activity is expired based on datetime or status
-    const isExpired = activity.status === "expired" || 
-      activity.status === "cancelled" || 
+    const isExpired =
+      activity.status === "expired" ||
+      activity.status === "cancelled" ||
       new Date(activity.dateTime) < new Date();
-  
+
     // If button is loading, show a spinner
     if (buttonLoading) {
       return (
@@ -352,29 +387,39 @@ export default function ActivityDetail() {
         </View>
       );
     }
-    
-      // If current user is the creator, show management options
-      if (activity.creator_id === currentUserId) {
-        return (
-          <View style={styles.creatorButtonsContainer}>
-            <TouchableOpacity
-              style={[styles.creatorButton, { backgroundColor: "#4a6fa1" }]}
-              onPress={handleUpdateActivity}
-            >
-              <Ionicons name="create-outline" size={16} color="#fff" style={styles.buttonIcon} />
-              <Text style={styles.creatorButtonText}>Update</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.creatorButton, { backgroundColor: "#28a745" }]}
-              onPress={handleManageParticipants}
-            >
-              <Ionicons name="people" size={16} color="#fff" style={styles.buttonIcon} />
-              <Text style={styles.creatorButtonText}>Participants</Text>
-            </TouchableOpacity>
-          </View>
-        );
-      }
-  
+
+    // If current user is the creator, show management options
+    if (activity.creator_id === currentUserId) {
+      return (
+        <View style={styles.creatorButtonsContainer}>
+          <TouchableOpacity
+            style={[styles.creatorButton, { backgroundColor: "#4a6fa1" }]}
+            onPress={handleUpdate}
+          >
+            <Ionicons
+              name="create-outline"
+              size={16}
+              color="#fff"
+              style={styles.buttonIcon}
+            />
+            <Text style={styles.creatorButtonText}>Update</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.creatorButton, { backgroundColor: "#28a745" }]}
+            onPress={handleManageParticipants}
+          >
+            <Ionicons
+              name="people"
+              size={16}
+              color="#fff"
+              style={styles.buttonIcon}
+            />
+            <Text style={styles.creatorButtonText}>Participants</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
     // If user is already a participant
     if (activity.participants?.includes(currentUserId)) {
       return (
@@ -386,7 +431,7 @@ export default function ActivityDetail() {
         </TouchableOpacity>
       );
     }
-  
+
     // If user has a pending join request
     if (activity.joinRequests?.includes(currentUserId) || joinRequestSent) {
       return (
@@ -398,7 +443,7 @@ export default function ActivityDetail() {
         </TouchableOpacity>
       );
     }
-  
+
     // If activity is full
     if (activity.participants?.length >= activity.maxParticipants) {
       return (
@@ -410,7 +455,7 @@ export default function ActivityDetail() {
         </TouchableOpacity>
       );
     }
-  
+
     // If activity is cancelled or expired
     if (isExpired) {
       return (
@@ -422,7 +467,7 @@ export default function ActivityDetail() {
         </TouchableOpacity>
       );
     }
-  
+
     // Default: User can join
     return (
       <TouchableOpacity style={styles.actionButton} onPress={handleJoinRequest}>
@@ -469,7 +514,9 @@ export default function ActivityDetail() {
       : activity.bannerImageUrl;
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
+    <ScrollView
+      style={[styles.container, { backgroundColor: colors.background }]}
+    >
       {/* Banner Image with Back Button Overlay */}
       <View style={styles.bannerContainer}>
         <Image
@@ -484,10 +531,12 @@ export default function ActivityDetail() {
         <TouchableOpacity style={styles.backIconButton} onPress={handleBack}>
           <Ionicons name="arrow-back" size={24} color="white" />
         </TouchableOpacity>
-      
 
-      {/* Share Button */}
-        <TouchableOpacity style={styles.shareIconButton} onPress={handleShareActivity}>
+        {/* Share Button */}
+        <TouchableOpacity
+          style={styles.shareIconButton}
+          onPress={handleShareActivity}
+        >
           <Ionicons name="share-social" size={24} color="white" />
         </TouchableOpacity>
       </View>
@@ -496,7 +545,9 @@ export default function ActivityDetail() {
       <View style={styles.detailsContainer}>
         {/* Activity Name and Action Button */}
         <View style={styles.headerRow}>
-          <Text style={[styles.activityName, {color:colors.text}]}>{activity.activityName}</Text>
+          <Text style={[styles.activityName, { color: colors.text }]}>
+            {activity.activityName}
+          </Text>
           {renderActionButton()}
         </View>
 
@@ -509,12 +560,17 @@ export default function ActivityDetail() {
                 <Text style={styles.userStatusText}>Creator</Text>
               </View>
             ) : activity.participants?.includes(currentUserId) ? (
-              <View style={[styles.userStatusBadge, { backgroundColor: '#28a745' }]}>
+              <View
+                style={[styles.userStatusBadge, { backgroundColor: "#28a745" }]}
+              >
                 <Ionicons name="checkmark-circle" size={14} color="#fff" />
                 <Text style={styles.userStatusText}>Participating</Text>
               </View>
-            ) : activity.joinRequests?.includes(currentUserId) || joinRequestSent ? (
-              <View style={[styles.userStatusBadge, { backgroundColor: '#f0ad4e' }]}>
+            ) : activity.joinRequests?.includes(currentUserId) ||
+              joinRequestSent ? (
+              <View
+                style={[styles.userStatusBadge, { backgroundColor: "#f0ad4e" }]}
+              >
                 <Ionicons name="time" size={14} color="#fff" />
                 <Text style={styles.userStatusText}>Pending Request</Text>
               </View>
@@ -530,53 +586,67 @@ export default function ActivityDetail() {
               {
                 backgroundColor:
                   activity.type === "event" ? "#5cb85c" : "#f0ad4e",
-                
               },
             ]}
           >
-            <Text style={[styles.typeBadgeText, {color:colors.background}]}>
+            <Text style={[styles.typeBadgeText, { color: colors.background }]}>
               {activity.type === "event" ? "Event" : "Coaching Session"}
             </Text>
           </View>
 
           {activity.price > 0 && (
-            <Text style={[styles.priceText, {color:colors.smalltext}]}>${activity.price}</Text>
+            <Text style={[styles.priceText, { color: colors.smalltext }]}>
+              ${activity.price}
+            </Text>
           )}
         </View>
 
         {/* Organizer Information */}
         <View style={styles.organizerSection}>
-          <Text style={[styles.sectionTitle, {color:colors.text}]}>Organiser</Text>
-          
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            Organiser
+          </Text>
+
           {creatorLoading ? (
             <View style={styles.creatorLoadingContainer}>
               <ActivityIndicator size="small" color={colors.smalltext} />
-              <Text style={[styles.infoText, {color:colors.text}]}>Loading organizer info...</Text>
+              <Text style={[styles.infoText, { color: colors.text }]}>
+                Loading organizer info...
+              </Text>
             </View>
           ) : creatorInfo ? (
-            <TouchableOpacity 
-              style={[styles.organizerContainer, {backgroundColor: colors.card}]}
+            <TouchableOpacity
+              style={[
+                styles.organizerContainer,
+                { backgroundColor: colors.card },
+              ]}
               onPress={() => navigateToProfile(activity.creator_id)}
             >
               <Image
-                source={{ 
-                  uri: creatorInfo.profilePicUrl || "https://placehold.co/60/gray/white?text=User" 
+                source={{
+                  uri:
+                    creatorInfo.profilePicUrl ||
+                    "https://placehold.co/60/gray/white?text=User",
                 }}
                 style={styles.organizerImage}
                 onError={(e) => console.log("Organizer image failed to load")}
               />
               <View style={styles.organizerInfo}>
-                <Text style={[styles.organizerName, {color:colors.text}]}>
+                <Text style={[styles.organizerName, { color: colors.text }]}>
                   {creatorInfo.firstName} {creatorInfo.lastName}
                 </Text>
-                <Text style={[styles.organizerUsername, {color:colors.text}]}>
+                <Text
+                  style={[styles.organizerUsername, { color: colors.text }]}
+                >
                   @{creatorInfo.username}
                 </Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color={colors.text} />
             </TouchableOpacity>
           ) : (
-            <Text style={[styles.infoText, {color:colors.text}]}>Organizer information unavailable</Text>
+            <Text style={[styles.infoText, { color: colors.text }]}>
+              Organizer information unavailable
+            </Text>
           )}
         </View>
 
@@ -584,18 +654,22 @@ export default function ActivityDetail() {
         <View style={styles.infoRow}>
           <View style={styles.infoItem}>
             <FontAwesome5 name="running" size={16} color={colors.smalltext} />
-            <Text style={[styles.infoText, {color:colors.smalltext}]}>{activity.sport}</Text>
+            <Text style={[styles.infoText, { color: colors.smalltext }]}>
+              {activity.sport}
+            </Text>
           </View>
           <View style={styles.infoItem}>
             <Ionicons name="stats-chart" size={16} color={colors.smalltext} />
-            <Text style={[styles.infoText, {color:colors.smalltext}]}>{activity.skillLevel}</Text>
+            <Text style={[styles.infoText, { color: colors.smalltext }]}>
+              {activity.skillLevel}
+            </Text>
           </View>
         </View>
 
         {/* Participants */}
         <View style={styles.participantsRow}>
           <Ionicons name="people" size={16} color={colors.smalltext} />
-          <Text style={[styles.participantsText, {color:colors.smalltext}]}>
+          <Text style={[styles.participantsText, { color: colors.smalltext }]}>
             {activity.participants?.length || 0}/{activity.maxParticipants}{" "}
             participants
           </Text>
@@ -605,29 +679,45 @@ export default function ActivityDetail() {
         <View style={styles.infoRow}>
           <View style={styles.infoItem}>
             <Ionicons name="calendar" size={16} color={colors.smalltext} />
-            <Text style={[styles.infoText, {color:colors.smalltext}]}>{formattedDate}</Text>
+            <Text style={[styles.infoText, { color: colors.smalltext }]}>
+              {formattedDate}
+            </Text>
           </View>
           <View style={styles.infoItem}>
             <Ionicons name="time" size={16} color={colors.smalltext} />
-            <Text style={[styles.infoText, {color:colors.smalltext}]}>{formattedTime}</Text>
+            <Text style={[styles.infoText, { color: colors.smalltext }]}>
+              {formattedTime}
+            </Text>
           </View>
         </View>
 
         {/* Location */}
         <View style={styles.locationRow}>
           <Ionicons name="location" size={16} color={colors.smalltext} />
-          <Text style={[styles.locationText, {color:colors.smalltext}]}>{activity.placeName}</Text>
+          <Text style={[styles.locationText, { color: colors.smalltext }]}>
+            {activity.placeName}
+          </Text>
         </View>
 
         {/* Description Section */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, {color:colors.actdetailsheader}]}>Description</Text>
-          <Text style={[styles.descriptionText,{color:colors.smalltext}]}>{activity.description}</Text>
+          <Text
+            style={[styles.sectionTitle, { color: colors.actdetailsheader }]}
+          >
+            Description
+          </Text>
+          <Text style={[styles.descriptionText, { color: colors.smalltext }]}>
+            {activity.description}
+          </Text>
         </View>
 
         {/* Map Section */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, {color:colors.actdetailsheader}]}>Location</Text>
+          <Text
+            style={[styles.sectionTitle, { color: colors.actdetailsheader }]}
+          >
+            Location
+          </Text>
           {activity.location && (
             <ConditionalMap
               latitude={activity.location.latitude}
@@ -736,18 +826,18 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   creatorButtonsContainer: {
-    flexDirection: 'column',
-    justifyContent: 'flex-end',
+    flexDirection: "column",
+    justifyContent: "flex-end",
     gap: 8,
   },
   creatorButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: "#0066cc",
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 5,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   creatorButtonText: {
     color: "white",
@@ -781,13 +871,13 @@ const styles = StyleSheet.create({
   organizerSection: {
     marginVertical: 15,
     borderTopWidth: 1,
-    borderTopColor: '#eee',
+    borderTopColor: "#eee",
     paddingTop: 15,
   },
   organizerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f9f9f9',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f9f9f9",
     padding: 12,
     borderRadius: 10,
   },
@@ -797,23 +887,23 @@ const styles = StyleSheet.create({
     borderRadius: 25,
     marginRight: 12,
     borderWidth: 1,
-    borderColor: '#eee',
+    borderColor: "#eee",
   },
   organizerInfo: {
     flex: 1,
   },
   organizerName: {
-    fontWeight: 'bold',
+    fontWeight: "bold",
     fontSize: 16,
-    color: '#333',
+    color: "#333",
   },
   organizerUsername: {
     fontSize: 14,
-    color: '#666',
+    color: "#666",
   },
   creatorLoadingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     padding: 10,
   },
   infoRow: {
@@ -880,18 +970,18 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   userStatusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#4a6fa1',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#4a6fa1",
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 15,
-    alignSelf: 'flex-start',
+    alignSelf: "flex-start",
   },
   userStatusText: {
-    color: 'white',
+    color: "white",
     fontSize: 12,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginLeft: 4,
   },
 });

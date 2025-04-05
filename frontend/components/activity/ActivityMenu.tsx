@@ -11,9 +11,9 @@ export const SKILL_LEVELS = [
 ];
 
 // Visibility option 
-export const ROLE = [
-  "Organiser",
-  "Coach"
+export const TYPE = [
+  "Event",
+  "Coaching Session"
 ];
 
 // Custom hook to fetch sports list from API

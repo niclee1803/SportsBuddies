@@ -31,7 +31,7 @@ class ActivityCreate(BaseModel):
     activityName: str
     bannerImageUrl: Optional[str] = ""
     type: ActivityType
-    price: int
+    price: float
     sport: str
     skillLevel: SkillLevel
     description: str
