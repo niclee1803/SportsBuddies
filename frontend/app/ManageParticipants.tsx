@@ -39,6 +39,10 @@ const ManageParticipants = () => {
     fetchActivityData();
   }, [activityId]);
 
+  const navigateToProfile = (userId: string) => {
+    router.push(`/PublicProfile?id=${userId}`);
+  };
+
   const fetchActivityData = async () => {
     try {
       setLoading(true);
@@ -296,14 +300,19 @@ const ManageParticipants = () => {
           <Text style={styles.sectionTitle}>Pending Join Requests ({pendingRequests.length})</Text>
           {pendingRequests.map((user) => (
             <View key={user.id} style={styles.userCard}>
-              <Image
-                source={{ uri: user.profilePicUrl }}
-                style={styles.userImage}
-              />
-              <View style={styles.userInfo}>
-                <Text style={styles.userName}>{user.name}</Text>
-                <Text style={styles.userUsername}>@{user.username}</Text>
-              </View>
+                <TouchableOpacity 
+                style={styles.userInfoContainer}
+                onPress={() => navigateToProfile(user.id)}
+                >
+                <Image
+                    source={{ uri: user.profilePicUrl }}
+                    style={styles.userImage}
+                />
+                <View style={styles.userInfo}>
+                    <Text style={styles.userName}>{user.name}</Text>
+                    <Text style={styles.userUsername}>@{user.username}</Text>
+                </View>
+                </TouchableOpacity>
               <View style={styles.actionButtons}>
                 <TouchableOpacity
                   style={[styles.actionButton, styles.approveButton]}
@@ -338,14 +347,19 @@ const ManageParticipants = () => {
           </Text>
           {participants.map((user) => (
             <View key={user.id} style={styles.userCard}>
-              <Image
-                source={{ uri: user.profilePicUrl }}
-                style={styles.userImage}
-              />
-              <View style={styles.userInfo}>
-                <Text style={styles.userName}>{user.name}</Text>
-                <Text style={styles.userUsername}>@{user.username}</Text>
-              </View>
+                <TouchableOpacity 
+                style={styles.userInfoContainer}
+                onPress={() => navigateToProfile(user.id)}
+                >
+                <Image
+                    source={{ uri: user.profilePicUrl }}
+                    style={styles.userImage}
+                />
+                <View style={styles.userInfo}>
+                    <Text style={styles.userName}>{user.name}</Text>
+                    <Text style={styles.userUsername}>@{user.username}</Text>
+                </View>
+                </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.actionButton, styles.removeButton]}
                 onPress={() => handleRemoveParticipant(user.id)}
@@ -491,6 +505,11 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333',
     textAlign: 'center',
+  },
+  userInfoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
   },
 });
 
