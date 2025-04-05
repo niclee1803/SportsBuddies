@@ -22,7 +22,7 @@ class ActivityController:
     def __init__(self):
         self.repo = ActivityRepository()
         self.image_service = ImageService()  
-        self.alert_service = Alert
+        self.alert_service = AlertService()
 
     def create_activity(self, creator_id: str, data: Dict) -> Dict:
         """
