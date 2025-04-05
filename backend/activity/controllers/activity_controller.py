@@ -280,6 +280,14 @@ class ActivityController:
                 return None
                 
             self.repo.update_activity_with_transaction(activity_id, update_func)
+
+            self.alert_service.create_user_removed_alert(
+                participant_id=user_id,
+                creator_id=current_user,
+                activity_id=activity_id,
+                activity_name=activity.activityName
+            )
+
             return {"message": "Participant removed successfully"}
         except FirestoreError as e:
             raise HTTPException(status_code=500, detail=str(e))

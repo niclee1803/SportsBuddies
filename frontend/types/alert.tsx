@@ -5,7 +5,8 @@ export type AlertType =
   | "user_left"
   | "activity_cancelled"
   | "activity_updated"
-  | "new_message";
+  | "new_message"
+  | "user_removed";
 
 export interface Alert {
   id: string;

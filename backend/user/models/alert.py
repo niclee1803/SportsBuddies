@@ -10,6 +10,7 @@ class AlertType(str, Enum):
     ACTIVITY_CANCELLED = "activity_cancelled"
     ACTIVITY_UPDATED = "activity_updated"
     NEW_MESSAGE = "new_message"
+    USER_REMOVED = "user_removed"
 
 class Alert:
     """Model for user notifications/alerts."""

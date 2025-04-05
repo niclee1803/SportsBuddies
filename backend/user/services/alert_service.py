@@ -205,3 +205,34 @@ class AlertService:
         alert_id = alerts[0].id
         self.repository.delete(alert_id)
         return True
+    
+    def create_user_removed_alert(
+        self,
+        participant_id: str,
+        creator_id: str,
+        activity_id: str,
+        activity_name: str
+    ) -> Alert:
+        """
+        Create an alert when a user is removed from an activity by the creator.
+        Sent TO the removed participant FROM the activity creator.
+        """
+        creator = self.user_repository.get_by_id(creator_id)
+        if not creator:
+            raise ValueError(f"User {creator_id} not found")
+        
+        creator_name = f"{creator.first_name} {creator.last_name}"
+        
+        # Create alert for the removed participant
+        alert = Alert(
+            user_id=participant_id,
+            type=AlertType.USER_REMOVED,
+            message=f"You were removed from {activity_name} by the organiser",
+            activity_id=activity_id,
+            activity_name=activity_name,
+            sender_id=creator_id,
+            sender_name=creator_name,
+            sender_profile_pic=creator.profile_pic_url
+        )
+        
+        return self.repository.create(alert)

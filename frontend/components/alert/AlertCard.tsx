@@ -63,6 +63,8 @@ const AlertCard: React.FC<AlertCardProps> = ({
         return <Ionicons name="close-circle" size={24} color="#F44336" />;
       case 'user_left': 
         return <Ionicons name="exit" size={24} color="#FF9800" />;
+      case 'user_removed':
+        return <Ionicons name="person-remove" size={24} color="#F44336" />;
       case 'activity_cancelled': 
         return <Ionicons name="trash" size={24} color="#F44336" />;
       case 'activity_updated': 
