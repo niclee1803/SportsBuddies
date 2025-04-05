@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import AuthLayout from "@/components/AuthLayout";
@@ -18,6 +19,7 @@ import { useTheme } from "@/hooks/ThemeContext";
 import { API_URL } from "@/config.json";
 import LoadingOverlay from "@/components/LoadingOverlay";
 import AlertCard from "@/components/alert/AlertCard";
+import { showAlert } from "@/utils/alertUtils";
 
 const Alerts = () => {
   const router = useRouter();
@@ -87,6 +89,11 @@ const Alerts = () => {
     }
   }, [alerts]);
 
+  // Handle back button press
+  const handleBack = () => {
+    router.back();
+  };
+
   // Mark an alert as read and navigate to relevant screen
   const handleAlertPress = async (alert: AlertType) => {
     // Skip handling for join requests (we have separate buttons for those)
@@ -132,6 +139,35 @@ const Alerts = () => {
     } catch (err) {
       console.error("Error marking all as read:", err);
     }
+  };
+
+  // Handle clearing all alerts
+  const handleClearAllAlerts = async () => {
+    showAlert(
+      "Clear All Alerts",
+      "Are you sure you want to delete all your alerts? This cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Clear All",
+          style: "destructive",
+          onPress: async () => {
+            setIsProcessing(true);
+            try {
+              const token = await AsyncStorage.getItem("token");
+              if (!token) return;
+  
+              await AlertService.deleteAllAlerts(token);
+              setAlerts([]);
+            } catch (err) {
+              console.error("Error deleting all alerts:", err);
+            } finally {
+              setIsProcessing(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleAcceptRequest = async (alert: AlertType) => {
@@ -242,22 +278,46 @@ const Alerts = () => {
     }
   };
 
+  // Calculate unread alerts count
+  const unreadAlertsCount = alerts.filter((alert) => !alert.read).length;
+
   return (
     <AuthLayout>
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         {/* Global loading overlay */}
         <LoadingOverlay visible={isProcessing} />
 
-        <View style={styles.header}>
-          <Text style={[styles.title, { color: colors.text }]}>Alerts</Text>
-          {alerts.some((alert) => !alert.read) && (
-            <TouchableOpacity
-              style={styles.markAllReadButton}
-              onPress={handleMarkAllAsRead}
-            >
-              <Text style={styles.markAllReadText}>Mark all as read</Text>
-            </TouchableOpacity>
-          )}
+        {/* Header with back button */}
+        <View style={styles.headerWithBack}>
+          <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+            <Ionicons name="arrow-back" size={24} color={colors.text} />
+          </TouchableOpacity>
+          
+          <View style={styles.headerTitleContainer}>
+            <Text style={[styles.title, { color: colors.text }]}>
+              Alerts {unreadAlertsCount > 0 ? `(${unreadAlertsCount})` : ""}
+            </Text>
+          </View>
+          
+          <View style={styles.headerActions}>
+            {alerts.some((alert) => !alert.read) && (
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={handleMarkAllAsRead}
+              >
+                <Text style={styles.actionButtonText}>Mark all read</Text>
+              </TouchableOpacity>
+            )}
+            
+            {alerts.length > 0 && (
+              <TouchableOpacity
+                style={[styles.clearAllButton, { borderColor: colors.border }]}
+                onPress={handleClearAllAlerts}
+              >
+                <Ionicons name="trash-outline" size={20} color="red" />
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
 
         {loading && !refreshing ? (
@@ -326,28 +386,50 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#f2f2f2",
   },
-  header: {
+  headerWithBack: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 30,
-    paddingTop: 30,
+    justifyContent: "space-between",
+    paddingHorizontal: 15,
+    paddingTop: 20,
     paddingBottom: 16,
+  },
+  backButton: {
+    padding: 8,
+    borderRadius: 20,
+  },
+  headerTitleContainer: {
+    flex: 1,
+    alignItems: "center",
   },
   title: {
     fontSize: 24,
     fontWeight: "bold",
   },
-  markAllReadButton: {
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  actionButton: {
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 16,
     backgroundColor: "#42c8f5",
+    marginRight: 8,
   },
-  markAllReadText: {
+  actionButtonText: {
     color: "#fff",
     fontWeight: "500",
-    fontSize: 14,
+    fontSize: 12,
+  },
+  clearAllButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#e0e0e0",
   },
   notificationsContainer: {
     paddingHorizontal: 16,

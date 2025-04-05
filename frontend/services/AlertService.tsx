@@ -111,4 +111,20 @@ export class AlertService {
       return false;
     }
   }
+
+  static async deleteAllAlerts(token: string): Promise<boolean> {
+    try {
+      const response = await fetch(`${API_URL}/user/alerts`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+  
+      return response.ok;
+    } catch (error) {
+      console.error("Error deleting all alerts:", error);
+      return false;
+    }
+  }
 }
