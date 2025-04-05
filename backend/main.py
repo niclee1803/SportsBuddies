@@ -52,11 +52,3 @@ async def root():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
-
-# Add this to your main.py after all routers are included
-@app.on_event("startup")
-async def startup_event():
-    print("=== Registered Routes ===")
-    for route in app.routes:
-        print(f"{route.methods} {route.path}")
-    print("========================")    

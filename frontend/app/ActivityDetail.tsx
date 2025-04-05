@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Platform,
   Share,
+  RefreshControl,
 } from "react-native";
 import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
 import { Ionicons, FontAwesome5 } from "@expo/vector-icons";
@@ -36,6 +37,7 @@ export default function ActivityDetail() {
   const [creatorInfo, setCreatorInfo] = useState<any>(null);
   const [creatorLoading, setCreatorLoading] = useState(false);
   const [buttonLoading, setButtonLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false); // New state for pull-to-refresh
   const { colors } = useTheme();
 
   const fetchActivityAndUser = async () => {
@@ -83,7 +85,14 @@ export default function ActivityDetail() {
       showAlert("Error", "Failed to load activity details");
     } finally {
       setLoading(false);
+      setRefreshing(false); // Ensure refreshing is reset when done
     }
+  };
+
+  // Handle pull-to-refresh
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchActivityAndUser();
   };
 
   // Initial fetch on mount
@@ -372,13 +381,15 @@ export default function ActivityDetail() {
 
   const renderActionButton = () => {
     if (!activity?.id || !currentUserId) return null;
-
+  
+    // Check if activity is cancelled
+    const isCancelled = activity.status === "cancelled";
+    
     // Check if activity is expired based on datetime or status
     const isExpired =
       activity.status === "expired" ||
-      activity.status === "cancelled" ||
       new Date(activity.dateTime) < new Date();
-
+  
     // If button is loading, show a spinner
     if (buttonLoading) {
       return (
@@ -387,9 +398,19 @@ export default function ActivityDetail() {
         </View>
       );
     }
-
-    // If current user is the creator, show management options
+  
+    // If current user is the creator
     if (activity.creator_id === currentUserId) {
+      // If activity is cancelled, show cancelled message instead of action buttons
+      if (isCancelled) {
+        return (
+          <View style={[styles.actionButton, { backgroundColor: "#6c757d" }]}>
+            <Text style={styles.actionButtonText}>Activity Cancelled</Text>
+          </View>
+        );
+      }
+      
+      // Show management options if not cancelled
       return (
         <View style={styles.creatorButtonsContainer}>
           <TouchableOpacity
@@ -419,31 +440,37 @@ export default function ActivityDetail() {
         </View>
       );
     }
-
+  
     // If user is already a participant
     if (activity.participants?.includes(currentUserId)) {
       return (
         <TouchableOpacity
           style={[styles.actionButton, { backgroundColor: "#d9534f" }]}
           onPress={handleLeaveActivity}
+          disabled={isCancelled}
         >
-          <Text style={styles.actionButtonText}>Leave Activity</Text>
+          <Text style={styles.actionButtonText}>
+            {isCancelled ? "Activity Cancelled" : "Leave Activity"}
+          </Text>
         </TouchableOpacity>
       );
     }
-
+  
     // If user has a pending join request
     if (activity.joinRequests?.includes(currentUserId) || joinRequestSent) {
       return (
         <TouchableOpacity
-          style={[styles.actionButton, { backgroundColor: "#f0ad4e" }]}
+          style={[styles.actionButton, { backgroundColor: "#ff0000" }]}
           onPress={handleCancelJoinRequest}
+          disabled={isCancelled}
         >
-          <Text style={styles.actionButtonText}>Cancel Request</Text>
+          <Text style={styles.actionButtonText}>
+            {isCancelled ? "Activity Cancelled" : "Cancel Request"}
+          </Text>
         </TouchableOpacity>
       );
     }
-
+  
     // If activity is full
     if (activity.participants?.length >= activity.maxParticipants) {
       return (
@@ -455,23 +482,31 @@ export default function ActivityDetail() {
         </TouchableOpacity>
       );
     }
-
+  
     // If activity is cancelled or expired
-    if (isExpired) {
+    if (isCancelled || isExpired) {
       return (
         <TouchableOpacity
           style={[styles.actionButton, { backgroundColor: "#6c757d" }]}
           disabled={true}
         >
-          <Text style={styles.actionButtonText}>Past Activity</Text>
+          <Text style={styles.actionButtonText}>
+            {isCancelled ? "Activity Cancelled" : "Past Activity"}
+          </Text>
         </TouchableOpacity>
       );
     }
-
+  
     // Default: User can join
     return (
-      <TouchableOpacity style={styles.actionButton} onPress={handleJoinRequest}>
-        <Text style={styles.actionButtonText}>Join Activity</Text>
+      <TouchableOpacity 
+        style={styles.actionButton} 
+        onPress={handleJoinRequest}
+        disabled={isCancelled}
+      >
+        <Text style={styles.actionButtonText}>
+          {isCancelled ? "Activity Cancelled" : "Join Activity"}
+        </Text>
       </TouchableOpacity>
     );
   };
@@ -516,6 +551,14 @@ export default function ActivityDetail() {
   return (
     <ScrollView
       style={[styles.container, { backgroundColor: colors.background }]}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          colors={[colors.primary]}
+          tintColor={colors.primary}
+        />
+      }
     >
       {/* Banner Image with Back Button Overlay */}
       <View style={styles.bannerContainer}>
@@ -539,6 +582,8 @@ export default function ActivityDetail() {
         >
           <Ionicons name="share-social" size={24} color="white" />
         </TouchableOpacity>
+        
+        
       </View>
 
       {/* Activity Details */}
@@ -552,31 +597,42 @@ export default function ActivityDetail() {
         </View>
 
         {/* Add user status indicator */}
-        {currentUserId && (
-          <View style={styles.userStatusContainer}>
-            {activity.creator_id === currentUserId ? (
-              <View style={styles.userStatusBadge}>
-                <Ionicons name="star" size={14} color="#fff" />
-                <Text style={styles.userStatusText}>Creator</Text>
-              </View>
-            ) : activity.participants?.includes(currentUserId) ? (
-              <View
-                style={[styles.userStatusBadge, { backgroundColor: "#28a745" }]}
-              >
-                <Ionicons name="checkmark-circle" size={14} color="#fff" />
-                <Text style={styles.userStatusText}>Participating</Text>
-              </View>
-            ) : activity.joinRequests?.includes(currentUserId) ||
-              joinRequestSent ? (
-              <View
-                style={[styles.userStatusBadge, { backgroundColor: "#f0ad4e" }]}
-              >
-                <Ionicons name="time" size={14} color="#fff" />
-                <Text style={styles.userStatusText}>Pending Request</Text>
-              </View>
-            ) : null}
-          </View>
-        )}
+        <View style={styles.userStatusContainer}>
+          {activity.status === "cancelled" && (
+            <View
+              style={[styles.userStatusBadge, { backgroundColor: "#FF3B30" }]}
+            >
+              <Ionicons name="close-circle" size={14} color="#fff" />
+              <Text style={styles.userStatusText}>Cancelled</Text>
+            </View>
+          )}
+          
+          {currentUserId && (
+            <>
+              {activity.creator_id === currentUserId ? (
+                <View style={styles.userStatusBadge}>
+                  <Ionicons name="star" size={14} color="#fff" />
+                  <Text style={styles.userStatusText}>Creator</Text>
+                </View>
+              ) : activity.participants?.includes(currentUserId) ? (
+                <View
+                  style={[styles.userStatusBadge, { backgroundColor: "#28a745" }]}
+                >
+                  <Ionicons name="checkmark-circle" size={14} color="#fff" />
+                  <Text style={styles.userStatusText}>Participating</Text>
+                </View>
+              ) : activity.joinRequests?.includes(currentUserId) ||
+                joinRequestSent ? (
+                <View
+                  style={[styles.userStatusBadge, { backgroundColor: "#686868" }]}
+                >
+                  <Ionicons name="time" size={14} color="#fff" />
+                  <Text style={styles.userStatusText}>Pending Request</Text>
+                </View>
+              ) : null}
+            </>
+          )}
+        </View>
 
         {/* Activity Type and Price */}
         <View style={styles.tagRow}>
@@ -799,6 +855,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+  cancelledText: {
+    color: "white",
+    fontWeight: "bold",
+    fontSize: 18,
+  },
   detailsContainer: {
     padding: 20,
   },
@@ -968,6 +1029,9 @@ const styles = StyleSheet.create({
   userStatusContainer: {
     marginTop: -5,
     marginBottom: 15,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
   },
   userStatusBadge: {
     flexDirection: "row",

@@ -39,7 +39,7 @@ export default function BannerPicker({
           style={styles.icon}
         />
         <View style={styles.textContainer}>
-          <Text style={[styles.placeholderText, { color: colors.placeholder }]}>
+          <Text style={[styles.placeholderText, { color: colors.smalltext }]}>
             {displayUri ? "Change Banner" : "Select Banner Image"}
           </Text>
           {displayUri && (

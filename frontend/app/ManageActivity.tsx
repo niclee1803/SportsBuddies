@@ -1,28 +1,25 @@
-import React, { useState, useEffect, ReactNode } from "react";
+import React, { useState, useEffect, ReactNode, useRef } from "react";
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
   ScrollView,
-  Alert,
   StyleSheet,
   Platform,
   KeyboardAvoidingView,
   ActivityIndicator,
+  TouchableWithoutFeedback,
+  Keyboard
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import DropDownPicker from "react-native-dropdown-picker";
 import BannerPicker from "@/components/activity/BannerPicker";
-import DateTimeInput from "@/components/activity/DateTimeInput";
 import LocationPicker from "@/components/activity/LocationPicker";
 import useFacilityLocations from "@/hooks/FacilityLocation";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import {
-  DEFAULT_SPORTS_LIST,
-  SKILL_LEVELS,
-  TYPE,
-} from "@/components/activity/ActivityMenu";
+import DateTimePickerModal from "react-native-modal-datetime-picker";
+import { format } from "date-fns";
+import { Ionicons } from "@expo/vector-icons";
 import { pickImage, cancelUpload } from "@/utils/createactivityhelpers";
 import {
   updateActivity,
@@ -32,9 +29,9 @@ import {
 import { uploadBanner } from "@/utils/uploadBanner";
 import { useTheme } from "@/hooks/ThemeContext";
 import { API_URL } from "../config.json";
-import { Ionicons } from "@expo/vector-icons";
 import { showAlert } from "@/utils/alertUtils";
 import { Activity, Location } from "@/types/activity";
+import Dropdown from '@/components/activity/ActivityMenu';
 
 // Section component props type
 interface SectionProps {
@@ -101,6 +98,12 @@ const ManageActivity = () => {
   const { colors } = useTheme();
   const { id } = useLocalSearchParams();
 
+  // Form field references
+  const activityNameRef = useRef<TextInput>(null);
+  const descriptionRef = useRef<TextInput>(null);
+  const maxParticipantsRef = useRef<TextInput>(null);
+  const priceRef = useRef<TextInput>(null);
+
   // State variables
   const [activity, setActivity] = useState<Activity | null>(null);
   const [loading, setLoading] = useState(true);
@@ -110,27 +113,22 @@ const ManageActivity = () => {
   const [skillLevel, setSkillLevel] = useState<string | null>(null);
   const [type, setType] = useState<string | null>(null);
   const [bannerUri, setBannerUri] = useState<string | null>(null);
-  const [existingBannerUrl, setExistingBannerUrl] = useState<string | null>(
-    null
-  );
+  const [existingBannerUrl, setExistingBannerUrl] = useState<string | null>(null);
   const [maxParticipants, setMaxParticipants] = useState("");
   const [price, setPrice] = useState("");
   const [date, setDate] = useState(new Date());
-  const [selectedLocation, setSelectedLocation] = useState<Location | null>(
-    null
-  );
+  const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
   const [placeName, setPlaceName] = useState("");
   const [locationModalVisible, setLocationModalVisible] = useState(false);
 
   // State to store initial form data for change detection
-  const [initialActivityData, setInitialActivityData] =
-    useState<InitialFormData | null>(null);
+  const [initialActivityData, setInitialActivityData] = useState<InitialFormData | null>(null);
 
-  // Dropdown states
-  const [sportOpen, setSportOpen] = useState(false);
-  const [skillOpen, setSkillOpen] = useState(false);
-  const [typeOpen, setTypeOpen] = useState(false);
+  // Date and time picker states
+  const [isDatePickerVisible, setDatePickerVisible] = useState(false);
+  const [isTimePickerVisible, setTimePickerVisible] = useState(false);
 
+  // Form validation
   const [errors, setErrors] = useState({
     activityName: "",
     sport: "",
@@ -180,20 +178,26 @@ const ManageActivity = () => {
         const currentActivityName = fetchedActivity.activityName;
         const currentDescription = fetchedActivity.description || "";
         const currentSport = fetchedActivity.sport;
+        
+        // Ensure skillLevel is one of the valid options
+        const validSkillLevels = ["Beginner", "Intermediate", "Advanced", "Professional"];
         const backendSkillLevel = fetchedActivity.skillLevel;
         const frontendSkillLevel =
-          SKILL_LEVELS.find(
+          validSkillLevels.find(
             (level) => level.toLowerCase() === backendSkillLevel?.toLowerCase()
           ) || null;
+        
+        // Map backend type to frontend type
         const backendType = fetchedActivity.type;
-        const frontendType =
-          TYPE.find((t) => t.toLowerCase() === backendType?.toLowerCase()) ||
-          null;
+        const typeMap: { [key: string]: string } = {
+          "event": "Event",
+          "coaching session": "Coaching Session"
+        };
+        const frontendType = backendType ? typeMap[backendType.toLowerCase()] || null : null;
+
         const currentExistingBannerUrl = fetchedActivity.bannerImageUrl || null;
         const currentBannerUri = null; // Reset local banner URI on load
-        const currentMaxParticipants = String(
-          fetchedActivity.maxParticipants || ""
-        );
+        const currentMaxParticipants = String(fetchedActivity.maxParticipants || "");
         const currentPrice = String(fetchedActivity.price || "");
         const currentDate = new Date(fetchedActivity.dateTime);
         const currentSelectedLocation = fetchedActivity.location;
@@ -247,6 +251,10 @@ const ManageActivity = () => {
       loadActivity();
     }
   }, [id]); // Depend on id
+
+  const dismissKeyboard = () => {
+    Keyboard.dismiss();
+  };
 
   // Function to check if form data has changed from initial state
   const hasFormChanged = () => {
@@ -315,16 +323,60 @@ const ManageActivity = () => {
         setErrors((prev) => ({ ...prev, type: "" }));
         break;
       case "maxParticipants":
-        setMaxParticipants(value);
+        setMaxParticipants(value.replace(/[^0-9]/g, ''));
         break;
       case "price":
-        setPrice(value);
+        setPrice(value.replace(/[^0-9.]/g, ''));
         break;
       case "placeName":
         setPlaceName(value);
         setErrors((prev) => ({ ...prev, placeName: "" }));
         break;
     }
+  };
+
+  const validateFutureDate = (selectedDate: Date): boolean => {
+    const now = new Date();
+    return selectedDate > now;
+  };
+  
+  const handleDateConfirm = (selectedDate: Date) => {
+    // Check if the selected date is in the past
+    if (!validateFutureDate(selectedDate)) {
+      showAlert(
+        "Invalid Date",
+        "You cannot schedule activities with dates in the past. Please select a future date.",
+        [{ text: "OK" }]
+      );
+      return;
+    }
+  
+    const currentTime = date;
+    selectedDate.setHours(
+      currentTime.getHours(),
+      currentTime.getMinutes(),
+      currentTime.getSeconds()
+    );
+    setDate(selectedDate);
+    setDatePickerVisible(false);
+  };
+  
+  const handleTimeConfirm = (selectedTime: Date) => {
+    const newDate = new Date(date);
+    newDate.setHours(selectedTime.getHours(), selectedTime.getMinutes());
+    
+    // Check if the new datetime is in the past
+    if (newDate < new Date()) {
+      showAlert(
+        "Invalid Time",
+        "You cannot schedule activities with times in the past. Please select a future time.",
+        [{ text: "OK" }]
+      );
+      return;
+    }
+    
+    setDate(newDate);
+    setTimePickerVisible(false);
   };
 
   const handleLocationSelect = (location: FacilityLocation) => {
@@ -334,6 +386,7 @@ const ManageActivity = () => {
     });
     setPlaceName(location.name);
     setLocationModalVisible(false);
+    setErrors((prev) => ({ ...prev, placeName: "" }));
   };
 
   const handleUpdate = async () => {
@@ -346,8 +399,18 @@ const ManageActivity = () => {
       !activity
     )
       return;
-    console.log("[handleUpdate] Starting update...");
+      
+    if (date < new Date()) {
+      showAlert(
+        "Invalid Date",
+        "You cannot schedule activities with dates in the past. Please select a future date and time.",
+        [{ text: "OK" }]
+      );
+      return;
+    }
+
     setIsSubmitting(true);
+    console.log("[handleUpdate] Starting update...");
 
     try {
       let uploadedUrl = existingBannerUrl;
@@ -391,10 +454,6 @@ const ManageActivity = () => {
       activity.id
     );
 
-    // --- Remove simple test alert ---
-    // Alert.alert("Test Alert", "Does this basic alert show up?");
-
-    // --- Use showAlert utility for confirmation ---
     showAlert(
       "Confirm Cancellation",
       "Are you sure you want to cancel this activity? This cannot be undone.",
@@ -415,7 +474,6 @@ const ManageActivity = () => {
               console.log("[handleCancel] Calling cancelActivity API...");
               await cancelActivity(activity.id);
               console.log("[handleCancel] cancelActivity API call successful.");
-              // Use showAlert for success message as well (consistency)
               showAlert(
                 "Activity Cancelled",
                 "The activity has been marked as cancelled.",
@@ -426,7 +484,6 @@ const ManageActivity = () => {
                 "[ERROR][handleCancel] Cancellation failed:",
                 error
               );
-              // Error alert is handled within cancelActivity utility
             } finally {
               console.log("[handleCancel] Finished cancellation attempt.");
               setIsCancelling(false);
@@ -444,7 +501,6 @@ const ManageActivity = () => {
       activity.id
     );
 
-    // --- Use showAlert utility for confirmation ---
     showAlert(
       "Confirm Deletion",
       "Are you sure you want to permanently delete this activity? This action cannot be undone.",
@@ -465,7 +521,6 @@ const ManageActivity = () => {
               console.log("[handleDelete] Calling deleteActivity API...");
               await deleteActivity(activity.id);
               console.log("[handleDelete] deleteActivity API call successful.");
-              // Use showAlert for success message
               showAlert(
                 "Activity Deleted",
                 "The activity has been permanently deleted.",
@@ -473,7 +528,6 @@ const ManageActivity = () => {
               );
             } catch (error) {
               console.error("[ERROR][handleDelete] Deletion failed:", error);
-              // Error alert handled in deleteActivity utility
             } finally {
               console.log("[handleDelete] Finished deletion attempt.");
               setIsDeleting(false);
@@ -486,7 +540,7 @@ const ManageActivity = () => {
 
   const handleBackPress = () => {
     if (hasFormChanged()) {
-      Alert.alert(
+      showAlert(
         "Discard Changes?",
         "You have unsaved changes. Are you sure you want to go back?",
         [
@@ -541,7 +595,7 @@ const ManageActivity = () => {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: colors.card }]}>
+      <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
           <Ionicons name="chevron-back" size={24} color={colors.primary} />
           <Text style={[styles.backButtonText, { color: colors.primary }]}>
@@ -555,379 +609,362 @@ const ManageActivity = () => {
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        keyboardVerticalOffset={100}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
-        <ScrollView
-          contentContainerStyle={{ padding: 16 }}
-          keyboardShouldPersistTaps="handled"
-        >
-          {loading ? (
-            <ActivityIndicator size="large" color={colors.primary} />
-          ) : (
-            <>
-              <Section title="Basic Information">
-                <Text style={[styles.inputHeader, { color: colors.text }]}>
-                  Activity Name
-                </Text>
-                <TextInput
-                  style={[
-                    styles.input,
-                    {
-                      backgroundColor: colors.card,
-                      color: colors.text,
-                      borderColor: errors.activityName
-                        ? colors.notification
-                        : colors.border,
-                    },
-                  ]}
-                  value={activityName}
-                  onChangeText={(text) =>
-                    handleFormChange("activityName", text)
+        <TouchableWithoutFeedback onPress={dismissKeyboard}>
+          <ScrollView
+            contentContainerStyle={{ padding: 16, paddingBottom: Platform.OS === "ios" ? 120 : 150 }}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={true}
+            keyboardDismissMode="interactive"
+          >
+            <Section title="Basic Information">
+              <Text style={[styles.inputHeader, { color: colors.text }]}>
+                Activity Name <Text style={{ color: colors.notification }}>*</Text>
+              </Text>
+              <TextInput
+                ref={activityNameRef}
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: colors.background,
+                    color: colors.text,
+                    borderColor: errors.activityName ? colors.notification : colors.border,
                   }
-                  placeholder="e.g. Weekend Football"
-                  placeholderTextColor={colors.placeholder}
+                ]}
+                value={activityName}
+                onChangeText={(text) => handleFormChange("activityName", text)}
+                placeholder="e.g. Weekend Football"
+                placeholderTextColor={colors.smalltext}
+                returnKeyType="next"
+                blurOnSubmit={false}
+                onSubmitEditing={() => descriptionRef.current?.focus()}
+              />
+              {errors.activityName ? (
+                <Text style={[styles.errorText, { color: colors.notification }]}>
+                  {errors.activityName}
+                </Text>
+              ) : null}
+
+              {/* Date Picker */}
+              <Text style={[styles.inputHeader, { color: colors.text, marginTop: 8 }]}>
+                Date & Time <Text style={{ color: colors.notification }}>*</Text>
+              </Text>
+              <View style={styles.dateTimeContainer}>
+                <TouchableOpacity
+                  style={[
+                    styles.dateTimeButton,
+                    { backgroundColor: colors.background, borderColor: colors.border }
+                  ]}
+                  onPress={() => setDatePickerVisible(true)}
+                >
+                  <Ionicons 
+                    name="calendar-outline" 
+                    size={18} 
+                    color={colors.smalltext} 
+                    style={styles.dateTimeIcon} 
+                  />
+                  <Text style={[styles.dateTimeText, { color: colors.text }]}>
+                    {format(date, 'MMM dd, yyyy')}
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.dateTimeButton, 
+                    { backgroundColor: colors.background, borderColor: colors.border }
+                  ]}
+                  onPress={() => setTimePickerVisible(true)}
+                >
+                  <Ionicons 
+                    name="time-outline" 
+                    size={18} 
+                    color={colors.smalltext} 
+                    style={styles.dateTimeIcon} 
+                  />
+                  <Text style={[styles.dateTimeText, { color: colors.text }]}>
+                    {format(date, 'h:mm a')}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </Section>
+
+            <Section title="Activity Banner">
+              <BannerPicker
+                bannerUri={bannerUri}
+                existingBannerUrl={existingBannerUrl}
+                pickImage={() => pickImage((uri: string) => setBannerUri(uri))}
+                cancelUpload={() => cancelUpload(setBannerUri)}
+              />
+            </Section>
+
+            <Section title="Activity Details" zIndex={4}>
+              <View style={[styles.dropdownContainer, { zIndex: 3000 }]}>
+                <Text style={[styles.inputHeader, { color: colors.text }]}>
+                  Sport <Text style={{ color: colors.notification }}>*</Text>
+                </Text>
+                <Dropdown
+                  items={[{label: sport || "Loading...", value: sport || ""}]}
+                  value={sport || ''}
+                  onChangeItem={(item) => handleFormChange("sport", item.value)}
+                  placeholder="Select sport..."
+                  zIndex={3000}
+                  zIndexInverse={1000}
                 />
-                {errors.activityName ? (
-                  <Text
-                    style={[styles.errorText, { color: colors.notification }]}
-                  >
-                    {errors.activityName}
+                {errors.sport ? (
+                  <Text style={[styles.errorText, { color: colors.notification }]}>
+                    {errors.sport}
                   </Text>
                 ) : null}
+              </View>
 
-                <DateTimeInput
-                  label="Date"
-                  mode="date"
-                  value={date}
-                  onChange={(newDate) => {
-                    setDate(newDate);
-                    handleFormChange("date", newDate);
-                  }}
-                />
-                <DateTimeInput
-                  label="Time"
-                  mode="time"
-                  value={date}
-                  onChange={(newDate) => {
-                    setDate(newDate);
-                    handleFormChange("time", newDate);
-                  }}
-                />
-              </Section>
-
-              <Section title="Activity Banner">
-                <BannerPicker
-                  bannerUri={bannerUri}
-                  existingBannerUrl={existingBannerUrl}
-                  pickImage={() =>
-                    pickImage((uri: string) => {
-                      setBannerUri(uri);
-                      handleFormChange("bannerImageUrl", uri);
-                    })
-                  }
-                  cancelUpload={() => cancelUpload(setBannerUri)}
-                />
-              </Section>
-
-              <Section title="Activity Details" zIndex={4}>
-                <View style={{ zIndex: 3000 }}>
-                  <DropDownPicker
-                    open={sportOpen}
-                    value={sport}
-                    items={DEFAULT_SPORTS_LIST.map((s) => ({
-                      label: s,
-                      value: s,
-                    }))}
-                    setOpen={setSportOpen}
-                    setValue={(value) => handleFormChange("sport", value)}
-                    placeholder="Select Sport"
-                    placeholderStyle={{ color: colors.placeholder }}
-                    style={[
-                      styles.dropdown,
-                      {
-                        borderColor: errors.sport
-                          ? colors.notification
-                          : colors.border,
-                        backgroundColor: colors.card,
-                      },
-                    ]}
-                    textStyle={{
-                      fontSize: 16,
-                      color: colors.text,
-                    }}
-                    dropDownContainerStyle={{
-                      borderColor: colors.border,
-                      backgroundColor: colors.card,
-                    }}
-                    listItemContainerStyle={{
-                      borderBottomColor: colors.border,
-                    }}
-                    selectedItemContainerStyle={{
-                      backgroundColor: colors.primary + "20",
-                    }}
-                    selectedItemLabelStyle={{
-                      color: colors.text,
-                      fontWeight: "600",
-                    }}
-                    listMode="SCROLLVIEW"
-                    scrollViewProps={{
-                      nestedScrollEnabled: true,
-                    }}
-                    zIndex={3000}
-                  />
-                  {errors.sport ? (
-                    <Text
-                      style={[styles.errorText, { color: colors.notification }]}
-                    >
-                      {errors.sport}
-                    </Text>
-                  ) : null}
-                </View>
-
-                <View style={{ zIndex: 2000 }}>
-                  <DropDownPicker
-                    open={skillOpen}
-                    value={skillLevel}
-                    items={SKILL_LEVELS.map((s) => ({ label: s, value: s }))}
-                    setOpen={setSkillOpen}
-                    setValue={(value) => handleFormChange("skillLevel", value)}
-                    placeholder="Select Skill Level"
-                    placeholderStyle={{ color: colors.placeholder }}
-                    style={[
-                      styles.dropdown,
-                      {
-                        borderColor: errors.skillLevel
-                          ? colors.notification
-                          : colors.border,
-                        backgroundColor: colors.card,
-                      },
-                    ]}
-                    textStyle={{
-                      fontSize: 16,
-                      color: colors.text,
-                    }}
-                    dropDownContainerStyle={{
-                      borderColor: colors.border,
-                      backgroundColor: colors.card,
-                    }}
-                    listItemContainerStyle={{
-                      borderBottomColor: colors.border,
-                    }}
-                    selectedItemContainerStyle={{
-                      backgroundColor: colors.primary + "20",
-                    }}
-                    selectedItemLabelStyle={{
-                      color: colors.text,
-                      fontWeight: "600",
-                    }}
-                    listMode="SCROLLVIEW"
-                    scrollViewProps={{
-                      nestedScrollEnabled: true,
-                    }}
-                    zIndex={2000}
-                  />
-                  {errors.skillLevel ? (
-                    <Text
-                      style={[styles.errorText, { color: colors.notification }]}
-                    >
-                      {errors.skillLevel}
-                    </Text>
-                  ) : null}
-                </View>
-
-                <View style={{ zIndex: 1000 }}>
-                  <DropDownPicker
-                    open={typeOpen}
-                    value={type}
-                    items={TYPE.map((s) => ({ label: s, value: s }))}
-                    setOpen={setTypeOpen}
-                    setValue={(value) => handleFormChange("type", value)}
-                    placeholder="Select Activity Type"
-                    placeholderStyle={{ color: colors.placeholder }}
-                    style={[
-                      styles.dropdown,
-                      {
-                        borderColor: errors.type
-                          ? colors.notification
-                          : colors.border,
-                        backgroundColor: colors.card,
-                      },
-                    ]}
-                    textStyle={{
-                      fontSize: 16,
-                      color: colors.text,
-                    }}
-                    dropDownContainerStyle={{
-                      borderColor: colors.border,
-                      backgroundColor: colors.card,
-                    }}
-                    listItemContainerStyle={{
-                      borderBottomColor: colors.border,
-                    }}
-                    selectedItemContainerStyle={{
-                      backgroundColor: colors.primary + "20",
-                    }}
-                    selectedItemLabelStyle={{
-                      color: colors.text,
-                      fontWeight: "600",
-                    }}
-                    listMode="SCROLLVIEW"
-                    scrollViewProps={{
-                      nestedScrollEnabled: true,
-                    }}
-                    zIndex={1000}
-                  />
-                  {errors.type ? (
-                    <Text
-                      style={[styles.errorText, { color: colors.notification }]}
-                    >
-                      {errors.type}
-                    </Text>
-                  ) : null}
-                </View>
-              </Section>
-
-              <Section title="Additional Information">
-                <TextInput
-                  style={[
-                    styles.input,
-                    { backgroundColor: colors.background, color: colors.text },
-                  ]}
-                  value={description}
-                  onChangeText={(text) => handleFormChange("description", text)}
-                  multiline
-                  numberOfLines={3}
-                  placeholder="Activity Description..."
-                  placeholderTextColor={colors.smalltext}
-                />
-
-                <TextInput
-                  style={[
-                    styles.input,
-                    { backgroundColor: colors.background, color: colors.text },
-                  ]}
-                  value={maxParticipants}
-                  onChangeText={(text) =>
-                    handleFormChange("maxParticipants", text)
-                  }
-                  keyboardType="numeric"
-                  placeholder="Max Participants (e.g. 10)"
-                  placeholderTextColor={colors.smalltext}
-                />
-
+              <View style={[styles.dropdownContainer, { zIndex: 2000, marginTop: 16 }]}>
                 <Text style={[styles.inputHeader, { color: colors.text }]}>
-                  Price (SGD)
+                  Skill Level <Text style={{ color: colors.notification }}>*</Text>
                 </Text>
-                <TextInput
-                  style={[
-                    styles.input,
-                    { backgroundColor: colors.card, color: colors.text },
+                <Dropdown
+                  items={[
+                    { label: "Beginner", value: "Beginner" },
+                    { label: "Intermediate", value: "Intermediate" },
+                    { label: "Advanced", value: "Advanced" },
+                    { label: "Professional", value: "Professional" }
                   ]}
-                  value={price}
-                  onChangeText={(text) => handleFormChange("price", text)}
-                  keyboardType="numeric"
-                  placeholder="0.00"
-                  placeholderTextColor={colors.placeholder}
+                  value={skillLevel || ''}
+                  onChangeItem={(item) => handleFormChange("skillLevel", item.value)}
+                  placeholder="Select skill level..."
+                  zIndex={2000}
+                  zIndexInverse={2000}
                 />
-              </Section>
+                {errors.skillLevel ? (
+                  <Text style={[styles.errorText, { color: colors.notification }]}>
+                    {errors.skillLevel}
+                  </Text>
+                ) : null}
+              </View>
 
-              <Section title="Location">
-                <TouchableOpacity
-                  onPress={() => setLocationModalVisible(true)}
-                  disabled={locationsLoading}
-                >
-                  <TextInput
+              <View style={{ marginTop: 16 }}>
+                <Text style={[styles.inputHeader, { color: colors.text, marginBottom: 12 }]}>
+                  Activity Type <Text style={{ color: colors.notification }}>*</Text>
+                </Text>
+                <View style={styles.typeButtonContainer}>
+                  <TouchableOpacity
                     style={[
-                      styles.input,
-                      {
-                        backgroundColor: colors.card,
-                        color: colors.text,
-                      },
-                      errors.placeName && { borderColor: colors.notification },
-                      !errors.placeName && { borderColor: colors.border },
+                      styles.typeButton,
+                      styles.typeButtonLeft,
+                      { backgroundColor: colors.background, borderColor: colors.border },
+                      type === "Event" && { backgroundColor: colors.primary }
                     ]}
-                    value={
-                      placeName ||
-                      (locationsLoading
-                        ? "Loading locations..."
-                        : "Tap to select location")
-                    }
-                    placeholder="Tap to select location"
-                    placeholderTextColor={colors.placeholder}
-                    editable={false}
-                    pointerEvents="none"
-                  />
-                </TouchableOpacity>
-                {errors.placeName ? (
-                  <Text style={styles.errorText}>{errors.placeName}</Text>
+                    onPress={() => handleFormChange("type", "Event")}
+                  >
+                    <Text style={[
+                      styles.typeButtonText,
+                      { color: type === "Event" ? "#fff" : colors.text }
+                    ]}>
+                      Event
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.typeButton,
+                      styles.typeButtonRight,
+                      { backgroundColor: colors.background, borderColor: colors.border },
+                      type === "Coaching Session" && { backgroundColor: colors.primary }
+                    ]}
+                    onPress={() => handleFormChange("type", "Coaching Session")}
+                  >
+                    <Text style={[
+                      styles.typeButtonText,
+                      { color: type === "Coaching Session" ? "#fff" : colors.text }
+                    ]}>
+                      Coaching Session
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+                {errors.type ? (
+                  <Text style={[styles.errorText, { color: colors.notification }]}>
+                    {errors.type}
+                  </Text>
                 ) : null}
-                {locationsError ? (
-                  <Text style={styles.errorText}>Error loading locations.</Text>
-                ) : null}
-              </Section>
+              </View>
+            </Section>
 
-              <LocationPicker
-                visible={locationModalVisible}
-                onClose={() => setLocationModalVisible(false)}
-                onSelectLocation={handleLocationSelect}
-                locations={locations}
-                loading={locationsLoading}
-                error={locationsError}
-                selectedLocation={placeName}
+            <Section title="Additional Information">
+              <Text style={[styles.inputHeader, { color: colors.text }]}>
+                Description
+              </Text>
+              <TextInput
+                ref={descriptionRef}
+                style={[
+                  styles.descriptionInput,
+                  { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }
+                ]}
+                value={description}
+                onChangeText={(text) => handleFormChange("description", text)}
+                multiline
+                numberOfLines={Platform.OS === 'ios' ? 0 : 4}
+                textAlignVertical="top"
+                placeholder="Add details about your activity, what to bring, what to expect, etc."
+                placeholderTextColor={colors.smalltext}
+                returnKeyType="next"
+                blurOnSubmit={true}
+                onSubmitEditing={() => maxParticipantsRef.current?.focus()}
               />
 
-              <Section title="Actions">
-                <TouchableOpacity
-                  style={[
-                    styles.button,
-                    { backgroundColor: colors.primary },
-                    (isSubmitting || isCancelling || isDeleting) &&
-                      styles.buttonDisabled,
-                  ]}
-                  onPress={handleUpdate}
-                  disabled={isSubmitting || isCancelling || isDeleting}
-                >
-                  <Text style={[styles.buttonText, { color: colors.text }]}>
-                    {isSubmitting ? "Updating..." : "Update Activity"}
+              <View style={styles.rowContainer}>
+                <View style={styles.halfColumn}>
+                  <Text style={[styles.inputHeader, { color: colors.text }]}>
+                    Max Participants <Text style={{ color: colors.notification }}>*</Text>
                   </Text>
-                </TouchableOpacity>
+                  <TextInput
+                    ref={maxParticipantsRef}
+                    style={[
+                      styles.input,
+                      { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }
+                    ]}
+                    value={maxParticipants}
+                    onChangeText={(text) => handleFormChange("maxParticipants", text)}
+                    keyboardType="numeric"
+                    placeholder="e.g. 10"
+                    placeholderTextColor={colors.smalltext}
+                    returnKeyType="next"
+                    blurOnSubmit={false}
+                    onSubmitEditing={() => priceRef.current?.focus()}
+                  />
+                </View>
 
-                <TouchableOpacity
-                  style={[
-                    styles.button,
-                    styles.cancelButton,
-                    { backgroundColor: "#FFA500" },
-                    (isSubmitting || isCancelling || isDeleting) &&
-                      styles.buttonDisabled,
-                  ]}
-                  onPress={handleCancel}
-                  disabled={isSubmitting || isCancelling || isDeleting}
-                >
-                  <Text style={[styles.buttonText, { color: colors.text }]}>
-                    {isCancelling ? "Cancelling..." : "Cancel Activity"}
+                <View style={styles.halfColumn}>
+                  <Text style={[styles.inputHeader, { color: colors.text }]}>
+                    Price (SGD)
                   </Text>
-                </TouchableOpacity>
+                  <TextInput
+                    ref={priceRef}
+                    style={[
+                      styles.input,
+                      { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }
+                    ]}
+                    value={price}
+                    onChangeText={(text) => handleFormChange("price", text)}
+                    keyboardType="numeric"
+                    placeholder="0.00"
+                    placeholderTextColor={colors.smalltext}
+                    returnKeyType="done"
+                    blurOnSubmit={true}
+                    onSubmitEditing={dismissKeyboard}
+                  />
+                </View>
+              </View>
+            </Section>
 
-                <TouchableOpacity
+            <Section title="Location">
+              <Text style={[styles.inputHeader, { color: colors.text }]}>
+                Location <Text style={{ color: colors.notification }}>*</Text>
+              </Text>
+              <TouchableOpacity
+                style={[
+                  styles.locationPickerButton,
+                  { backgroundColor: colors.background, borderColor: errors.placeName ? colors.notification : colors.border }
+                ]}
+                onPress={() => setLocationModalVisible(true)}
+              >
+                <View style={styles.locationIconContainer}>
+                  <Ionicons name="location-outline" size={20} color={colors.smalltext} />
+                </View>
+                <Text
                   style={[
-                    styles.button,
-                    styles.deleteButton,
-                    { backgroundColor: colors.notification },
-                    (isSubmitting || isCancelling || isDeleting) &&
-                      styles.buttonDisabled,
+                    styles.locationButtonText,
+                    placeName ? { color: colors.text } : { color: colors.smalltext }
                   ]}
-                  onPress={handleDelete}
-                  disabled={isSubmitting || isCancelling || isDeleting}
                 >
-                  <Text style={[styles.buttonText, { color: colors.text }]}>
-                    {isDeleting ? "Deleting..." : "Delete Activity"}
-                  </Text>
-                </TouchableOpacity>
-              </Section>
-            </>
-          )}
-        </ScrollView>
+                  {placeName || "Tap to select location"}
+                </Text>
+                <Ionicons name="chevron-forward" size={20} color={colors.smalltext} />
+              </TouchableOpacity>
+              {errors.placeName ? (
+                <Text style={[styles.errorText, { color: colors.notification }]}>
+                  {errors.placeName}
+                </Text>
+              ) : null}
+            </Section>
+
+            <Section title="Actions">
+              <TouchableOpacity
+                style={[
+                  styles.button,
+                  { backgroundColor: colors.primary },
+                  (isSubmitting || isCancelling || isDeleting) && styles.buttonDisabled,
+                ]}
+                onPress={handleUpdate}
+                disabled={isSubmitting || isCancelling || isDeleting}
+              >
+                <Text style={[styles.buttonText, { color: "#fff" }]}>
+                  {isSubmitting ? "Updating..." : "Update Activity"}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.cancelBtn,
+                  { backgroundColor: "#FFA500" },
+                  (isSubmitting || isCancelling || isDeleting) && styles.buttonDisabled,
+                ]}
+                onPress={handleCancel}
+                disabled={isSubmitting || isCancelling || isDeleting}
+              >
+                <Text style={[styles.buttonText, { color: "#fff" }]}>
+                  {isCancelling ? "Cancelling..." : "Cancel Activity"}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.deleteBtn,
+                  { backgroundColor: colors.notification },
+                  (isSubmitting || isCancelling || isDeleting) && styles.buttonDisabled,
+                ]}
+                onPress={handleDelete}
+                disabled={isSubmitting || isCancelling || isDeleting}
+              >
+                <Text style={[styles.buttonText, { color: "#fff" }]}>
+                  {isDeleting ? "Deleting..." : "Delete Activity"}
+                </Text>
+              </TouchableOpacity>
+            </Section>
+
+            {/* Date/Time Pickers */}
+            <DateTimePickerModal
+              isVisible={isDatePickerVisible}
+              mode="date"
+              date={date}
+              onConfirm={handleDateConfirm}
+              onCancel={() => setDatePickerVisible(false)}
+              minimumDate={new Date()}
+              confirmTextIOS="Confirm"
+              cancelTextIOS="Cancel"
+            />
+
+            <DateTimePickerModal
+              isVisible={isTimePickerVisible}
+              mode="time"
+              date={date}
+              onConfirm={handleTimeConfirm}
+              onCancel={() => setTimePickerVisible(false)}
+              confirmTextIOS="Confirm"
+              cancelTextIOS="Cancel"
+            />
+
+            <LocationPicker
+              visible={locationModalVisible}
+              onClose={() => setLocationModalVisible(false)}
+              onSelectLocation={handleLocationSelect}
+              locations={locations}
+              loading={locationsLoading}
+              error={locationsError}
+              selectedLocation={placeName}
+            />
+            
+            <View style={{ height: 50 }}></View>
+          </ScrollView>
+        </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
     </View>
   );
@@ -938,7 +975,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingTop: Platform.OS === "ios" ? 50 : 40,
+    paddingTop: Platform.OS === "ios" ? 50 : 30,
     paddingBottom: 10,
     borderBottomWidth: 1,
   },
@@ -947,23 +984,20 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontSize: 18,
     fontWeight: "600",
+    marginRight: 40,
   },
   backButton: {
-    position: "absolute",
-    left: 16,
-    top: Platform.OS === "ios" ? 50 : 40,
-    zIndex: 1,
     flexDirection: "row",
     alignItems: "center",
     padding: 8,
   },
-  backButtonAlone: {
-    marginTop: 20,
-    padding: 10,
-  },
   backButtonText: {
     marginLeft: 4,
     fontSize: 16,
+  },
+  backButtonAlone: {
+    marginTop: 20,
+    padding: 10,
   },
   section: {
     borderRadius: 12,
@@ -987,38 +1021,55 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   input: {
-    padding: 12,
+    padding: Platform.OS === 'ios' ? 14 : 12,
     borderRadius: 8,
     borderWidth: 1,
     marginBottom: 16,
     fontSize: 16,
   },
-  inputError: {
-    borderWidth: 2,
+  descriptionInput: {
+    padding: Platform.OS === 'ios' ? 14 : 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginBottom: 16,
+    fontSize: 16,
+    height: 120,
+    textAlignVertical: 'top',
   },
   errorText: {
-    color: "red",
     fontSize: 14,
     marginTop: -12,
     marginBottom: 12,
   },
-  dropdown: {
-    marginVertical: 8,
-    height: 50,
+  dateTimeContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  dateTimeButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
     borderRadius: 8,
     borderWidth: 1,
+    flex: 0.48,
+  },
+  dateTimeIcon: {
+    marginRight: 8,
+  },
+  dateTimeText: {
+    fontSize: 16,
   },
   button: {
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderRadius: 10,
+    padding: 16,
+    borderRadius: 12,
     alignItems: "center",
     marginBottom: 12,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 3,
+    shadowRadius: 4,
+    elevation: 4,
   },
   buttonText: {
     fontSize: 16,
@@ -1026,23 +1077,6 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: {
     opacity: 0.6,
-  },
-  cancelButton: {
-    // Specific styles if needed
-  },
-  deleteButton: {
-    // Specific styles if needed
-  },
-  inputHeader: {
-    fontSize: 16,
-    fontWeight: "600",
-    marginBottom: 5,
-    marginTop: 3,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
   },
   cancelBtn: {
     padding: 16,
@@ -1065,6 +1099,68 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 4,
+  },
+  inputHeader: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 8,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  typeButtonContainer: {
+    flexDirection: 'row',
+    borderRadius: 8,
+    overflow: 'hidden',
+    marginBottom: 16,
+  },
+  typeButton: {
+    flex: 1,
+    padding: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  typeButtonLeft: {
+    borderTopLeftRadius: 8,
+    borderBottomLeftRadius: 8,
+    borderWidth: 1,
+  },
+  typeButtonRight: {
+    borderTopRightRadius: 8,
+    borderBottomRightRadius: 8,
+    borderWidth: 1,
+    borderLeftWidth: 0,
+  },
+  typeButtonText: {
+    fontWeight: '500',
+    fontSize: 16,
+  },
+  locationPickerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginBottom: 16,
+  },
+  locationIconContainer: {
+    marginRight: 8,
+  },
+  locationButtonText: {
+    flex: 1,
+    fontSize: 16,
+  },
+  rowContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  halfColumn: {
+    width: '48%',
+  },
+  dropdownContainer: {
+    marginBottom: 8,
   },
 });
 

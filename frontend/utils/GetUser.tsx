@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { API_URL, FALLBACK_API_URL } from "../config.json";
+import { API_URL } from "../config.json";
 import { Platform } from "react-native";
 
 export const fetchCurrentUser = async () => {
@@ -37,7 +37,7 @@ export const fetchCurrentUser = async () => {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 second timeout for fallback
 
-    const response = await fetch(`${FALLBACK_API_URL}/user/current_user`, {
+    const response = await fetch(`${API_URL}/user/current_user`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${token}`,

@@ -22,9 +22,6 @@ import { useRouter } from "expo-router";
 import { format } from "date-fns";
 import FilterModal, { FilterOptions } from "@/components/activity/FilterModal";
 import { useTheme } from "@/hooks/ThemeContext";
-import { getValidToken } from "@/utils/getValidToken"; // 👈 Add this at top
-
-
 
 export default function Feed() {
   const { colors } = useTheme();
@@ -35,6 +32,7 @@ export default function Feed() {
   const [refreshing, setRefreshing] = useState(false);
   const [noResults, setNoResults] = useState(false);
   const [filterModalVisible, setFilterModalVisible] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   // Search params
   const [searchTerm, setSearchTerm] = useState("");
@@ -48,6 +46,31 @@ export default function Feed() {
     dateTo: null,
     location: "",
   });
+
+  // Fetch current user ID on mount
+  useEffect(() => {
+    const fetchCurrentUser = async () => {
+      try {
+        const token = await AsyncStorage.getItem("token");
+        if (!token) return;
+
+        const response = await fetch(`${API_URL}/user/current_user`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (response.ok) {
+          const userData = await response.json();
+          setCurrentUserId(userData.id);
+        }
+      } catch (err) {
+        console.error("Failed to fetch current user:", err);
+      }
+    };
+
+    fetchCurrentUser();
+  }, []);
 
   // Whether any filters are currently active
   const hasActiveFilters = () => {
@@ -75,8 +98,7 @@ export default function Feed() {
     setError(null);
   
     try {
-      // Retrieve the token from AsyncStorage
-      const token = await getValidToken();
+      const token = await AsyncStorage.getItem("token");
       if (!token) {
         showAlert("Authentication Error", "No token found. Please log in.", [
           { text: "Log In", onPress: () => router.push("/Login") },
@@ -139,6 +161,9 @@ export default function Feed() {
         );
       }
   
+      // Always filter for only available activities
+      params.append("status", "available");
+      
       // Construct the final URL using API_URL
       const baseUrl = `${API_URL}/activity/search`;
       const queryString = params.toString();
@@ -161,13 +186,36 @@ export default function Feed() {
         throw new Error(`Request failed with status ${response.status}`);
       }
   
-      const data = await response.json();
-      console.log(`Found ${data.length} activities`);
+      let data = await response.json();
+      console.log(`Found ${data.length} activities before filtering`);
+      
+      if (currentUserId) {
+        const now = new Date();
+        data = data.filter((activity: { dateTime: string | number | Date; status: string; participants: string | string[]; creator_id: string; }) => {
+          const activityDate = new Date(activity.dateTime);
+          
+          // Check if activity is in the future
+          const isUpcoming = activityDate > now;
+          
+          // Check if activity is available (not cancelled)
+          const isAvailable = activity.status === "available";
+          
+          // Check if user is not already a participant
+          const isNotParticipant = !activity.participants?.includes(currentUserId);
+          
+          // Check if user is not the creator
+          const isNotCreator = activity.creator_id !== currentUserId;
+          
+          return isUpcoming && isAvailable && isNotParticipant && isNotCreator;
+        });
+      }
+      
+      console.log(`Showing ${data.length} activities after filtering`);
   
       // Check if we have results
       setNoResults(data.length === 0);
   
-      // Assume the backend returns an array of Activity objects that match your Activity type.
+      // Set the filtered activities
       setActivities(data);
     } catch (err: any) {
       console.error("Error fetching activities:", err);
@@ -180,7 +228,7 @@ export default function Feed() {
 
   useEffect(() => {
     fetchActivities();
-  }, []);
+  }, [currentUserId]); // Re-fetch when user ID is loaded
 
   const handleSearch = () => {
     const currentFilters = { ...activeFilters };
@@ -315,7 +363,7 @@ export default function Feed() {
                 style={styles.clearSearchButton}
                 onPress={() => {
                   setSearchTerm("");
-                  // Only auto-search if there was a previous search term
+
                   fetchActivities(false, activeFilters, "");
                 }}
               >
@@ -438,6 +486,13 @@ export default function Feed() {
           </ScrollView>
           </View>
         )}
+        
+        {/* Added info text about what's being shown */}
+        <View style={styles.infoTextContainer}>
+          <Text style={[styles.infoText, { color: colors.smalltext }]}>
+            Upcoming activities you can join
+          </Text>
+        </View>
 
         {loading && !refreshing ? (
           <ActivityIndicator
@@ -605,6 +660,15 @@ const styles = StyleSheet.create({
   clearFilterPillText: {
     color: '#666',
     fontWeight: '500',
+  },
+  infoTextContainer: {
+    marginBottom: 8,
+    paddingHorizontal: 8,
+  },
+  infoText: {
+    fontSize: 13,
+    fontStyle: 'italic',
+    textAlign: 'center',
   },
   loader: {
     marginTop: 40,

@@ -8,7 +8,7 @@ from fastapi import HTTPException, UploadFile
 from datetime import datetime
 
 from activity.repository.activity_repository import ActivityRepository, FirestoreError
-from activity.models.activity import Activity, ActivityStatus, Location
+from activity.models.activity import ActivityStatus
 from user.services.image_service import ImageService
 
 from user.services.alert_service import AlertService

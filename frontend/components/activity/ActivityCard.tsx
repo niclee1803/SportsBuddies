@@ -71,12 +71,9 @@ const ActivityCard = ({ activity }: ActivityCardProps) => {
     if (activity.status === "cancelled") {
       return {
         label: "Cancelled",
-        color: "#FF3B30",
+        color: "#FF0000",
         icon: "close-circle",
-        style: {
-          opacity: 0.7,
-          backgroundColor: "#FFE5E5",
-        },
+        style: {},
       };
     }
 
@@ -126,9 +123,15 @@ const ActivityCard = ({ activity }: ActivityCardProps) => {
   const participantCount = activity.participants?.length || 0;
   const maxParticipants = activity.maxParticipants || "∞";
 
+  const isCancelled = activity.status === "cancelled";
+
   return (
     <TouchableOpacity
-      style={[styles.card, { backgroundColor: colors.card }, status.style]}
+      style={[
+        styles.card, 
+        { backgroundColor: colors.card },
+        isCancelled && { opacity: 0.9 }
+      ]}
       onPress={handleActivityPress}
       activeOpacity={0.7}
     >
@@ -198,6 +201,7 @@ const ActivityCard = ({ activity }: ActivityCardProps) => {
           style={[
             styles.statusContainer,
             { backgroundColor: status.color + "20" },
+            isCancelled && { borderWidth: 1, borderColor: status.color }
           ]}
         >
           <Ionicons name={status.icon as any} size={16} color={status.color} />
@@ -262,6 +266,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
+    overflow: "hidden",
+    position: "relative",
   },
   cardHeader: {
     flexDirection: "row",

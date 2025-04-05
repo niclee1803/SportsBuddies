@@ -160,15 +160,13 @@ async def upload_banner_image(
     current_user: Dict = Depends(AuthService.get_current_user)
 ):
     """
-    Upload an activity banner image to Cloudinary (or your storage) and return the URL.
+    Upload an activity banner image to Cloudinary and return the URL.
     """
-    print(f"[UPLOAD DEBUG] filename={file.filename}, content_type={file.content_type}, size={len(await file.read())}")
-    await file.seek(0)  # ✅ Reset file pointer after reading
-
     try:
         url_data = await activity_controller.upload_banner(current_user["uid"], file)
-        return url_data  # ✅ Must return dict with `url` key
+        return url_data 
     except Exception as e:
+        print(f"Banner upload error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to upload image: {str(e)}")
 
 
