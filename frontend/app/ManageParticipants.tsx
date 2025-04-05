@@ -7,7 +7,8 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   Image,
-  RefreshControl
+  RefreshControl,
+  SafeAreaView
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,6 +17,7 @@ import { API_URL } from "../config.json";
 import { Activity } from '../types/activity';
 import { showAlert } from '../utils/alertUtils';
 import { AlertService } from '@/services/AlertService';
+import { useTheme } from '@/hooks/ThemeContext';
 
 interface Participant {
   id: string;
@@ -28,6 +30,7 @@ const ManageParticipants = () => {
   const router = useRouter();
   const { id } = useLocalSearchParams();
   const activityId = Array.isArray(id) ? id[0] : id;
+  const { colors } = useTheme();
   
   const [activity, setActivity] = useState<Activity | null>(null);
   const [loading, setLoading] = useState(true);
@@ -285,22 +288,22 @@ const ManageParticipants = () => {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#0066cc" />
-        <Text style={styles.loadingText}>Loading participants...</Text>
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={ colors.primary } />
+        <Text style={[ styles.loadingText, {color: colors.text }]} >Loading participants...</Text>
       </View>
     );
   }
 
   if (!activity) {
     return (
-      <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>Activity not found</Text>
+      <View style={[styles.errorContainer, { backgroundColor: colors.background }]}>
+        <Text style={[styles.errorText, { color: "red" }]}>Activity not found</Text>
         <TouchableOpacity
-          style={styles.backButton}
+          style={[styles.errorBackButton, { backgroundColor: colors.primary }]}
           onPress={() => router.back()}
         >
-          <Text style={styles.backButtonText}>Go Back</Text>
+          <Text style={styles.errorBackButtonText}>Go Back</Text>
         </TouchableOpacity>
       </View>
     );
@@ -309,131 +312,139 @@ const ManageParticipants = () => {
   // Check if current user is the creator
   if (currentUserId !== activity.creator_id) {
     return (
-      <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>Only the activity creator can manage participants</Text>
+      <View style={[styles.errorContainer, { backgroundColor: colors.background }]}>
+        <Text style={[styles.errorText, { color: "red" }]}>Only the activity creator can manage participants</Text>
         <TouchableOpacity
-          style={styles.backButton}
+          style={[styles.errorBackButton, { backgroundColor: colors.primary }]}
           onPress={() => router.back()}
         >
-          <Text style={styles.backButtonText}>Go Back</Text>
+          <Text style={styles.errorBackButtonText}>Go Back</Text>
         </TouchableOpacity>
       </View>
     );
   }
 
   return (
-    
-    
-    <ScrollView
-      style={styles.container}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-      }
-    >
-         <View style={styles.header}>
-      <TouchableOpacity 
-        style={styles.backButton} 
-        onPress={() => router.back()}
-      >
-        <Ionicons name="arrow-back" size={24} color="#0066cc" />
-      </TouchableOpacity>
-      <View style={styles.titleContainer}>
-        <Text style={styles.title}>{activity.activityName}</Text>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+      {/* Fixed header outside ScrollView */}
+      <View style={[styles.header, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
+        <TouchableOpacity 
+          style={styles.backButton} 
+          onPress={() => router.back()}
+        >
+          <Ionicons name="arrow-back" size={24} color={colors.primary} />
+        </TouchableOpacity>
+        <View style={styles.titleContainer}>
+          <Text style={[styles.title, { color: colors.text }]}>{activity.activityName}</Text>
+        </View>
       </View>
-    </View>
-
-
-      {/* Pending Requests Section */}
-      {pendingRequests.length > 0 ? (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Pending Join Requests ({pendingRequests.length})</Text>
-          {pendingRequests.map((user) => (
-            <View key={user.id} style={styles.userCard}>
+      
+      {/* Scrollable content with RefreshControl */}
+      <ScrollView
+        style={styles.scrollContent}
+        contentContainerStyle={styles.scrollContentContainer}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
+        {/* Pending Requests Section */}
+        {pendingRequests.length > 0 ? (
+          <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              Pending Join Requests ({pendingRequests.length})
+            </Text>
+            {pendingRequests.map((user) => (
+              <View key={user.id} style={[styles.userCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
                 <TouchableOpacity 
-                style={styles.userInfoContainer}
-                onPress={() => navigateToProfile(user.id)}
+                  style={styles.userInfoContainer}
+                  onPress={() => navigateToProfile(user.id)}
                 >
-                <Image
+                  <Image
                     source={{ uri: user.profilePicUrl }}
                     style={styles.userImage}
-                />
-                <View style={styles.userInfo}>
-                    <Text style={styles.userName}>{user.name}</Text>
-                    <Text style={styles.userUsername}>@{user.username}</Text>
+                  />
+                  <View style={styles.userInfo}>
+                    <Text style={[styles.userName, { color: colors.text }]}>{user.name}</Text>
+                    <Text style={[styles.userUsername, { color: colors.smalltext }]}>@{user.username}</Text>
+                  </View>
+                </TouchableOpacity>
+                <View style={styles.actionButtons}>
+                  <TouchableOpacity
+                    style={[styles.actionButton, styles.approveButton]}
+                    onPress={() => handleApproveRequest(user.id)}
+                  >
+                    <Ionicons name="checkmark" size={18} color="white" />
+                    <Text style={styles.actionButtonText}>Approve</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.actionButton, styles.rejectButton]}
+                    onPress={() => handleRejectRequest(user.id)}
+                  >
+                    <Ionicons name="close" size={18} color="white" />
+                    <Text style={styles.actionButtonText}>Reject</Text>
+                  </TouchableOpacity>
                 </View>
-                </TouchableOpacity>
-              <View style={styles.actionButtons}>
-                <TouchableOpacity
-                  style={[styles.actionButton, styles.approveButton]}
-                  onPress={() => handleApproveRequest(user.id)}
+              </View>
+            ))}
+          </View>
+        ) : (
+          <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>No Pending Requests</Text>
+            <Text style={[styles.emptyText, { color: colors.smalltext }]}>
+              There are currently no pending join requests.
+            </Text>
+          </View>
+        )}
+
+        {/* Participants Section */}
+        {participants.length > 0 ? (
+          <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              Participants ({participants.length}/{activity.maxParticipants})
+            </Text>
+            {participants.map((user) => (
+              <View key={user.id} style={[styles.userCard, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                <TouchableOpacity 
+                  style={styles.userInfoContainer}
+                  onPress={() => navigateToProfile(user.id)}
                 >
-                  <Ionicons name="checkmark" size={18} color="white" />
-                  <Text style={styles.actionButtonText}>Approve</Text>
+                  <Image
+                    source={{ uri: user.profilePicUrl }}
+                    style={styles.userImage}
+                  />
+                  <View style={styles.userInfo}>
+                    <Text style={[styles.userName, { color: colors.text }]}>{user.name}</Text>
+                    <Text style={[styles.userUsername, { color: colors.smalltext }]}>@{user.username}</Text>
+                  </View>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.actionButton, styles.rejectButton]}
-                  onPress={() => handleRejectRequest(user.id)}
+                  style={[styles.actionButton, styles.removeButton]}
+                  onPress={() => handleRemoveParticipant(user.id)}
                 >
-                  <Ionicons name="close" size={18} color="white" />
-                  <Text style={styles.actionButtonText}>Reject</Text>
+                  <Ionicons name="trash" size={16} color="white" />
+                  <Text style={styles.actionButtonText}>Remove</Text>
                 </TouchableOpacity>
               </View>
-            </View>
-          ))}
-        </View>
-      ) : (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>No Pending Requests</Text>
-          <Text style={styles.emptyText}>There are currently no pending join requests.</Text>
-        </View>
-      )}
-
-      {/* Participants Section */}
-      {participants.length > 0 ? (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>
-            Participants ({participants.length}/{activity.maxParticipants})
-          </Text>
-          {participants.map((user) => (
-            <View key={user.id} style={styles.userCard}>
-                <TouchableOpacity 
-                style={styles.userInfoContainer}
-                onPress={() => navigateToProfile(user.id)}
-                >
-                <Image
-                    source={{ uri: user.profilePicUrl }}
-                    style={styles.userImage}
-                />
-                <View style={styles.userInfo}>
-                    <Text style={styles.userName}>{user.name}</Text>
-                    <Text style={styles.userUsername}>@{user.username}</Text>
-                </View>
-                </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.actionButton, styles.removeButton]}
-                onPress={() => handleRemoveParticipant(user.id)}
-              >
-                <Ionicons name="trash" size={16} color="white" />
-                <Text style={styles.actionButtonText}>Remove</Text>
-              </TouchableOpacity>
-            </View>
-          ))}
-        </View>
-      ) : (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>No Participants Yet</Text>
-          <Text style={styles.emptyText}>There are currently no participants in this activity.</Text>
-        </View>
-      )}
-    </ScrollView>
+            ))}
+          </View>
+        ) : (
+          <View style={[styles.section, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>No Participants Yet</Text>
+            <Text style={[styles.emptyText, { color: colors.smalltext }]}>
+              There are currently no participants in this activity.
+            </Text>
+          </View>
+        )}
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
-    backgroundColor: '#fff',
-    padding: 16,
+    marginTop: -20
+
   },
   loadingContainer: {
     flex: 1,
@@ -443,7 +454,6 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 10,
     fontSize: 16,
-    color: '#555',
   },
   errorContainer: {
     flex: 1,
@@ -453,31 +463,61 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 16,
-    color: '#d9534f',
     textAlign: 'center',
     marginBottom: 20,
   },
+  errorBackButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+  },
+  errorBackButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    marginTop: 10,
+  },
+  scrollContent: {
+    flex: 1,
+  },
+  scrollContentContainer: {
+    padding: 16,
+    paddingBottom: 40,
+  },
   section: {
     marginBottom: 24,
-    marginTop: 16,
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+    borderWidth: 1,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
     marginBottom: 12,
   },
   emptyText: {
-    color: '#666',
     fontSize: 14,
+    textAlign: 'center',
+    paddingVertical: 12,
   },
   userCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f9f9f9',
     borderRadius: 10,
     padding: 12,
     marginBottom: 10,
+    borderWidth: 1,
   },
   userImage: {
     width: 50,
@@ -491,11 +531,9 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
   },
   userUsername: {
     fontSize: 14,
-    color: '#666',
     marginTop: 2,
   },
   actionButtons: {
@@ -525,24 +563,10 @@ const styles = StyleSheet.create({
   removeButton: {
     backgroundColor: '#dc3545',
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#fff',
-    borderBottomColor: '#e0e0e0',
-    borderBottomWidth: 1,
-    marginTop: 30,
-  },
   backButton: {
     flexDirection: 'row',
     alignItems: 'center',
     marginRight: 16,
-  },
-  backButtonText: {
-    marginLeft: 4,
-    color: '#0066cc',
-    fontSize: 16,
   },
   titleContainer: {
     flex: 1,
@@ -553,7 +577,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
     textAlign: 'center',
   },
   userInfoContainer: {
