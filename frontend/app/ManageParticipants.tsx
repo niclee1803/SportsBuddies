@@ -15,6 +15,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from "../config.json";
 import { Activity } from '../types/activity';
 import { showAlert } from '../utils/alertUtils';
+import { AlertService } from '@/services/AlertService';
 
 interface Participant {
   id: string;
@@ -128,66 +129,115 @@ const ManageParticipants = () => {
   };
 
   const handleApproveRequest = async (userId: string) => {
+    setLoading(true);
     try {
-      const token = await AsyncStorage.getItem('token');
+      const token = await AsyncStorage.getItem("token");
+      if (!token) return;
+  
+      // Call API to approve request
       const response = await fetch(
         `${API_URL}/activity/${activityId}/approve/${userId}`,
         {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${token}` }
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
         }
       );
-
-      if (response.ok) {
-        showAlert('Success', 'Join request approved');
-        // Refresh data
-        fetchActivityData();
-      } else {
-        const errorData = await response.json();
-        showAlert('Error', errorData.detail || 'Failed to approve request');
+  
+      if (!response.ok) {
+        throw new Error("Failed to approve request");
       }
+  
+      // Get the alert related to this join request so we can update its status
+      const alertsResponse = await fetch(`${API_URL}/user/alerts`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      
+      if (alertsResponse.ok) {
+        const alerts = await alertsResponse.json();
+        // Find the join request alert for this user and activity
+        const joinRequestAlert = alerts.find(
+          (alert: any) => 
+            alert.type === "join_request" && 
+            alert.sender_id === userId && 
+            alert.activity_id === activityId
+        );
+        
+        // If we found the alert, update its status
+        if (joinRequestAlert) {
+          await AlertService.setResponseStatus(token, joinRequestAlert.id, "accepted");
+          await AlertService.markAsRead(token, joinRequestAlert.id);
+        }
+      }
+  
+      // Refresh the participants and requests lists
+      fetchActivityData();
     } catch (error) {
-      showAlert('Error', 'An error occurred while approving the request');
-      console.error(error);
+      console.error("Error approving request:", error);
+      showAlert("Error", "Failed to approve request. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
-
+  
   const handleRejectRequest = async (userId: string) => {
-    showAlert(
-      'Reject Request',
-      'Are you sure you want to reject this join request?',
-      [
-        { text: 'Cancel', style: 'cancel' },
+    setLoading(true);
+    try {
+      const token = await AsyncStorage.getItem("token");
+      if (!token) return;
+  
+      // Call API to reject request
+      const response = await fetch(
+        `${API_URL}/activity/${activityId}/reject/${userId}`,
         {
-          text: 'Reject',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              const token = await AsyncStorage.getItem('token');
-              const response = await fetch(
-                `${API_URL}/activity/${activityId}/reject/${userId}`,
-                {
-                  method: 'POST',
-                  headers: { Authorization: `Bearer ${token}` }
-                }
-              );
-
-              if (response.ok) {
-                showAlert('Success', 'Join request rejected');
-                // Refresh data
-                fetchActivityData();
-              } else {
-                const errorData = await response.json();
-                showAlert('Error', errorData.detail || 'Failed to reject request');
-              }
-            } catch (error) {
-              showAlert('Error', 'An error occurred while rejecting the request');
-              console.error(error);
-            }
-          }
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
         }
-      ]
-    );
+      );
+  
+      if (!response.ok) {
+        throw new Error("Failed to reject request");
+      }
+  
+      // Get the alert related to this join request so we can update its status
+      const alertsResponse = await fetch(`${API_URL}/user/alerts`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      
+      if (alertsResponse.ok) {
+        const alerts = await alertsResponse.json();
+        // Find the join request alert for this user and activity
+        const joinRequestAlert = alerts.find(
+          (alert: any) => 
+            alert.type === "join_request" && 
+            alert.sender_id === userId && 
+            alert.activity_id === activityId
+        );
+        
+        // If we found the alert, update its status
+        if (joinRequestAlert) {
+          await AlertService.setResponseStatus(token, joinRequestAlert.id, "rejected");
+          await AlertService.markAsRead(token, joinRequestAlert.id);
+        }
+      }
+  
+      // Refresh the participants and requests lists
+      fetchActivityData();
+    } catch (error) {
+      console.error("Error rejecting request:", error);
+      showAlert("Error", "Failed to reject request. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleRemoveParticipant = async (userId: string) => {
@@ -286,7 +336,6 @@ const ManageParticipants = () => {
         onPress={() => router.back()}
       >
         <Ionicons name="arrow-back" size={24} color="#0066cc" />
-        <Text style={styles.backButtonText}>Back</Text>
       </TouchableOpacity>
       <View style={styles.titleContainer}>
         <Text style={styles.title}>{activity.activityName}</Text>
@@ -483,6 +532,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderBottomColor: '#e0e0e0',
     borderBottomWidth: 1,
+    marginTop: 30,
   },
   backButton: {
     flexDirection: 'row',
@@ -497,8 +547,8 @@ const styles = StyleSheet.create({
   titleContainer: {
     flex: 1,
     justifyContent: 'center',
-    alignItems: 'center', // Change from 'flex-start' to 'center'
-    marginHorizontal: 40, // Add margin to prevent overlap
+    alignItems: 'center',
+    marginHorizontal: 40,
   },
   title: {
     fontSize: 18,
