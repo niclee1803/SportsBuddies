@@ -10,7 +10,7 @@ import {
   KeyboardAvoidingView,
   ActivityIndicator,
   TouchableWithoutFeedback,
-  Keyboard
+  Keyboard,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import BannerPicker from "@/components/activity/BannerPicker";
@@ -31,7 +31,10 @@ import { useTheme } from "@/hooks/ThemeContext";
 import { API_URL } from "../config.json";
 import { showAlert } from "@/utils/alertUtils";
 import { Activity, Location } from "@/types/activity";
-import Dropdown from '@/components/activity/ActivityMenu';
+import Dropdown, {
+  useSportsList,
+  SKILL_LEVELS,
+} from "@/components/activity/ActivityMenu";
 
 // Section component props type
 interface SectionProps {
@@ -113,16 +116,22 @@ const ManageActivity = () => {
   const [skillLevel, setSkillLevel] = useState<string | null>(null);
   const [type, setType] = useState<string | null>(null);
   const [bannerUri, setBannerUri] = useState<string | null>(null);
-  const [existingBannerUrl, setExistingBannerUrl] = useState<string | null>(null);
+  const [existingBannerUrl, setExistingBannerUrl] = useState<string | null>(
+    null
+  );
   const [maxParticipants, setMaxParticipants] = useState("");
   const [price, setPrice] = useState("");
   const [date, setDate] = useState(new Date());
-  const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
+  const [selectedLocation, setSelectedLocation] = useState<Location | null>(
+    null
+  );
   const [placeName, setPlaceName] = useState("");
   const [locationModalVisible, setLocationModalVisible] = useState(false);
+  const { sportsList, loading: sportsLoading } = useSportsList();
 
   // State to store initial form data for change detection
-  const [initialActivityData, setInitialActivityData] = useState<InitialFormData | null>(null);
+  const [initialActivityData, setInitialActivityData] =
+    useState<InitialFormData | null>(null);
 
   // Date and time picker states
   const [isDatePickerVisible, setDatePickerVisible] = useState(false);
@@ -178,26 +187,35 @@ const ManageActivity = () => {
         const currentActivityName = fetchedActivity.activityName;
         const currentDescription = fetchedActivity.description || "";
         const currentSport = fetchedActivity.sport;
-        
+
         // Ensure skillLevel is one of the valid options
-        const validSkillLevels = ["Beginner", "Intermediate", "Advanced", "Professional"];
+        const validSkillLevels = [
+          "Beginner",
+          "Intermediate",
+          "Advanced",
+          "Professional",
+        ];
         const backendSkillLevel = fetchedActivity.skillLevel;
         const frontendSkillLevel =
           validSkillLevels.find(
             (level) => level.toLowerCase() === backendSkillLevel?.toLowerCase()
           ) || null;
-        
+
         // Map backend type to frontend type
         const backendType = fetchedActivity.type;
         const typeMap: { [key: string]: string } = {
-          "event": "Event",
-          "coaching session": "Coaching Session"
+          event: "Event",
+          "coaching session": "Coaching Session",
         };
-        const frontendType = backendType ? typeMap[backendType.toLowerCase()] || null : null;
+        const frontendType = backendType
+          ? typeMap[backendType.toLowerCase()] || null
+          : null;
 
         const currentExistingBannerUrl = fetchedActivity.bannerImageUrl || null;
         const currentBannerUri = null; // Reset local banner URI on load
-        const currentMaxParticipants = String(fetchedActivity.maxParticipants || "");
+        const currentMaxParticipants = String(
+          fetchedActivity.maxParticipants || ""
+        );
         const currentPrice = String(fetchedActivity.price || "");
         const currentDate = new Date(fetchedActivity.dateTime);
         const currentSelectedLocation = fetchedActivity.location;
@@ -323,10 +341,10 @@ const ManageActivity = () => {
         setErrors((prev) => ({ ...prev, type: "" }));
         break;
       case "maxParticipants":
-        setMaxParticipants(value.replace(/[^0-9]/g, ''));
+        setMaxParticipants(value.replace(/[^0-9]/g, ""));
         break;
       case "price":
-        setPrice(value.replace(/[^0-9.]/g, ''));
+        setPrice(value.replace(/[^0-9.]/g, ""));
         break;
       case "placeName":
         setPlaceName(value);
@@ -339,7 +357,7 @@ const ManageActivity = () => {
     const now = new Date();
     return selectedDate > now;
   };
-  
+
   const handleDateConfirm = (selectedDate: Date) => {
     // Check if the selected date is in the past
     if (!validateFutureDate(selectedDate)) {
@@ -350,7 +368,7 @@ const ManageActivity = () => {
       );
       return;
     }
-  
+
     const currentTime = date;
     selectedDate.setHours(
       currentTime.getHours(),
@@ -360,11 +378,11 @@ const ManageActivity = () => {
     setDate(selectedDate);
     setDatePickerVisible(false);
   };
-  
+
   const handleTimeConfirm = (selectedTime: Date) => {
     const newDate = new Date(date);
     newDate.setHours(selectedTime.getHours(), selectedTime.getMinutes());
-    
+
     // Check if the new datetime is in the past
     if (newDate < new Date()) {
       showAlert(
@@ -374,7 +392,7 @@ const ManageActivity = () => {
       );
       return;
     }
-    
+
     setDate(newDate);
     setTimePickerVisible(false);
   };
@@ -399,7 +417,7 @@ const ManageActivity = () => {
       !activity
     )
       return;
-      
+
     if (date < new Date()) {
       showAlert(
         "Invalid Date",
@@ -595,7 +613,12 @@ const ManageActivity = () => {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+      <View
+        style={[
+          styles.header,
+          { backgroundColor: colors.card, borderBottomColor: colors.border },
+        ]}
+      >
         <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
           <Ionicons name="chevron-back" size={24} color={colors.primary} />
           <Text style={[styles.backButtonText, { color: colors.primary }]}>
@@ -613,14 +636,18 @@ const ManageActivity = () => {
       >
         <TouchableWithoutFeedback onPress={dismissKeyboard}>
           <ScrollView
-            contentContainerStyle={{ padding: 16, paddingBottom: Platform.OS === "ios" ? 120 : 150 }}
+            contentContainerStyle={{
+              padding: 16,
+              paddingBottom: Platform.OS === "ios" ? 120 : 150,
+            }}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={true}
             keyboardDismissMode="interactive"
           >
             <Section title="Basic Information">
               <Text style={[styles.inputHeader, { color: colors.text }]}>
-                Activity Name <Text style={{ color: colors.notification }}>*</Text>
+                Activity Name{" "}
+                <Text style={{ color: colors.notification }}>*</Text>
               </Text>
               <TextInput
                 ref={activityNameRef}
@@ -629,8 +656,10 @@ const ManageActivity = () => {
                   {
                     backgroundColor: colors.background,
                     color: colors.text,
-                    borderColor: errors.activityName ? colors.notification : colors.border,
-                  }
+                    borderColor: errors.activityName
+                      ? colors.notification
+                      : colors.border,
+                  },
                 ]}
                 value={activityName}
                 onChangeText={(text) => handleFormChange("activityName", text)}
@@ -641,49 +670,63 @@ const ManageActivity = () => {
                 onSubmitEditing={() => descriptionRef.current?.focus()}
               />
               {errors.activityName ? (
-                <Text style={[styles.errorText, { color: colors.notification }]}>
+                <Text
+                  style={[styles.errorText, { color: colors.notification }]}
+                >
                   {errors.activityName}
                 </Text>
               ) : null}
 
               {/* Date Picker */}
-              <Text style={[styles.inputHeader, { color: colors.text, marginTop: 8 }]}>
-                Date & Time <Text style={{ color: colors.notification }}>*</Text>
+              <Text
+                style={[
+                  styles.inputHeader,
+                  { color: colors.text, marginTop: 8 },
+                ]}
+              >
+                Date & Time{" "}
+                <Text style={{ color: colors.notification }}>*</Text>
               </Text>
               <View style={styles.dateTimeContainer}>
                 <TouchableOpacity
                   style={[
                     styles.dateTimeButton,
-                    { backgroundColor: colors.background, borderColor: colors.border }
+                    {
+                      backgroundColor: colors.background,
+                      borderColor: colors.border,
+                    },
                   ]}
                   onPress={() => setDatePickerVisible(true)}
                 >
-                  <Ionicons 
-                    name="calendar-outline" 
-                    size={18} 
-                    color={colors.smalltext} 
-                    style={styles.dateTimeIcon} 
+                  <Ionicons
+                    name="calendar-outline"
+                    size={18}
+                    color={colors.smalltext}
+                    style={styles.dateTimeIcon}
                   />
                   <Text style={[styles.dateTimeText, { color: colors.text }]}>
-                    {format(date, 'MMM dd, yyyy')}
+                    {format(date, "MMM dd, yyyy")}
                   </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                   style={[
-                    styles.dateTimeButton, 
-                    { backgroundColor: colors.background, borderColor: colors.border }
+                    styles.dateTimeButton,
+                    {
+                      backgroundColor: colors.background,
+                      borderColor: colors.border,
+                    },
                   ]}
                   onPress={() => setTimePickerVisible(true)}
                 >
-                  <Ionicons 
-                    name="time-outline" 
-                    size={18} 
-                    color={colors.smalltext} 
-                    style={styles.dateTimeIcon} 
+                  <Ionicons
+                    name="time-outline"
+                    size={18}
+                    color={colors.smalltext}
+                    style={styles.dateTimeIcon}
                   />
                   <Text style={[styles.dateTimeText, { color: colors.text }]}>
-                    {format(date, 'h:mm a')}
+                    {format(date, "h:mm a")}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -703,63 +746,112 @@ const ManageActivity = () => {
                 <Text style={[styles.inputHeader, { color: colors.text }]}>
                   Sport <Text style={{ color: colors.notification }}>*</Text>
                 </Text>
-                <Dropdown
-                  items={[{label: sport || "Loading...", value: sport || ""}]}
-                  value={sport || ''}
-                  onChangeItem={(item) => handleFormChange("sport", item.value)}
-                  placeholder="Select sport..."
-                  zIndex={3000}
-                  zIndexInverse={1000}
-                />
+                {sportsLoading ? (
+                  <View
+                    style={[
+                      styles.loadingContainer,
+                      {
+                        backgroundColor: colors.card,
+                        padding: 12,
+                        borderRadius: 8,
+                        marginBottom: 16,
+                      },
+                    ]}
+                  >
+                    <ActivityIndicator size="small" color={colors.primary} />
+                    <Text style={{ color: colors.smalltext, marginLeft: 8 }}>
+                      Loading sports...
+                    </Text>
+                  </View>
+                ) : (
+                  <Dropdown
+                    items={sportsList.map((sportItem) => ({
+                      label: sportItem,
+                      value: sportItem,
+                    }))}
+                    value={sport || ""}
+                    onChangeItem={(item) =>
+                      handleFormChange("sport", item.value)
+                    }
+                    placeholder="Select sport..."
+                    searchable={true}
+                    searchablePlaceholder="Search sport..."
+                    zIndex={3000}
+                    zIndexInverse={1000}
+                  />
+                )}
                 {errors.sport ? (
-                  <Text style={[styles.errorText, { color: colors.notification }]}>
+                  <Text
+                    style={[styles.errorText, { color: colors.notification }]}
+                  >
                     {errors.sport}
                   </Text>
                 ) : null}
               </View>
 
-              <View style={[styles.dropdownContainer, { zIndex: 2000, marginTop: 16 }]}>
+              <View
+                style={[
+                  styles.dropdownContainer,
+                  { zIndex: 2000, marginTop: 16 },
+                ]}
+              >
                 <Text style={[styles.inputHeader, { color: colors.text }]}>
-                  Skill Level <Text style={{ color: colors.notification }}>*</Text>
+                  Skill Level{" "}
+                  <Text style={{ color: colors.notification }}>*</Text>
                 </Text>
                 <Dropdown
                   items={[
                     { label: "Beginner", value: "Beginner" },
                     { label: "Intermediate", value: "Intermediate" },
                     { label: "Advanced", value: "Advanced" },
-                    { label: "Professional", value: "Professional" }
+                    { label: "Professional", value: "Professional" },
                   ]}
-                  value={skillLevel || ''}
-                  onChangeItem={(item) => handleFormChange("skillLevel", item.value)}
+                  value={skillLevel || ""}
+                  onChangeItem={(item) =>
+                    handleFormChange("skillLevel", item.value)
+                  }
                   placeholder="Select skill level..."
                   zIndex={2000}
                   zIndexInverse={2000}
                 />
                 {errors.skillLevel ? (
-                  <Text style={[styles.errorText, { color: colors.notification }]}>
+                  <Text
+                    style={[styles.errorText, { color: colors.notification }]}
+                  >
                     {errors.skillLevel}
                   </Text>
                 ) : null}
               </View>
 
               <View style={{ marginTop: 16 }}>
-                <Text style={[styles.inputHeader, { color: colors.text, marginBottom: 12 }]}>
-                  Activity Type <Text style={{ color: colors.notification }}>*</Text>
+                <Text
+                  style={[
+                    styles.inputHeader,
+                    { color: colors.text, marginBottom: 12 },
+                  ]}
+                >
+                  Activity Type{" "}
+                  <Text style={{ color: colors.notification }}>*</Text>
                 </Text>
                 <View style={styles.typeButtonContainer}>
                   <TouchableOpacity
                     style={[
                       styles.typeButton,
                       styles.typeButtonLeft,
-                      { backgroundColor: colors.background, borderColor: colors.border },
-                      type === "Event" && { backgroundColor: colors.primary }
+                      {
+                        backgroundColor: colors.background,
+                        borderColor: colors.border,
+                      },
+                      type === "Event" && { backgroundColor: colors.primary },
                     ]}
                     onPress={() => handleFormChange("type", "Event")}
                   >
-                    <Text style={[
-                      styles.typeButtonText,
-                      { color: type === "Event" ? "#fff" : colors.text }
-                    ]}>
+                    <Text
+                      style={[
+                        styles.typeButtonText,
+                        { color: type === "Event" ? "#fff" : colors.text },
+                      ]}
+                    >
                       Event
                     </Text>
                   </TouchableOpacity>
@@ -767,21 +859,33 @@ const ManageActivity = () => {
                     style={[
                       styles.typeButton,
                       styles.typeButtonRight,
-                      { backgroundColor: colors.background, borderColor: colors.border },
-                      type === "Coaching Session" && { backgroundColor: colors.primary }
+                      {
+                        backgroundColor: colors.background,
+                        borderColor: colors.border,
+                      },
+                      type === "Coaching Session" && {
+                        backgroundColor: colors.primary,
+                      },
                     ]}
                     onPress={() => handleFormChange("type", "Coaching Session")}
                   >
-                    <Text style={[
-                      styles.typeButtonText,
-                      { color: type === "Coaching Session" ? "#fff" : colors.text }
-                    ]}>
+                    <Text
+                      style={[
+                        styles.typeButtonText,
+                        {
+                          color:
+                            type === "Coaching Session" ? "#fff" : colors.text,
+                        },
+                      ]}
+                    >
                       Coaching Session
                     </Text>
                   </TouchableOpacity>
                 </View>
                 {errors.type ? (
-                  <Text style={[styles.errorText, { color: colors.notification }]}>
+                  <Text
+                    style={[styles.errorText, { color: colors.notification }]}
+                  >
                     {errors.type}
                   </Text>
                 ) : null}
@@ -796,12 +900,16 @@ const ManageActivity = () => {
                 ref={descriptionRef}
                 style={[
                   styles.descriptionInput,
-                  { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }
+                  {
+                    backgroundColor: colors.background,
+                    color: colors.text,
+                    borderColor: colors.border,
+                  },
                 ]}
                 value={description}
                 onChangeText={(text) => handleFormChange("description", text)}
                 multiline
-                numberOfLines={Platform.OS === 'ios' ? 0 : 4}
+                numberOfLines={Platform.OS === "ios" ? 0 : 4}
                 textAlignVertical="top"
                 placeholder="Add details about your activity, what to bring, what to expect, etc."
                 placeholderTextColor={colors.smalltext}
@@ -813,16 +921,23 @@ const ManageActivity = () => {
               <View style={styles.rowContainer}>
                 <View style={styles.halfColumn}>
                   <Text style={[styles.inputHeader, { color: colors.text }]}>
-                    Max Participants <Text style={{ color: colors.notification }}>*</Text>
+                    Max Participants{" "}
+                    <Text style={{ color: colors.notification }}>*</Text>
                   </Text>
                   <TextInput
                     ref={maxParticipantsRef}
                     style={[
                       styles.input,
-                      { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }
+                      {
+                        backgroundColor: colors.background,
+                        color: colors.text,
+                        borderColor: colors.border,
+                      },
                     ]}
                     value={maxParticipants}
-                    onChangeText={(text) => handleFormChange("maxParticipants", text)}
+                    onChangeText={(text) =>
+                      handleFormChange("maxParticipants", text)
+                    }
                     keyboardType="numeric"
                     placeholder="e.g. 10"
                     placeholderTextColor={colors.smalltext}
@@ -840,7 +955,11 @@ const ManageActivity = () => {
                     ref={priceRef}
                     style={[
                       styles.input,
-                      { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }
+                      {
+                        backgroundColor: colors.background,
+                        color: colors.text,
+                        borderColor: colors.border,
+                      },
                     ]}
                     value={price}
                     onChangeText={(text) => handleFormChange("price", text)}
@@ -862,25 +981,42 @@ const ManageActivity = () => {
               <TouchableOpacity
                 style={[
                   styles.locationPickerButton,
-                  { backgroundColor: colors.background, borderColor: errors.placeName ? colors.notification : colors.border }
+                  {
+                    backgroundColor: colors.background,
+                    borderColor: errors.placeName
+                      ? colors.notification
+                      : colors.border,
+                  },
                 ]}
                 onPress={() => setLocationModalVisible(true)}
               >
                 <View style={styles.locationIconContainer}>
-                  <Ionicons name="location-outline" size={20} color={colors.smalltext} />
+                  <Ionicons
+                    name="location-outline"
+                    size={20}
+                    color={colors.smalltext}
+                  />
                 </View>
                 <Text
                   style={[
                     styles.locationButtonText,
-                    placeName ? { color: colors.text } : { color: colors.smalltext }
+                    placeName
+                      ? { color: colors.text }
+                      : { color: colors.smalltext },
                   ]}
                 >
                   {placeName || "Tap to select location"}
                 </Text>
-                <Ionicons name="chevron-forward" size={20} color={colors.smalltext} />
+                <Ionicons
+                  name="chevron-forward"
+                  size={20}
+                  color={colors.smalltext}
+                />
               </TouchableOpacity>
               {errors.placeName ? (
-                <Text style={[styles.errorText, { color: colors.notification }]}>
+                <Text
+                  style={[styles.errorText, { color: colors.notification }]}
+                >
                   {errors.placeName}
                 </Text>
               ) : null}
@@ -891,7 +1027,8 @@ const ManageActivity = () => {
                 style={[
                   styles.button,
                   { backgroundColor: colors.primary },
-                  (isSubmitting || isCancelling || isDeleting) && styles.buttonDisabled,
+                  (isSubmitting || isCancelling || isDeleting) &&
+                    styles.buttonDisabled,
                 ]}
                 onPress={handleUpdate}
                 disabled={isSubmitting || isCancelling || isDeleting}
@@ -905,7 +1042,8 @@ const ManageActivity = () => {
                 style={[
                   styles.cancelBtn,
                   { backgroundColor: "#FFA500" },
-                  (isSubmitting || isCancelling || isDeleting) && styles.buttonDisabled,
+                  (isSubmitting || isCancelling || isDeleting) &&
+                    styles.buttonDisabled,
                 ]}
                 onPress={handleCancel}
                 disabled={isSubmitting || isCancelling || isDeleting}
@@ -919,7 +1057,8 @@ const ManageActivity = () => {
                 style={[
                   styles.deleteBtn,
                   { backgroundColor: colors.notification },
-                  (isSubmitting || isCancelling || isDeleting) && styles.buttonDisabled,
+                  (isSubmitting || isCancelling || isDeleting) &&
+                    styles.buttonDisabled,
                 ]}
                 onPress={handleDelete}
                 disabled={isSubmitting || isCancelling || isDeleting}
@@ -961,7 +1100,7 @@ const ManageActivity = () => {
               error={locationsError}
               selectedLocation={placeName}
             />
-            
+
             <View style={{ height: 50 }}></View>
           </ScrollView>
         </TouchableWithoutFeedback>
@@ -1021,20 +1160,20 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   input: {
-    padding: Platform.OS === 'ios' ? 14 : 12,
+    padding: Platform.OS === "ios" ? 14 : 12,
     borderRadius: 8,
     borderWidth: 1,
     marginBottom: 16,
     fontSize: 16,
   },
   descriptionInput: {
-    padding: Platform.OS === 'ios' ? 14 : 12,
+    padding: Platform.OS === "ios" ? 14 : 12,
     borderRadius: 8,
     borderWidth: 1,
     marginBottom: 16,
     fontSize: 16,
     height: 120,
-    textAlignVertical: 'top',
+    textAlignVertical: "top",
   },
   errorText: {
     fontSize: 14,
@@ -1042,13 +1181,13 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   dateTimeContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginBottom: 16,
   },
   dateTimeButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     padding: 12,
     borderRadius: 8,
     borderWidth: 1,
@@ -1111,16 +1250,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   typeButtonContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     borderRadius: 8,
-    overflow: 'hidden',
+    overflow: "hidden",
     marginBottom: 16,
   },
   typeButton: {
     flex: 1,
     padding: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   typeButtonLeft: {
     borderTopLeftRadius: 8,
@@ -1134,12 +1273,12 @@ const styles = StyleSheet.create({
     borderLeftWidth: 0,
   },
   typeButtonText: {
-    fontWeight: '500',
+    fontWeight: "500",
     fontSize: 16,
   },
   locationPickerButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     padding: 12,
     borderRadius: 8,
     borderWidth: 1,
@@ -1153,11 +1292,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   rowContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
   halfColumn: {
-    width: '48%',
+    width: "48%",
   },
   dropdownContainer: {
     marginBottom: 8,
