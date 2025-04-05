@@ -10,7 +10,7 @@ export const lightColors = {
   smalltext: "#333333",
   primary: '#42c8f5',
   secondary: '#737373',
-  card: '#F5F5F5',
+  card: '#F9F9F9',
   border: '#CCCCCC',
   notification: '#FF3B30',
   placeholder: '#888888',
