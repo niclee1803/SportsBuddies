@@ -101,11 +101,15 @@ export const handleSubmitActivity = async (
         onError(data?.detail || "Failed to create activity");
       }
     } catch (fetchErr) {
-      console.error("[DEBUG] Fetch error details:", {
-        name: fetchErr.name,
-        message: fetchErr.message,
-        stack: fetchErr.stack,
-      });
+      if (fetchErr instanceof Error) {
+        console.error("[DEBUG] Fetch error details:", {
+          name: fetchErr.name,
+          message: fetchErr.message,
+          stack: fetchErr.stack,
+        });
+      } else {
+        console.error("[DEBUG] Fetch error details: Unknown error", fetchErr);
+      }
       throw fetchErr;
     }
   } catch (err: any) {

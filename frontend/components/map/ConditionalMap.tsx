@@ -9,10 +9,8 @@ interface MapProps {
 }
 
 const ConditionalMap = ({ latitude, longitude, placeName }: MapProps) => {
-  // Using Wikimedia Maps API for static map image
-  const mapUrl = `https://maps.wikimedia.org/img/osm-intl,${latitude},${longitude},15,600x200.png?lang=en`;
-  
-  console.log('Map URL:', mapUrl);
+  // Use OneMap API for static map image
+  const oneMapUrl = `https://www.onemap.gov.sg/api/staticmap/getStaticImage?layerchosen=default&latitude=${latitude}&longitude=${longitude}&zoom=17&width=500&height=200&points=[${latitude},${longitude}]`;
   
   // Add error handling for image loading
   const [imageError, setImageError] = React.useState(false);
@@ -24,7 +22,7 @@ const ConditionalMap = ({ latitude, longitude, placeName }: MapProps) => {
     } else if (Platform.OS === 'android') {
       return `geo:0,0?q=${latitude},${longitude}(${encodeURIComponent(placeName)})`;
     } else {
-      return `https://www.openstreetmap.org/?mlat=${latitude}&mlon=${longitude}&zoom=15`;
+      return `https://www.onemap.gov.sg/main/v2/?lat=${latitude}&lng=${longitude}`;
     }
   };
 
@@ -37,28 +35,18 @@ const ConditionalMap = ({ latitude, longitude, placeName }: MapProps) => {
       <TouchableOpacity onPress={handleOpenMaps} style={styles.mapContainer}>
         {!imageError ? (
           <Image 
-            source={{ uri: mapUrl }} 
+            source={{ uri: oneMapUrl }}
             style={styles.mapImage}
             resizeMode="cover"
             onError={(e) => {
               console.log('Map image loading error:', e.nativeEvent.error);
               setImageError(true);
             }}
-            onLoad={() => console.log('Map image loaded successfully')}
           />
         ) : (
           <View style={styles.fallbackContainer}>
             <MaterialIcons name="map" size={48} color="#999" />
             <Text style={styles.fallbackText}>Map unavailable</Text>
-          </View>
-        )}
-        
-        {/* Custom marker overlay positioned in the center */}
-        {!imageError && (
-          <View style={styles.markerContainer}>
-            <MaterialIcons name="location-pin" size={36} color="#e74c3c" />
-            {/* Shadow effect for the pin */}
-            <View style={styles.markerShadow} />
           </View>
         )}
         
@@ -84,27 +72,11 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     overflow: 'hidden',
     position: 'relative',
+    backgroundColor: '#f0f0f0',
   },
   mapImage: {
     width: '100%',
     height: '100%',
-  },
-  markerContainer: {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    marginLeft: -18,
-    marginTop: -36,  
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  markerShadow: {
-    position: 'absolute',
-    bottom: -2,
-    backgroundColor: 'rgba(0,0,0,0.2)',
-    height: 6,
-    width: 6,
-    borderRadius: 3,
   },
   overlay: {
     position: 'absolute',
