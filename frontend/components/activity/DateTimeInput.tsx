@@ -1,89 +1,111 @@
-import React, { useState } from "react";
+import React from "react";
 import {
+  Platform,
   View,
   Text,
-  Pressable,
-  Platform,
+  TouchableOpacity,
   StyleSheet,
-  Modal,
-  Button,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import { useTheme } from "@/hooks/ThemeContext";
 
-type DateTimeInputProps = {
+interface DateTimeInputProps {
+  label: string;
   mode: "date" | "time";
   value: Date;
   onChange: (date: Date) => void;
-  label: string;
-};
+}
 
 export default function DateTimeInput({
+  label,
   mode,
   value,
   onChange,
-  label,
 }: DateTimeInputProps) {
-  const [showPicker, setShowPicker] = useState(false);
-  const [tempDate, setTempDate] = useState<Date>(value); // temp state for iOS
+  const { colors } = useTheme();
+  const [show, setShow] = React.useState(false);
 
-  const handleConfirm = () => {
-    setShowPicker(false);
-    onChange(tempDate);
-  };
-
-  const handleChange = (event, selectedDate) => {
-    if (Platform.OS === "android") {
-      setShowPicker(false);
-      if (selectedDate) {
-        onChange(selectedDate);
-      }
-    } else if (selectedDate) {
-      setTempDate(selectedDate); // iOS → don't call onChange yet
+  const formatDate = (date: Date) => {
+    if (mode === "date") {
+      return date.toLocaleDateString();
     }
+    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
+  if (Platform.OS === "web") {
+    // Web implementation using native input
+    return (
+      <View style={styles.container}>
+        <Text style={[styles.label, { color: colors.text }]}>{label}</Text>
+        <input
+          type={mode}
+          value={
+            mode === "date"
+              ? value.toISOString().split("T")[0]
+              : value.toTimeString().split(" ")[0].slice(0, 5)
+          }
+          onChange={(e) => {
+            const newDate = new Date(value);
+            if (mode === "date") {
+              const [year, month, day] = e.target.value.split("-");
+              newDate.setFullYear(parseInt(year));
+              newDate.setMonth(parseInt(month) - 1);
+              newDate.setDate(parseInt(day));
+            } else {
+              const [hours, minutes] = e.target.value.split(":");
+              newDate.setHours(parseInt(hours));
+              newDate.setMinutes(parseInt(minutes));
+            }
+            onChange(newDate);
+          }}
+          style={{
+            fontSize: 16,
+            padding: 12,
+            borderRadius: 8,
+            borderWidth: 1,
+            borderColor: colors.border,
+            backgroundColor: colors.card,
+            color: colors.text,
+            width: "100%",
+            marginBottom: 16,
+            borderStyle: "solid", // Add this for web
+            outline: "none", // Remove default focus outline
+          }}
+        />
+      </View>
+    );
+  }
+
+  // Mobile implementation using DateTimePicker
   return (
-    <View style={{ marginBottom: 16 }}>
-      <Text style={styles.label}>{label}</Text>
-      <Pressable
-        style={styles.inputField}
-        onPress={() => setShowPicker(true)}
+    <View style={styles.container}>
+      <Text style={[styles.label, { color: colors.text }]}>{label}</Text>
+      <TouchableOpacity
+        onPress={() => setShow(true)}
+        style={[
+          styles.input,
+          {
+            backgroundColor: colors.card,
+            borderColor: colors.border,
+          },
+        ]}
       >
-        <Text>
-          {mode === "date"
-            ? value.toDateString()
-            : value.toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
+        <Text style={[styles.inputText, { color: colors.text }]}>
+          {formatDate(value)}
         </Text>
-      </Pressable>
+      </TouchableOpacity>
 
-      {/* iOS - Show in Modal with Done */}
-      {Platform.OS === "ios" && showPicker && (
-        <Modal transparent animationType="slide">
-          <View style={styles.modalContainer}>
-            <View style={styles.modalContent}>
-              <DateTimePicker
-                value={tempDate}
-                mode={mode}
-                display="spinner"
-                onChange={handleChange}
-                textColor="black" // ✅ works only on iOS
-              />
-              <Button title="Done" onPress={handleConfirm} />
-            </View>
-          </View>
-        </Modal>
-      )}
-
-      {/* Android - Inline */}
-      {Platform.OS === "android" && showPicker && (
+      {show && (
         <DateTimePicker
           value={value}
           mode={mode}
-          display="default"
-          onChange={handleChange}
+          is24Hour={true}
+          onChange={(event, selectedDate) => {
+            setShow(false);
+            if (selectedDate) {
+              onChange(selectedDate);
+            }
+          }}
         />
       )}
     </View>
@@ -91,28 +113,22 @@ export default function DateTimeInput({
 }
 
 const styles = StyleSheet.create({
-  label: {
-    fontWeight: "bold",
-    marginBottom: 5,
+  container: {
+    marginBottom: 16,
   },
-  inputField: {
-    height: 44,
-    borderColor: "#ccc",
+  label: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 8,
+  },
+  input: {
+    height: 50,
     borderWidth: 1,
     borderRadius: 8,
     paddingHorizontal: 12,
-    backgroundColor: "#f9f9f9",
     justifyContent: "center",
   },
-  modalContainer: {
-    flex: 1,
-    justifyContent: "flex-end",
-    backgroundColor: "rgba(0,0,0,0.3)",
-  },
-  modalContent: {
-    backgroundColor: "#fff",
-    padding: 16,
-    borderTopLeftRadius: 12,
-    borderTopRightRadius: 12,
+  inputText: {
+    fontSize: 16,
   },
 });

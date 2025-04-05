@@ -1,5 +1,6 @@
 import os
 import tempfile
+import time
 from fastapi import UploadFile, HTTPException
 import cloudinary
 import cloudinary.uploader
@@ -50,3 +51,37 @@ class ImageService:
             
         except Exception as e:
             raise HTTPException(status_code=400, detail=f"Image upload failed: {str(e)}")
+
+    @staticmethod
+    async def upload_banner_image(file: UploadFile, user_id: str) -> str:
+        """Upload banner image to Cloudinary"""
+        try:
+            # Read file contents
+            contents = await file.read()
+            
+            # Create a temporary file
+            with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+                temp_file.write(contents)
+                temp_file_path = temp_file.name
+            
+            # Upload to Cloudinary with optimizations for banner images
+            upload_result = cloudinary.uploader.upload(
+                temp_file_path,
+                public_id=f"banners/{user_id}_{int(time.time())}",  # unique ID for each banner
+                overwrite=True,
+                resource_type="image",
+                transformation=[
+                    {"width": 1200, "height": 400, "crop": "fill"},  # banner dimensions
+                    {"fetch_format": "auto"},
+                    {"quality": "auto"}
+                ]
+            )
+            
+            # Clean up the temporary file
+            os.unlink(temp_file_path)
+            
+            # Return the optimized URL from Cloudinary
+            return upload_result["secure_url"]
+            
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to upload banner: {str(e)}")

@@ -82,7 +82,6 @@ function AppStack() {
       <Stack.Screen name="ProfileSettings" options={{ title: 'Profile Settings' }} />
       <Stack.Screen name="Profile" options={{ title: 'Profile' }} />
       <Stack.Screen name="Create" options={{ title: 'Create' }} />
-      <Stack.Screen name="CreateActivityAsOrganiser" options={{ title: 'Create' }}/>
       <Stack.Screen name="Groups" options={{ title: 'Groups' }} />
       <Stack.Screen
         name="Dashboard"

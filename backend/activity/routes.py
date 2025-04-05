@@ -4,8 +4,10 @@ deletion, update, joining, and searching of activities.
 """
 
 from typing import Optional, List, Dict
-from fastapi import APIRouter, HTTPException, Depends, Body, Path, Query
+from fastapi import APIRouter, HTTPException, Depends, Body, Path, Query, File, UploadFile
 from datetime import datetime
+
+
 
 # Change relative imports to absolute imports
 from activity.controllers.activity_controller import ActivityController
@@ -151,6 +153,25 @@ async def cancel_activity(
     Cancels the specified activity if the current user is the creator.
     """
     return activity_controller.cancel_activity(activity_id, current_user["uid"])
+
+@router.post("/upload-banner", summary="Upload banner image")
+async def upload_banner_image(
+    file: UploadFile = File(...),
+    current_user: Dict = Depends(AuthService.get_current_user)
+):
+    """
+    Upload an activity banner image to Cloudinary (or your storage) and return the URL.
+    """
+    print(f"[UPLOAD DEBUG] filename={file.filename}, content_type={file.content_type}, size={len(await file.read())}")
+    await file.seek(0)  # ✅ Reset file pointer after reading
+
+    try:
+        url_data = await activity_controller.upload_banner(current_user["uid"], file)
+        return url_data  # ✅ Must return dict with `url` key
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to upload image: {str(e)}")
+
+
 
 # ============== Participant Management ==============
 

@@ -3,10 +3,12 @@ Business logic layer for Activity operations.
 """
 import time
 from typing import Dict, List
-from fastapi import HTTPException
+from fastapi import HTTPException, UploadFile
+from datetime import datetime
 
 from activity.repository.activity_repository import ActivityRepository, FirestoreError
 from activity.models.activity import Activity, ActivityStatus, Location
+from user.services.image_service import ImageService
 
 from datetime import datetime
 
@@ -18,6 +20,7 @@ class ActivityController:
     
     def __init__(self):
         self.repo = ActivityRepository()
+        self.image_service = ImageService()  
 
     def create_activity(self, creator_id: str, data: Dict) -> Dict:
         """
@@ -72,7 +75,7 @@ class ActivityController:
             self.repo.update(activity_id, data)
             return {"message": "Activity updated successfully"}
         except FirestoreError as e:
-            raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=500, detail=str(e))    
     
     def join_activity(self, activity_id: str, user_id: str) -> Dict:
         """
@@ -405,3 +408,11 @@ class ActivityController:
             }
         except FirestoreError as e:
             raise HTTPException(status_code=500, detail=str(e))
+        
+    #def upload image
+    async def upload_banner(self, user_id: str, file: UploadFile):
+        try:
+            banner_url = await self.image_service.upload_banner_image(file, user_id)
+            return {"url": banner_url}
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to upload banner: {str(e)}")   
