@@ -20,6 +20,7 @@ import { API_URL } from "@/config.json";
 import LoadingOverlay from "@/components/LoadingOverlay";
 import AlertCard from "@/components/alert/AlertCard";
 import { showAlert } from "@/utils/alertUtils";
+import { Gesture, GestureHandlerRootView } from "react-native-gesture-handler";
 
 const Alerts = () => {
   const router = useRouter();
@@ -170,6 +171,40 @@ const Alerts = () => {
     );
   };
 
+  const handleDeleteAlert = async (alert: AlertType) => {
+    // Show confirmation dialog
+    showAlert(
+      "Delete Alert",
+      "Are you sure you want to delete this alert?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            setIsProcessing(true);
+            try {
+              const token = await AsyncStorage.getItem("token");
+              if (!token) return;
+  
+              // Delete the alert from the database
+              await AlertService.deleteAlert(token, alert.id);
+              
+              // Remove the alert from the UI
+              setAlerts((currentAlerts) => 
+                currentAlerts.filter((a) => a.id !== alert.id)
+              );
+            } catch (err) {
+              console.error("Error deleting alert:", err);
+            } finally {
+              setIsProcessing(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const handleAcceptRequest = async (alert: AlertType) => {
     if (!alert.activity_id || !alert.sender_id) return;
 
@@ -282,6 +317,7 @@ const Alerts = () => {
   const unreadAlertsCount = alerts.filter((alert) => !alert.read).length;
 
   return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
     <AuthLayout>
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         {/* Global loading overlay */}
@@ -357,6 +393,7 @@ const Alerts = () => {
                   onPress={handleAlertPress}
                   onAccept={handleAcceptRequest}
                   onReject={handleRejectRequest}
+                  onDelete={handleDeleteAlert}
                   isProcessing={isProcessing}
                   processingAlertId={processingAlertId}
                   responseStatusMap={responseStatusMap}
@@ -378,6 +415,7 @@ const Alerts = () => {
         )}
       </View>
     </AuthLayout>
+    </GestureHandlerRootView>
   );
 };
 

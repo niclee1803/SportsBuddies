@@ -4,6 +4,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { ThemeProvider, useTheme } from "@/hooks/ThemeContext";
 import { StatusBar } from 'expo-status-bar';
 import { View } from 'react-native';
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 export default function RootLayout() {
   const [isSignedIn, setIsSignedIn] = useState<boolean | null>(null);
@@ -30,10 +31,10 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider>
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }}>
       <StatusBar style={isDarkMode ? "light" : "dark"} />
       {isSignedIn ? <AppStack /> : <AuthStack />}
-    </View>
+    </GestureHandlerRootView>
     </ThemeProvider>
   );
 }

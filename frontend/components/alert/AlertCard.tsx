@@ -1,25 +1,27 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  Image
+  Image,
+  Alert
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Alert as AlertType } from '@/types/alert';
 import { format, formatDistanceToNow } from 'date-fns';
 import { useTheme } from '@/hooks/ThemeContext';
 import { useRouter } from 'expo-router';
+import { Swipeable } from 'react-native-gesture-handler';
 
 interface AlertCardProps {
   alert: AlertType;
   onPress: (alert: AlertType) => void;
   onAccept?: (alert: AlertType) => void;
   onReject?: (alert: AlertType) => void;
+  onDelete?: (alert: AlertType) => void;
   isProcessing?: boolean;
   processingAlertId?: string | null;
-  // Add response status map to track responses
   responseStatusMap?: Record<string, 'accepted' | 'rejected'>;
 }
 
@@ -28,12 +30,14 @@ const AlertCard: React.FC<AlertCardProps> = ({
   onPress,
   onAccept,
   onReject,
+  onDelete,
   isProcessing,
   processingAlertId,
   responseStatusMap = {}
 }) => {
   const { colors } = useTheme();
   const router = useRouter();
+  const swipeableRef = useRef<Swipeable>(null);
   
   // Format the date/time for display
   const formatAlertTime = (dateString: string): string => {
@@ -63,7 +67,7 @@ const AlertCard: React.FC<AlertCardProps> = ({
         return <Ionicons name="close-circle" size={24} color="#F44336" />;
       case 'user_left': 
         return <Ionicons name="exit" size={24} color="#FF9800" />;
-      case 'user_removed':
+      case 'user_removed': 
         return <Ionicons name="person-remove" size={24} color="#F44336" />;
       case 'activity_cancelled': 
         return <Ionicons name="trash" size={24} color="#F44336" />;
@@ -126,86 +130,118 @@ const AlertCard: React.FC<AlertCardProps> = ({
     }
   };
 
-  return (
-    <View style={[
-      styles.notificationItem,
-      !alert.read && styles.unreadNotification,
-      responseStatus === 'accepted' && styles.acceptedNotification,
-      responseStatus === 'rejected' && styles.rejectedNotification,
-      { backgroundColor: colors.card, borderColor: colors.border }
-    ]}>
-      {/* Profile image - clickable to view user profile */}
+  // Handler for delete action
+  const handleDelete = () => {
+    if (onDelete) {
+      onDelete(alert);
+    }
+    // Close the swipeable
+    if (swipeableRef.current) {
+      swipeableRef.current.close();
+    }
+  };
+
+  // Render right actions (delete button)
+  const renderRightActions = () => {
+    return (
       <TouchableOpacity 
-        onPress={handleProfileClick}
-        disabled={!alert.sender_id || isProcessingThis}
-        style={styles.profileImageContainer}
-        activeOpacity={0.7}
+        style={styles.deleteAction}
+        onPress={handleDelete}
       >
-        {alert.sender_profile_pic ? (
-          <Image 
-            source={{ uri: alert.sender_profile_pic }} 
-            style={styles.senderImage}
-          />
-        ) : (
-          <View style={styles.iconContainer}>
-            {getNotificationIcon()}
-          </View>
-        )}
+        <Ionicons name="trash-outline" size={24} color="#fff" />
+        <Text style={styles.deleteActionText}>Delete</Text>
       </TouchableOpacity>
-      
-      {/* Main content area - clickable to view activity details */}
-      <TouchableOpacity
-        style={styles.contentTouchable}
-        onPress={handleAlertBodyClick}
-        disabled={isProcessingThis || (!alert.activity_id && alert.type !== 'new_message')}
-        activeOpacity={0.7}
-      >
-        <View style={styles.notificationContent}>
-          <Text style={[
-            styles.notificationMessage,
-            !alert.read && styles.boldText,
-            { color: colors.text }
-          ]}>
-            {alert.message}
-          </Text>
-          
-          <Text style={[styles.notificationTime, { color: colors.smalltext }]}>
-            {formatAlertTime(alert.created_at)}
-          </Text>
-          
-          {/* Show response status if available */}
-          {hasResponse && renderResponseStatus()}
-          
-          {/* Action buttons for join requests - only if no response yet */}
-          {isJoinRequest && onAccept && onReject && !hasResponse && (
-            <View style={styles.actionButtonsContainer}>
-              <TouchableOpacity 
-                style={[styles.actionButton, styles.acceptButton]}
-                onPress={() => onAccept(alert)}
-                disabled={isProcessingThis}
-              >
-                <Text style={styles.acceptButtonText}>Accept</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={[styles.actionButton, styles.rejectButton]}
-                onPress={() => onReject(alert)}
-                disabled={isProcessingThis}
-              >
-                <Text style={styles.rejectButtonText}>Reject</Text>
-              </TouchableOpacity>
+    );
+  };
+
+  return (
+    <Swipeable
+      ref={swipeableRef}
+      renderRightActions={renderRightActions}
+      friction={2}
+      rightThreshold={40}
+      enabled={!isProcessingThis}
+    >
+      <View style={[
+        styles.notificationItem,
+        !alert.read && styles.unreadNotification,
+        responseStatus === 'accepted' && styles.acceptedNotification,
+        responseStatus === 'rejected' && styles.rejectedNotification,
+        { backgroundColor: colors.card, borderColor: colors.border }
+      ]}>
+        {/* Profile image - clickable to view user profile */}
+        <TouchableOpacity 
+          onPress={handleProfileClick}
+          disabled={!alert.sender_id || isProcessingThis}
+          style={styles.profileImageContainer}
+          activeOpacity={0.7}
+        >
+          {alert.sender_profile_pic ? (
+            <Image 
+              source={{ uri: alert.sender_profile_pic }} 
+              style={styles.senderImage}
+            />
+          ) : (
+            <View style={styles.iconContainer}>
+              {getNotificationIcon()}
             </View>
           )}
-        </View>
-      </TouchableOpacity>
-      
-      {!alert.read && <View style={styles.unreadDot} />}
-      
-      {isProcessingThis && (
-        <View style={styles.processingOverlay}>
-          <Ionicons name="ellipsis-horizontal" size={24} color="#ffffff" />
-        </View>
-      )}
-    </View>
+        </TouchableOpacity>
+        
+        {/* Main content area - clickable to view activity details */}
+        <TouchableOpacity
+          style={styles.contentTouchable}
+          onPress={handleAlertBodyClick}
+          disabled={isProcessingThis || (!alert.activity_id && alert.type !== 'new_message')}
+          activeOpacity={0.7}
+        >
+          <View style={styles.notificationContent}>
+            <Text style={[
+              styles.notificationMessage,
+              !alert.read && styles.boldText,
+              { color: colors.text }
+            ]}>
+              {alert.message}
+            </Text>
+            
+            <Text style={[styles.notificationTime, { color: colors.smalltext }]}>
+              {formatAlertTime(alert.created_at)}
+            </Text>
+            
+            {/* Show response status if available */}
+            {hasResponse && renderResponseStatus()}
+            
+            {/* Action buttons for join requests - only if no response yet */}
+            {isJoinRequest && onAccept && onReject && !hasResponse && (
+              <View style={styles.actionButtonsContainer}>
+                <TouchableOpacity 
+                  style={[styles.actionButton, styles.acceptButton]}
+                  onPress={() => onAccept(alert)}
+                  disabled={isProcessingThis}
+                >
+                  <Text style={styles.acceptButtonText}>Accept</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.actionButton, styles.rejectButton]}
+                  onPress={() => onReject(alert)}
+                  disabled={isProcessingThis}
+                >
+                  <Text style={styles.rejectButtonText}>Reject</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        </TouchableOpacity>
+        
+        {!alert.read && <View style={styles.unreadDot} />}
+        
+        {isProcessingThis && (
+          <View style={styles.processingOverlay}>
+            <Ionicons name="ellipsis-horizontal" size={24} color="#ffffff" />
+          </View>
+        )}
+      </View>
+    </Swipeable>
   );
 };
 
@@ -280,18 +316,6 @@ const styles = StyleSheet.create({
     marginLeft: 6,
     fontWeight: '500',
   },
-  navigationHintsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    marginTop: 2,
-    marginBottom: 6,
-  },
-  navigationHint: {
-    fontSize: 12,
-    fontStyle: 'italic',
-    marginRight: 4,
-  },
   unreadDot: {
     width: 10,
     height: 10,
@@ -336,6 +360,21 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  deleteAction: {
+    backgroundColor: '#F44336',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 100,
+    borderRadius: 12,
+    marginBottom: 12,
+    flexDirection: 'column',
+  },
+  deleteActionText: {
+    color: 'white',
+    fontWeight: '600',
+    fontSize: 12,
+    marginTop: 4,
   }
 });
 
