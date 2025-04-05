@@ -347,14 +347,23 @@ export default function ActivityDetail() {
     // If current user is the creator
     if (activity.creator_id === currentUserId) {
       return (
-        <TouchableOpacity
-          style={[styles.actionButton, { backgroundColor: "#4a6fa1" }]}
-          onPress={handleManageActivity}
-        >
-          <Text style={styles.actionButtonText}>Manage Activity</Text>
-        </TouchableOpacity>
+        <View>
+          <TouchableOpacity
+            style={[styles.actionButton, { backgroundColor: "#4a6fa1" }]}
+            onPress={handleManageActivity}
+          >
+            <Text style={styles.actionButtonText}>Manage Activity</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.actionButton, { backgroundColor: "#4a6fa1", marginTop: 10 }]}
+            onPress={() => router.push(`/ManageParticipants?id=${activity.id}`)}
+          >
+            <Text style={styles.actionButtonText}>Manage Participants</Text>
+          </TouchableOpacity>
+        </View>
       );
     }
+  
   
     // If user is already a participant
     if (activity.participants?.includes(currentUserId)) {
