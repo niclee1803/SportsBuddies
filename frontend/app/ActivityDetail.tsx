@@ -333,7 +333,7 @@ export default function ActivityDetail() {
   
   const handleManageParticipants = () => {
     if (!activity) return;
-    //router.push(`/ManageParticipants?id=${activity.id}`);
+    router.push(`/ManageParticipants?id=${activity.id}`);
   };
 
   const renderActionButton = () => {
