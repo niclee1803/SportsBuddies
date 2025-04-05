@@ -18,6 +18,7 @@ import { Activity } from "@/types/activity";
 import { format } from "date-fns";
 import ConditionalMap from "@/components/map/ConditionalMap";
 import { showAlert } from "@/utils/alertUtils";
+import { useTheme } from "@/hooks/ThemeContext";
 
 // Default banner placeholder image URL from Cloudinary
 const BANNER_PLACEHOLDER =
@@ -35,6 +36,8 @@ export default function ActivityDetail() {
   const [creatorInfo, setCreatorInfo] = useState<any>(null);
   const [creatorLoading, setCreatorLoading] = useState(false);
   const [buttonLoading, setButtonLoading] = useState(false);
+  const { colors } = useTheme();
+
 
   useEffect(() => {
     const fetchActivityAndUser = async () => {
@@ -323,8 +326,14 @@ export default function ActivityDetail() {
     );
   };
 
-  const handleManageActivity = () => {
-    //router.push(`/ManageActivity?id=${activity?.id}`);
+  const handleUpdateActivity = () => {
+    if (!activity) return;
+    //router.push(`/UpdateActivity?id=${activity.id}`);
+  };
+  
+  const handleManageParticipants = () => {
+    if (!activity) return;
+    router.push(`/ManageParticipants?id=${activity.id}`);
   };
 
   const renderActionButton = () => {
@@ -344,26 +353,27 @@ export default function ActivityDetail() {
       );
     }
     
-    // If current user is the creator
-    if (activity.creator_id === currentUserId) {
-      return (
-        <View>
-          <TouchableOpacity
-            style={[styles.actionButton, { backgroundColor: "#4a6fa1" }]}
-            onPress={handleManageActivity}
-          >
-            <Text style={styles.actionButtonText}>Manage Activity</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.actionButton, { backgroundColor: "#4a6fa1", marginTop: 10 }]}
-            onPress={() => router.push(`/ManageParticipants?id=${activity.id}`)}
-          >
-            <Text style={styles.actionButtonText}>Manage Participants</Text>
-          </TouchableOpacity>
-        </View>
-      );
-    }
-  
+      // If current user is the creator, show management options
+      if (activity.creator_id === currentUserId) {
+        return (
+          <View style={styles.creatorButtonsContainer}>
+            <TouchableOpacity
+              style={[styles.creatorButton, { backgroundColor: "#4a6fa1" }]}
+              onPress={handleUpdateActivity}
+            >
+              <Ionicons name="create-outline" size={16} color="#fff" style={styles.buttonIcon} />
+              <Text style={styles.creatorButtonText}>Update</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.creatorButton, { backgroundColor: "#28a745" }]}
+              onPress={handleManageParticipants}
+            >
+              <Ionicons name="people" size={16} color="#fff" style={styles.buttonIcon} />
+              <Text style={styles.creatorButtonText}>Participants</Text>
+            </TouchableOpacity>
+          </View>
+        );
+      }
   
     // If user is already a participant
     if (activity.participants?.includes(currentUserId)) {
@@ -422,7 +432,7 @@ export default function ActivityDetail() {
   };
 
   const navigateToProfile = (userId: string) => {
-    //router.push(`/UserProfile?id=${userId}`);
+    router.push(`/PublicProfile?id=${userId}`);
   };
 
   if (loading) {
@@ -456,7 +466,7 @@ export default function ActivityDetail() {
       : activity.bannerImageUrl;
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Banner Image with Back Button Overlay */}
       <View style={styles.bannerContainer}>
         <Image
@@ -483,7 +493,7 @@ export default function ActivityDetail() {
       <View style={styles.detailsContainer}>
         {/* Activity Name and Action Button */}
         <View style={styles.headerRow}>
-          <Text style={styles.activityName}>{activity.activityName}</Text>
+          <Text style={[styles.activityName, {color:colors.text}]}>{activity.activityName}</Text>
           {renderActionButton()}
         </View>
 
@@ -517,31 +527,32 @@ export default function ActivityDetail() {
               {
                 backgroundColor:
                   activity.type === "event" ? "#5cb85c" : "#f0ad4e",
+                
               },
             ]}
           >
-            <Text style={styles.typeBadgeText}>
+            <Text style={[styles.typeBadgeText, {color:colors.background}]}>
               {activity.type === "event" ? "Event" : "Coaching Session"}
             </Text>
           </View>
 
           {activity.price > 0 && (
-            <Text style={styles.priceText}>${activity.price}</Text>
+            <Text style={[styles.priceText, {color:colors.smalltext}]}>${activity.price}</Text>
           )}
         </View>
 
         {/* Organizer Information */}
         <View style={styles.organizerSection}>
-          <Text style={styles.sectionTitle}>Organiser</Text>
+          <Text style={[styles.sectionTitle, {color:colors.text}]}>Organiser</Text>
           
           {creatorLoading ? (
             <View style={styles.creatorLoadingContainer}>
-              <ActivityIndicator size="small" color="#0066cc" />
-              <Text style={styles.infoText}>Loading organizer info...</Text>
+              <ActivityIndicator size="small" color={colors.smalltext} />
+              <Text style={[styles.infoText, {color:colors.text}]}>Loading organizer info...</Text>
             </View>
           ) : creatorInfo ? (
             <TouchableOpacity 
-              style={styles.organizerContainer}
+              style={[styles.organizerContainer, {backgroundColor: colors.card}]}
               onPress={() => navigateToProfile(activity.creator_id)}
             >
               <Image
@@ -552,36 +563,36 @@ export default function ActivityDetail() {
                 onError={(e) => console.log("Organizer image failed to load")}
               />
               <View style={styles.organizerInfo}>
-                <Text style={styles.organizerName}>
+                <Text style={[styles.organizerName, {color:colors.text}]}>
                   {creatorInfo.firstName} {creatorInfo.lastName}
                 </Text>
-                <Text style={styles.organizerUsername}>
+                <Text style={[styles.organizerUsername, {color:colors.text}]}>
                   @{creatorInfo.username}
                 </Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color="#999" />
+              <Ionicons name="chevron-forward" size={20} color={colors.text} />
             </TouchableOpacity>
           ) : (
-            <Text style={styles.infoText}>Organizer information unavailable</Text>
+            <Text style={[styles.infoText, {color:colors.text}]}>Organizer information unavailable</Text>
           )}
         </View>
 
         {/* Sport and Skill Level */}
         <View style={styles.infoRow}>
           <View style={styles.infoItem}>
-            <FontAwesome5 name="running" size={16} color="#555" />
-            <Text style={styles.infoText}>{activity.sport}</Text>
+            <FontAwesome5 name="running" size={16} color={colors.smalltext} />
+            <Text style={[styles.infoText, {color:colors.smalltext}]}>{activity.sport}</Text>
           </View>
           <View style={styles.infoItem}>
-            <Ionicons name="stats-chart" size={16} color="#555" />
-            <Text style={styles.infoText}>{activity.skillLevel}</Text>
+            <Ionicons name="stats-chart" size={16} color={colors.smalltext} />
+            <Text style={[styles.infoText, {color:colors.smalltext}]}>{activity.skillLevel}</Text>
           </View>
         </View>
 
         {/* Participants */}
         <View style={styles.participantsRow}>
-          <Ionicons name="people" size={16} color="#555" />
-          <Text style={styles.participantsText}>
+          <Ionicons name="people" size={16} color={colors.smalltext} />
+          <Text style={[styles.participantsText, {color:colors.smalltext}]}>
             {activity.participants?.length || 0}/{activity.maxParticipants}{" "}
             participants
           </Text>
@@ -590,30 +601,30 @@ export default function ActivityDetail() {
         {/* Date and Time */}
         <View style={styles.infoRow}>
           <View style={styles.infoItem}>
-            <Ionicons name="calendar" size={16} color="#555" />
-            <Text style={styles.infoText}>{formattedDate}</Text>
+            <Ionicons name="calendar" size={16} color={colors.smalltext} />
+            <Text style={[styles.infoText, {color:colors.smalltext}]}>{formattedDate}</Text>
           </View>
           <View style={styles.infoItem}>
-            <Ionicons name="time" size={16} color="#555" />
-            <Text style={styles.infoText}>{formattedTime}</Text>
+            <Ionicons name="time" size={16} color={colors.smalltext} />
+            <Text style={[styles.infoText, {color:colors.smalltext}]}>{formattedTime}</Text>
           </View>
         </View>
 
         {/* Location */}
         <View style={styles.locationRow}>
-          <Ionicons name="location" size={16} color="#555" />
-          <Text style={styles.locationText}>{activity.placeName}</Text>
+          <Ionicons name="location" size={16} color={colors.smalltext} />
+          <Text style={[styles.locationText, {color:colors.smalltext}]}>{activity.placeName}</Text>
         </View>
 
         {/* Description Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Description</Text>
-          <Text style={styles.descriptionText}>{activity.description}</Text>
+          <Text style={[styles.sectionTitle, {color:colors.actdetailsheader}]}>Description</Text>
+          <Text style={[styles.descriptionText,{color:colors.smalltext}]}>{activity.description}</Text>
         </View>
 
         {/* Map Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Location</Text>
+          <Text style={[styles.sectionTitle, {color:colors.actdetailsheader}]}>Location</Text>
           {activity.location && (
             <ConditionalMap
               latitude={activity.location.latitude}
@@ -721,6 +732,28 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 14,
     fontWeight: "bold",
+  },
+  creatorButtonsContainer: {
+    flexDirection: 'column',
+    justifyContent: 'flex-end',
+    gap: 8,
+  },
+  creatorButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: "#0066cc",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 5,
+    justifyContent: 'center',
+  },
+  creatorButtonText: {
+    color: "white",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  buttonIcon: {
+    marginRight: 4,
   },
   tagRow: {
     flexDirection: "row",
