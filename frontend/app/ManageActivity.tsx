@@ -34,7 +34,7 @@ import { useTheme } from "@/hooks/ThemeContext";
 import { API_URL } from "../config.json";
 import { Ionicons } from "@expo/vector-icons";
 import { showAlert } from "@/utils/alertUtils";
-import { Activity } from "@/types/activity";
+import { Activity, Location } from "@/types/activity";
 
 // Section component props type
 interface SectionProps {
@@ -75,14 +75,25 @@ const Section = ({ title, children, style = {}, zIndex = 1 }: SectionProps) => {
   );
 };
 
-interface Location {
-  latitude: number;
-  longitude: number;
-}
-
 interface FacilityLocation {
   name: string;
   coordinates: number[];
+}
+
+// Define a type for the initial form data snapshot
+interface InitialFormData {
+  activityName: string;
+  description: string;
+  sport: string | null;
+  skillLevel: string | null;
+  type: string | null;
+  bannerUri: string | null;
+  existingBannerUrl: string | null;
+  maxParticipants: string;
+  price: string;
+  date: Date;
+  selectedLocation: Location | null;
+  placeName: string;
 }
 
 const ManageActivity = () => {
@@ -110,6 +121,10 @@ const ManageActivity = () => {
   );
   const [placeName, setPlaceName] = useState("");
   const [locationModalVisible, setLocationModalVisible] = useState(false);
+
+  // State to store initial form data for change detection
+  const [initialActivityData, setInitialActivityData] =
+    useState<InitialFormData | null>(null);
 
   // Dropdown states
   const [sportOpen, setSportOpen] = useState(false);
@@ -162,33 +177,57 @@ const ManageActivity = () => {
 
         // --- Set state based on fetched data ---
         setActivity(fetchedActivity);
-        setActivityName(fetchedActivity.activityName);
-        setDescription(fetchedActivity.description || "");
-        setSport(fetchedActivity.sport);
-
-        // Find the correctly cased skillLevel from SKILL_LEVELS
+        const currentActivityName = fetchedActivity.activityName;
+        const currentDescription = fetchedActivity.description || "";
+        const currentSport = fetchedActivity.sport;
         const backendSkillLevel = fetchedActivity.skillLevel;
         const frontendSkillLevel =
           SKILL_LEVELS.find(
             (level) => level.toLowerCase() === backendSkillLevel?.toLowerCase()
           ) || null;
-        setSkillLevel(frontendSkillLevel);
-
-        // Find the correctly cased type from TYPE
         const backendType = fetchedActivity.type;
         const frontendType =
           TYPE.find((t) => t.toLowerCase() === backendType?.toLowerCase()) ||
           null;
-        setType(frontendType);
+        const currentExistingBannerUrl = fetchedActivity.bannerImageUrl || null;
+        const currentBannerUri = null; // Reset local banner URI on load
+        const currentMaxParticipants = String(
+          fetchedActivity.maxParticipants || ""
+        );
+        const currentPrice = String(fetchedActivity.price || "");
+        const currentDate = new Date(fetchedActivity.dateTime);
+        const currentSelectedLocation = fetchedActivity.location;
+        const currentPlaceName = fetchedActivity.placeName || "";
 
-        // Use existingBannerUrl for the initial state, bannerUri for local changes
-        setExistingBannerUrl(fetchedActivity.bannerImageUrl || null);
-        setBannerUri(null); // Reset local banner URI on load
-        setMaxParticipants(String(fetchedActivity.maxParticipants || ""));
-        setPrice(String(fetchedActivity.price || ""));
-        setDate(new Date(fetchedActivity.dateTime));
-        setSelectedLocation(fetchedActivity.location);
-        setPlaceName(fetchedActivity.placeName || "");
+        setActivityName(currentActivityName);
+        setDescription(currentDescription);
+        setSport(currentSport);
+        setSkillLevel(frontendSkillLevel);
+        setType(frontendType);
+        setExistingBannerUrl(currentExistingBannerUrl);
+        setBannerUri(currentBannerUri);
+        setMaxParticipants(currentMaxParticipants);
+        setPrice(currentPrice);
+        setDate(currentDate);
+        setSelectedLocation(currentSelectedLocation);
+        setPlaceName(currentPlaceName);
+
+        // Store initial data for change detection using the defined type
+        setInitialActivityData({
+          activityName: currentActivityName,
+          description: currentDescription,
+          sport: currentSport,
+          skillLevel: frontendSkillLevel,
+          type: frontendType,
+          bannerUri: currentBannerUri,
+          existingBannerUrl: currentExistingBannerUrl,
+          maxParticipants: currentMaxParticipants,
+          price: currentPrice,
+          date: currentDate,
+          selectedLocation: currentSelectedLocation,
+          placeName: currentPlaceName,
+        });
+
         // --- End set state ---
       } catch (error) {
         console.error("Error fetching activity:", error);
@@ -208,6 +247,39 @@ const ManageActivity = () => {
       loadActivity();
     }
   }, [id]); // Depend on id
+
+  // Function to check if form data has changed from initial state
+  const hasFormChanged = () => {
+    if (!initialActivityData) return false; // No initial data loaded yet
+
+    const dateChanged =
+      date.toISOString() !== initialActivityData.date?.toISOString();
+
+    // Compare locations carefully
+    const locationChanged =
+      selectedLocation?.latitude !==
+        initialActivityData.selectedLocation?.latitude ||
+      selectedLocation?.longitude !==
+        initialActivityData.selectedLocation?.longitude;
+
+    // Check if banner has changed (new local URI selected OR existing banner removed)
+    const bannerChanged = bannerUri !== initialActivityData.bannerUri; // Check if a new local banner URI was set
+
+    // Compare other fields
+    return (
+      activityName !== initialActivityData.activityName ||
+      description !== initialActivityData.description ||
+      sport !== initialActivityData.sport ||
+      skillLevel !== initialActivityData.skillLevel ||
+      type !== initialActivityData.type ||
+      maxParticipants !== initialActivityData.maxParticipants || // Compare as strings
+      price !== initialActivityData.price || // Compare as strings
+      placeName !== initialActivityData.placeName ||
+      dateChanged ||
+      locationChanged ||
+      bannerChanged
+    );
+  };
 
   const validateForm = () => {
     const newErrors = {
@@ -413,7 +485,7 @@ const ManageActivity = () => {
   };
 
   const handleBackPress = () => {
-    if (validateForm()) {
+    if (hasFormChanged()) {
       Alert.alert(
         "Discard Changes?",
         "You have unsaved changes. Are you sure you want to go back?",
@@ -427,7 +499,7 @@ const ManageActivity = () => {
         ]
       );
     } else {
-      router.back();
+      router.back(); // Navigate back directly if no changes detected
     }
   };
 
