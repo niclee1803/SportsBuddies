@@ -2,6 +2,7 @@
 Business logic layer for Activity operations.
 """
 import time
+from datetime import datetime
 from typing import Dict, List
 from fastapi import HTTPException, UploadFile
 from datetime import datetime
@@ -10,7 +11,7 @@ from activity.repository.activity_repository import ActivityRepository, Firestor
 from activity.models.activity import Activity, ActivityStatus, Location
 from user.services.image_service import ImageService
 
-from datetime import datetime
+from user.services.alert_service import AlertService
 
 class ActivityController:
     """
@@ -21,6 +22,7 @@ class ActivityController:
     def __init__(self):
         self.repo = ActivityRepository()
         self.image_service = ImageService()  
+        self.alert_service = Alert
 
     def create_activity(self, creator_id: str, data: Dict) -> Dict:
         """
@@ -108,6 +110,15 @@ class ActivityController:
                 return None
                 
             self.repo.update_activity_with_transaction(activity_id, update_func)
+
+            # Create alert for the creator
+            self.alert_service.create_join_request_alert(
+                creator_id=activity.creator_id,
+                requester_id=user_id,
+                activity_id=activity_id,
+                activity_name=activity.activityName
+            )
+
             return {"message": "Join request sent successfully"}
         except FirestoreError as e:
             raise HTTPException(status_code=500, detail=str(e))
@@ -131,6 +142,14 @@ class ActivityController:
                 return None
                 
             self.repo.update_activity_with_transaction(activity_id, update_func)
+
+            # Delete the join request alert sent to the creator
+            self.alert_service.delete_join_request_alert(
+                creator_id=activity.creator_id,
+                requester_id=user_id,
+                activity_id=activity_id
+            )
+
             return {"message": "Join request cancelled successfully"}
         except FirestoreError as e:
             raise HTTPException(status_code=500, detail=str(e))
@@ -163,6 +182,31 @@ class ActivityController:
                 return None
                 
             self.repo.update_activity_with_transaction(activity_id, update_func)
+
+            # Find and update the join request alert
+            # Get alerts for the current user that match this activity and sender
+            alerts_query = self.alert_service.repository.collection.where("user_id", "==", current_user)\
+                                            .where("sender_id", "==", new_user_id)\
+                                            .where("activity_id", "==", activity_id)\
+                                            .where("type", "==", "join_request")\
+                                            .limit(1)
+            
+            alerts = list(alerts_query.stream())
+            if alerts:
+                alert_id = alerts[0].id
+                # Update the alert status
+                self.alert_service.repository.set_response_status(alert_id, "accepted")
+
+            # Create alert for requester
+            self.alert_service.create_request_response_alert(
+                user_id=new_user_id,
+                creator_id=current_user,
+                activity_id=activity_id,
+                activity_name=activity.activityName,
+                approved=True
+            )
+
+
             return {"message": "Join request approved successfully"}
         except FirestoreError as e:
             raise HTTPException(status_code=500, detail=str(e))
@@ -189,6 +233,30 @@ class ActivityController:
                 return None
                 
             self.repo.update_activity_with_transaction(activity_id, update_func)
+
+            # Find and update the join request alert
+            # Get alerts for the current user that match this activity and sender
+            alerts_query = self.alert_service.repository.collection.where("user_id", "==", current_user)\
+                                            .where("sender_id", "==", new_user_id)\
+                                            .where("activity_id", "==", activity_id)\
+                                            .where("type", "==", "join_request")\
+                                            .limit(1)
+            
+            alerts = list(alerts_query.stream())
+            if alerts:
+                alert_id = alerts[0].id
+                # Update the alert status
+                self.alert_service.repository.set_response_status(alert_id, "accepted")
+
+            # Create alert for requester
+            self.alert_service.create_request_response_alert(
+                user_id=user_id,
+                creator_id=current_user, 
+                activity_id=activity_id,
+                activity_name=activity.activityName,
+                approved=False
+            )
+
             return {"message": "Join request rejected successfully"}
         except FirestoreError as e:
             raise HTTPException(status_code=500, detail=str(e))
@@ -215,6 +283,14 @@ class ActivityController:
                 return None
                 
             self.repo.update_activity_with_transaction(activity_id, update_func)
+
+            self.alert_service.create_user_removed_alert(
+                participant_id=user_id,
+                creator_id=current_user,
+                activity_id=activity_id,
+                activity_name=activity.activityName
+            )
+
             return {"message": "Participant removed successfully"}
         except FirestoreError as e:
             raise HTTPException(status_code=500, detail=str(e))
@@ -241,6 +317,14 @@ class ActivityController:
                 return None
                 
             self.repo.update_activity_with_transaction(activity_id, update_func)
+
+            self.alert_service.create_user_left_alert(
+                creator_id=activity.creator_id,
+                user_id=user_id,
+                activity_id=activity_id,
+                activity_name=activity.activityName
+            )
+
             return {"message": "Left activity successfully"}
         except FirestoreError as e:
             raise HTTPException(status_code=500, detail=str(e))
@@ -261,6 +345,17 @@ class ActivityController:
         
         try:
             self.repo.update(activity_id, {"status": ActivityStatus.CANCELLED.value})
+
+            # Notify all participants about the cancellation
+            for participant_id in activity.participants:
+                if participant_id != current_user:
+                    self.alert_service.create_activity_cancelled_alert(
+                        participant_id=participant_id,
+                        creator_id=current_user,
+                        activity_id=activity_id,
+                        activity_name=activity.activityName
+                    )
+
             return {"message": "Activity cancelled successfully"}
         except FirestoreError as e:
             raise HTTPException(status_code=500, detail=str(e))

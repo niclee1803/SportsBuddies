@@ -367,7 +367,7 @@ export default function ActivityDetail() {
 
   const handleManageParticipants = () => {
     if (!activity) return;
-    //router.push(`/ManageParticipants?id=${activity.id}`);
+    router.push(`/ManageParticipants?id=${activity.id}`);
   };
 
   const renderActionButton = () => {
@@ -482,18 +482,21 @@ export default function ActivityDetail() {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#0066cc" />
-        <Text style={styles.loadingText}>Loading activity details...</Text>
+      <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={[styles.loadingText, { color: colors.text }]}>Loading activity details...</Text>
       </View>
     );
   }
 
   if (error || !activity) {
     return (
-      <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>{error || "Activity not found"}</Text>
-        <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+      <View style={[styles.errorContainer, { backgroundColor: colors.background }]}>
+        <Text style={[styles.errorText, { color: "#d9534f" }]}>{error || "Activity not found"}</Text>
+        <TouchableOpacity 
+          style={[styles.backButton, { backgroundColor: colors.primary }]} 
+          onPress={handleBack}
+        >
           <Text style={styles.backButtonText}>Go Back</Text>
         </TouchableOpacity>
       </View>
@@ -737,7 +740,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#fff",
   },
   loadingText: {
     marginTop: 10,
