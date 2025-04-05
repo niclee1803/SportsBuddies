@@ -4,6 +4,7 @@ import { FormInput } from '../FormInput';
 import { NavigationButtons } from '../NavigationButtons';
 import { validateName } from '../ValidationUtils';
 import styles from '../styles';
+import { useTheme } from '@/hooks/ThemeContext';
 
 interface Step1Props {
   firstName: string;
@@ -31,10 +32,10 @@ export const Step1: React.FC<Step1Props> = ({
   onLogin,
 }) => {
   const isValid = !!firstName && !!lastName && !firstNameError && !lastNameError;
-
+  const { colors } = useTheme();
   return (
     <>
-      <Text style={styles.subheading}>Step 1: Tell us your name</Text>
+      <Text style={[styles.subheading, {color:colors.text}]}>Step 1: Tell us your name</Text>
       <View style={styles.rowContainer}>
         <FormInput
           label="First Name"
@@ -61,7 +62,7 @@ export const Step1: React.FC<Step1Props> = ({
       </View>
 
       <View style={styles.loginContainer}>
-        <Text style={styles.haveAnAccountText}>Have an account? </Text>
+        <Text style={[styles.haveAnAccountText, {color:colors.text}]}>Have an account? </Text>
         <TouchableOpacity onPress={onLogin}>
           <Text style={styles.loginButtonText}>Log In</Text>
         </TouchableOpacity>

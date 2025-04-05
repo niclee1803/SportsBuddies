@@ -4,6 +4,7 @@ import { FormInput } from '../FormInput';
 import { NavigationButtons } from '../NavigationButtons';
 import { validateEmail, validatePhone } from '../ValidationUtils';
 import styles from '../styles';
+import { useTheme } from '@/hooks/ThemeContext';
 
 interface Step2Props {
   email: string;
@@ -31,9 +32,11 @@ export const Step2: React.FC<Step2Props> = ({
   onNext,
 }) => {
     const isValid = !!email && !!phone && !emailError && !phoneError;
+    
+    const { colors } = useTheme();
   return (
     <>
-      <Text style={styles.subheading}>Step 2: Contact Information</Text>
+      <Text style={[styles.subheading, {color:colors.text}]}>Step 2: Contact Information</Text>
       <FormInput
         label="Email"
         value={email}

@@ -6,49 +6,17 @@ import {
   Modal,
   TouchableOpacity,
   ScrollView,
-  Platform,
   SafeAreaView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { format } from 'date-fns';
-// Import your custom Dropdown and predefined lists from ActivityMenu
-import Dropdown, { SPORTS_LIST, SKILL_LEVELS } from '@/components/activity/ActivityMenu';
-
-
-
-export const LOCATIONS_LIST = [
-  "AMK Swimming Complex",
-  "Bishan Sports Centre",
-  "Bukit Batok Swimming Complex",
-  "Bukit Gombak Sports Centre",
-  "Clementi Stadium",
-  "Delta Sports Centre",
-  "Enabling Village Gym",
-  "Farrer Park Field and Tennis Centre",
-  "Geylang East Swimming Complex",
-  "Geylang Field",
-  "Heartbeat@Bedok",
-  "Hougang Sports Centre",
-  "Jalan Besar Sports Centre",
-  "Jurong East Sports Centre",
-  "Jurong Stadium",
-  "Jurong West Sports Centre",
-  "Kallang Basin Swimming Complex",
-  "Kallang Sports Centre",
-  "Katong Swimming Complex",
-  "Our Tampines Hub - Community Auditorium",
-  "Pasir Ris Sports Centre",
-  "Queenstown Sports Centre",
-  "Sengkang Sports Centre",
-  "Serangoon Sports Centre",
-  "St Wilfrid Sports Centre",
-  "Toa Payoh Sports Centre",
-  "Woodlands Sports Centre",
-  "Yio Chu Kang Sports Centre",
-  "Yishun Sports Centre",
-  "Yishun Swimming Complex"
-];
+// Import updated components and hooks
+import Dropdown, { useSportsList, SKILL_LEVELS } from '@/components/activity/ActivityMenu';
+import LocationPicker from '@/components/activity/LocationPicker';
+import { useTheme } from '@/hooks/ThemeContext';
+import useFacilityLocations, { FacilityLocation } from '@/hooks/FacilityLocation';
+import { API_URL } from "@/config.json";
 
 interface FilterModalProps {
   visible: boolean;
@@ -64,6 +32,12 @@ export interface FilterOptions {
   dateFrom: Date | null;
   dateTo: Date | null;
   location: string;
+  locationCoordinates?: [number, number]; 
+  locationDetails?: {
+    address?: string;
+    postalCode?: string;
+    facilities?: string;
+  };
 }
 
 const FilterModal: React.FC<FilterModalProps> = ({
@@ -79,6 +53,13 @@ const FilterModal: React.FC<FilterModalProps> = ({
     location: ''
   }
 }) => {
+  // Get sports list from API
+  const { sportsList, loading: sportsLoading } = useSportsList();
+  
+  // Fetch facility locations
+  const { locations, loading: locationsLoading, error: locationsError } = 
+    useFacilityLocations(`${API_URL}/utils/facilities_geojson`);
+
   // Filter state
   const [sport, setSport] = useState(initialFilters.sport);
   const [skillLevel, setSkillLevel] = useState(initialFilters.skillLevel);
@@ -86,10 +67,15 @@ const FilterModal: React.FC<FilterModalProps> = ({
   const [dateFrom, setDateFrom] = useState<Date | null>(initialFilters.dateFrom);
   const [dateTo, setDateTo] = useState<Date | null>(initialFilters.dateTo);
   const [location, setLocation] = useState(initialFilters.location);
+  const [locationCoordinates, setLocationCoordinates] = useState<[number, number] | undefined>(
+    initialFilters.locationCoordinates
+  );
+  const [locationDetails, setLocationDetails] = useState(initialFilters.locationDetails);
 
-  // Date picker visibility state
+  // UI state
   const [isDateFromPickerVisible, setDateFromPickerVisible] = useState(false);
   const [isDateToPickerVisible, setDateToPickerVisible] = useState(false);
+  const [isLocationPickerVisible, setLocationPickerVisible] = useState(false);
 
   // Reset filters when modal is opened with initialFilters
   useEffect(() => {
@@ -100,17 +86,34 @@ const FilterModal: React.FC<FilterModalProps> = ({
       setDateFrom(initialFilters.dateFrom);
       setDateTo(initialFilters.dateTo);
       setLocation(initialFilters.location);
+      setLocationCoordinates(initialFilters.locationCoordinates);
+      setLocationDetails(initialFilters.locationDetails);
     }
   }, [visible, initialFilters]);
 
   const handleApply = () => {
+    let formattedDateFrom = dateFrom;
+    let formattedDateTo = dateTo;
+    
+    if (dateFrom) {
+      formattedDateFrom = new Date(dateFrom);
+      formattedDateFrom.setHours(0, 0, 0, 0);
+    }
+    
+    if (dateTo) {
+      formattedDateTo = new Date(dateTo);
+      formattedDateTo.setHours(23, 59, 59, 999);
+    }
+    
     onApply({
       sport,
       skillLevel,
       activityType,
-      dateFrom,
-      dateTo,
-      location
+      dateFrom: formattedDateFrom,
+      dateTo: formattedDateTo,
+      location,
+      locationCoordinates,
+      locationDetails
     });
     onClose();
   };
@@ -122,9 +125,11 @@ const FilterModal: React.FC<FilterModalProps> = ({
     setDateFrom(null);
     setDateTo(null);
     setLocation('');
+    setLocationCoordinates(undefined);
+    setLocationDetails(undefined);
   };
 
-  // Handlers for the modal date pickers
+  // Date picker handlers
   const handleConfirmDateFrom = (selectedDate: Date) => {
     setDateFrom(selectedDate);
     setDateFromPickerVisible(false);
@@ -143,42 +148,75 @@ const FilterModal: React.FC<FilterModalProps> = ({
     setDateToPickerVisible(false);
   };
 
+  // Location selection handler
+  const handleSelectLocation = (selectedLocation: FacilityLocation) => {
+    setLocation(selectedLocation.name);
+    setLocationCoordinates(selectedLocation.coordinates);
+    setLocationDetails({
+      address: selectedLocation.address,
+      postalCode: selectedLocation.postalCode,
+      facilities: selectedLocation.facilities
+    });
+    setLocationPickerVisible(false);
+  };
+
+  const { colors } = useTheme();
+
   return (
     <Modal
       visible={visible}
-      animationType="slide"
+      animationType="fade"
       transparent={true}
       onRequestClose={onClose}
     >
       <SafeAreaView style={styles.container}>
-        <View style={styles.modalContent}>
-          <View style={styles.header}>
-            <Text style={styles.title}>Filter Activities</Text>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <Ionicons name="close" size={24} color="#333" />
-            </TouchableOpacity>
-          </View>
+        <TouchableOpacity 
+          style={styles.backdrop} 
+          activeOpacity={1} 
+          onPress={onClose}
+        />
+        <View style={[
+          styles.modalContent, 
+          { backgroundColor: colors.card, borderColor: colors.border }
+        ]}>
+          <View style={[
+  styles.header, 
+  { 
+    backgroundColor: colors.background === '#121212' ? '#1E1E1E' : '#f9f9f9', // Darker in dark mode, lighter in light mode
+    borderBottomColor: colors.border 
+  }
+]}>
+  <Text style={[styles.title, {color: colors.text}]}>Filter Activities</Text>
+  <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+    <Ionicons name="close" size={24} color={colors.text} />
+  </TouchableOpacity>
+</View>
 
-          <ScrollView style={styles.scrollView}>
-            {/* Sport Dropdown with higher zIndex */}
+          <ScrollView 
+            style={styles.scrollView} 
+            contentContainerStyle={styles.scrollViewContent}
+          >
+            {/* Sport Dropdown */}
             <View style={[styles.filterSection, styles.sportSection]}>
-              <Text style={styles.sectionTitle}>Sport</Text>
+              <Text style={[styles.sectionTitle, {color: colors.text}]}>Sport</Text>
               <Dropdown
-                items={SPORTS_LIST.map(sportItem => ({
+                items={sportsList.map(sportItem => ({
                   label: sportItem,
-                  value: sportItem.toLowerCase(),
+                  value: sportItem,
                 }))}
                 value={sport}
                 onChangeItem={(item) => setSport(item.value)}
-                placeholder="Select sport..."
+                placeholder={sportsLoading ? "Loading sports..." : "Select sport..."}
                 searchable={true}
                 searchablePlaceholder="Search sport..."
+                zIndex={3000}
+                zIndexInverse={1000}
               />
             </View>
 
-            {/* Skill Level Dropdown with lower zIndex */}
+            {/* Skill Level Dropdown */}
             <View style={[styles.filterSection, styles.skillLevelSection]}>
-              <Text style={styles.sectionTitle}>Skill Level</Text>
+              <Text style={[styles.sectionTitle, {color: colors.text}]}>Skill Level</Text>
               <Dropdown
                 items={SKILL_LEVELS.map(level => ({
                   label: level,
@@ -189,37 +227,43 @@ const FilterModal: React.FC<FilterModalProps> = ({
                 placeholder="Select skill level..."
                 searchable={true}
                 searchablePlaceholder="Search skill level..."
+                zIndex={2000}
+                zIndexInverse={2000}
               />
             </View>
 
-            {/* Activity Type - using buttons */}
+            {/* Activity Type */}
             <View style={styles.filterSection}>
-              <Text style={styles.sectionTitle}>Activity Type</Text>
+              <Text style={[styles.sectionTitle, {color: colors.text}]}>Activity Type</Text>
               <View style={styles.typeButtonContainer}>
                 <TouchableOpacity
                   style={[
                     styles.typeButton,
                     styles.typeButtonLeft,
-                    activityType === "event" && styles.activeTypeButton
+                    { backgroundColor: colors.card, borderColor: colors.border },
+                    activityType === "event" && [styles.activeTypeButton, { backgroundColor: colors.primary }]
                   ]}
                   onPress={() => setActivityType(activityType === "event" ? "" : "event")}
                 >
                   <Text style={[
                     styles.typeButtonText,
-                    activityType === "event" && styles.activeTypeButtonText
+                    activityType === "event" && styles.activeTypeButtonText, 
+                    {color: colors.text}
                   ]}>Events</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[
                     styles.typeButton,
                     styles.typeButtonRight,
-                    activityType === "coaching" && styles.activeTypeButton
+                    { backgroundColor: colors.card, borderColor: colors.border },
+                    activityType === "coaching session" && [styles.activeTypeButton, { backgroundColor: colors.primary }]
                   ]}
-                  onPress={() => setActivityType(activityType === "coaching" ? "" : "coaching")}
+                  onPress={() => setActivityType(activityType === "coaching session" ? "" : "coaching session")}
                 >
                   <Text style={[
                     styles.typeButtonText,
-                    activityType === "coaching" && styles.activeTypeButtonText
+                    activityType === "coaching" && styles.activeTypeButtonText,  
+                    {color: colors.text}
                   ]}>Coaching</Text>
                 </TouchableOpacity>
               </View>
@@ -227,74 +271,125 @@ const FilterModal: React.FC<FilterModalProps> = ({
 
             {/* Date Range */}
             <View style={styles.filterSection}>
-              <Text style={styles.sectionTitle}>Date Range</Text>
+              <Text style={[styles.sectionTitle, {color: colors.text}]}>Date Range</Text>
               <View style={styles.dateContainer}>
                 <TouchableOpacity
-                  style={styles.dateButton}
+                  style={[styles.dateButton, { 
+                    backgroundColor: colors.card, 
+                    borderColor: colors.border 
+                  }]}
                   onPress={() => setDateFromPickerVisible(true)}
                 >
-                  <Ionicons name="calendar-outline" size={18} color="#555" style={styles.dateIcon} />
-                  <Text style={[styles.dateText, dateFrom ? styles.dateTextActive : {}]}>
+                  <Ionicons name="calendar-outline" size={18} color={colors.smalltext} style={styles.dateIcon} />
+                  <Text style={[styles.dateText, dateFrom ? styles.dateTextActive : {}, {color: colors.smalltext}]}>
                     {dateFrom ? format(dateFrom, 'MMM dd, yyyy') : 'From date'}
                   </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={styles.dateButton}
+                  style={[styles.dateButton, { 
+                    backgroundColor: colors.card, 
+                    borderColor: colors.border 
+                  }]}
                   onPress={() => setDateToPickerVisible(true)}
                 >
-                  <Ionicons name="calendar-outline" size={18} color="#555" style={styles.dateIcon} />
-                  <Text style={[styles.dateText, dateTo ? styles.dateTextActive : {}]}>
+                  <Ionicons name="calendar-outline" size={18} color={colors.smalltext} style={styles.dateIcon} />
+                  <Text style={[styles.dateText, dateTo ? styles.dateTextActive : {}, {color: colors.smalltext}]}>
                     {dateTo ? format(dateTo, 'MMM dd, yyyy') : 'To date'}
                   </Text>
                 </TouchableOpacity>
               </View>
-              <DateTimePickerModal
-                isVisible={isDateFromPickerVisible}
-                mode="date"
-                date={dateFrom || new Date()}
-                onConfirm={handleConfirmDateFrom}
-                onCancel={handleCancelDateFrom}
-                confirmTextIOS="Confirm"
-                cancelTextIOS="Cancel"
-              />
-              <DateTimePickerModal
-                isVisible={isDateToPickerVisible}
-                mode="date"
-                date={dateTo || new Date()}
-                onConfirm={handleConfirmDateTo}
-                onCancel={handleCancelDateTo}
-                confirmTextIOS="Confirm"
-                cancelTextIOS="Cancel"
-              />
             </View>
 
-            {/* Location Dropdown */}
+            {/* Location Button - Opens LocationPicker */}
             <View style={styles.filterSection}>
-              <Text style={styles.sectionTitle}>Location</Text>
-              <Dropdown
-                items={LOCATIONS_LIST.map(loc => ({
-                  label: loc,
-                  value: loc,
-                }))}
-                value={location}
-                onChangeItem={(item) => setLocation(item.value)}
-                placeholder="Select location..."
-                searchable={true}
-                searchablePlaceholder="Search location..."
-              />
+              <Text style={[styles.sectionTitle, {color: colors.text}]}>Location</Text>
+              <TouchableOpacity
+                style={[styles.locationButton, {
+                  backgroundColor: colors.card,
+                  borderColor: colors.border
+                }]}
+                onPress={() => setLocationPickerVisible(true)}
+              >
+                <Ionicons name="location-outline" size={18} color={colors.smalltext} style={styles.locationIcon} />
+                <Text style={[
+                  styles.locationButtonText, 
+                  location ? styles.locationButtonTextActive : {}, 
+                  {color: location ? colors.text : colors.smalltext}
+                ]}>
+                  {location || "Select location..."}
+                </Text>
+                <Ionicons name="chevron-down" size={18} color={colors.smalltext} />
+              </TouchableOpacity>
+              
+              {location && locationDetails?.address && (
+                <Text style={[styles.locationDetails, {color: colors.smalltext}]}>
+                  {locationDetails.address}
+                  {locationDetails.postalCode ? `, ${locationDetails.postalCode}` : ''}
+                </Text>
+              )}
+              
+              {location && locationDetails?.facilities && (
+                <Text style={[styles.locationFacilities, {color: colors.smalltext}]}>
+                  {locationDetails.facilities}
+                </Text>
+              )}
             </View>
           </ScrollView>
 
-          <View style={styles.footer}>
-            <TouchableOpacity style={styles.clearButton} onPress={handleClear}>
-              <Text style={styles.clearButtonText}>Clear All</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.applyButton} onPress={handleApply}>
-              <Text style={styles.applyButtonText}>Apply Filters</Text>
-            </TouchableOpacity>
-          </View>
+          <View style={[
+  styles.footer,
+  { 
+    backgroundColor: colors.background === '#121212' ? '#1E1E1E' : '#f9f9f9', // Darker in dark mode, lighter in light mode
+    borderTopColor: colors.border,
+    borderTopWidth: 1
+  }
+]}>
+  <TouchableOpacity 
+    style={[styles.clearButton, {borderColor: colors.border}]} 
+    onPress={handleClear}
+  >
+    <Text style={[styles.clearButtonText, {color: colors.smalltext}]}>Clear All</Text>
+  </TouchableOpacity>
+  <TouchableOpacity 
+    style={styles.applyButton} 
+    onPress={handleApply}
+  >
+    <Text style={styles.applyButtonText}>Apply Filters</Text>
+  </TouchableOpacity>
+</View>
         </View>
+
+        {/* Date Picker Modals */}
+        <DateTimePickerModal
+          isVisible={isDateFromPickerVisible}
+          mode="date"
+          date={dateFrom || new Date()}
+          onConfirm={handleConfirmDateFrom}
+          onCancel={handleCancelDateFrom}
+          confirmTextIOS="Confirm"
+          cancelTextIOS="Cancel"
+        />
+        <DateTimePickerModal
+          isVisible={isDateToPickerVisible}
+          mode="date"
+          date={dateTo || new Date()}
+          onConfirm={handleConfirmDateTo}
+          onCancel={handleCancelDateTo}
+          confirmTextIOS="Confirm"
+          cancelTextIOS="Cancel"
+        />
+
+        {/* Location Picker Modal - Now using the separate LocationPicker component */}
+        <LocationPicker
+          visible={isLocationPickerVisible}
+          onClose={() => setLocationPickerVisible(false)}
+          onSelectLocation={handleSelectLocation}
+          locations={locations}
+          loading={locationsLoading}
+          error={locationsError}
+          selectedLocation={location}
+        />
       </SafeAreaView>
     </Modal>
   );
@@ -303,16 +398,33 @@ const FilterModal: React.FC<FilterModalProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  backdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
   },
   modalContent: {
+    width: '90%',
+    maxHeight: '90%',
     backgroundColor: '#fff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderRadius: 20,
     paddingTop: 20,
-    paddingBottom: Platform.OS === 'ios' ? 30 : 20,
-    maxHeight: '80%',
+    paddingBottom: 10,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+    overflow: 'visible',
   },
   header: {
     flexDirection: 'row',
@@ -322,6 +434,7 @@ const styles = StyleSheet.create({
     paddingBottom: 15,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
+    zIndex: 1,
   },
   title: {
     fontSize: 18,
@@ -332,7 +445,10 @@ const styles = StyleSheet.create({
     padding: 5,
   },
   scrollView: {
-    maxHeight: '70%',
+    maxHeight: '80%',
+  },
+  scrollViewContent: {
+    paddingBottom: 10,
   },
   filterSection: {
     paddingHorizontal: 20,
@@ -373,14 +489,13 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   dateText: {
-    color: '#333',
+    color: '#888',
     fontSize: 16,
   },
   dateTextActive: {
     color: '#000',
-    fontWeight: '600',
+    fontWeight: '500',
   },
-  // Added styles for Activity Type buttons
   typeButtonContainer: {
     flexDirection: 'row',
     borderRadius: 8,
@@ -416,39 +531,78 @@ const styles = StyleSheet.create({
   activeTypeButtonText: {
     color: '#fff',
   },
+  locationButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 15,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  locationIcon: {
+    marginRight: 8,
+  },
+  locationButtonText: {
+    flex: 1,
+    fontSize: 16,
+    color: '#888',
+  },
+  locationButtonTextActive: {
+    color: '#000',
+    fontWeight: '500',
+  },
+  locationDetails: {
+    fontSize: 14,
+    marginTop: 8,
+    color: '#888',
+  },
+  locationFacilities: {
+    fontSize: 12,
+    marginTop: 4,
+    fontStyle: 'italic',
+    color: '#888',
+  },
   footer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingTop: 15,
+    paddingVertical: 8, // Reduced padding
+    zIndex: 1,
   },
   clearButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 15,
     borderWidth: 1,
     borderColor: '#e0e0e0',
     borderRadius: 8,
     alignItems: 'center',
+    justifyContent: 'center',
     flex: 0.48,
+    marginTop: 10
   },
   clearButtonText: {
-    color: '#555',
+    color: '#888',
     fontWeight: '600',
-    fontSize: 16,
+    fontSize: 14,
   },
   applyButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 15,
     backgroundColor: '#42c8f5',
     borderRadius: 8,
     alignItems: 'center',
+    justifyContent: 'center',
     flex: 0.48,
+    marginTop: 10,
   },
   applyButtonText: {
-    color: '#fff',
+    color: '#000',
     fontWeight: '600',
-    fontSize: 16,
-  },
+    fontSize: 14,
+  }
 });
 
 export default FilterModal;
