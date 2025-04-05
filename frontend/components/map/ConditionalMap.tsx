@@ -125,6 +125,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     fontSize: 16,
     fontWeight: '500',
+    color: '#777',
   },
   coordinates: {
     fontSize: 12,
