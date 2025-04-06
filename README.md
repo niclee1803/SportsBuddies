@@ -39,7 +39,7 @@ Run the backend and frontend servers on different terminals.
    Set-ExecutionPolicy Unrestricted -Scope Process
    ```
 
-3. If you haven't already, install the dependencies
+3. Install the dependencies into your virtual environment
    ```bash
    pip install -r requirements.txt
    ```
