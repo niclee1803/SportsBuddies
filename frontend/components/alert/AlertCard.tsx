@@ -96,9 +96,7 @@ const AlertCard: React.FC<AlertCardProps> = ({
   
   // Handler for alert body click
   const handleAlertBodyClick = () => {
-    if (!isJoinRequest) {
-      onPress(alert);
-    }
+    onPress(alert);
   };
   
   // Response status UI for accepted/rejected requests

@@ -93,7 +93,7 @@ const ActivityThread = () => {
       }
       
       const activityData = await activityResponse.json();
-      setActivityName(activityData.name || 'Activity Thread');
+      setActivityName(activityData.activityName || 'Activity Thread');
 
       // Fetch messages for the activity
       const messagesResponse = await fetch(`${API_URL}/activity/${activityId}/messages`, {

@@ -97,7 +97,6 @@ const Alerts = () => {
 
   // Mark an alert as read and navigate to relevant screen
   const handleAlertPress = async (alert: AlertType) => {
-    if (alert.type === "join_request") return;
     
     try {
       const token = await AsyncStorage.getItem("token");
