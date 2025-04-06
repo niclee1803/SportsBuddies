@@ -149,16 +149,8 @@ export default function Feed() {
         params.append("placeName", filtersToApply.location);
       }
   
-      // Add coordinates if available
-      if (filtersToApply.locationCoordinates) {
-        params.append(
-          "latitude",
-          filtersToApply.locationCoordinates[1].toString()
-        );
-        params.append(
-          "longitude",
-          filtersToApply.locationCoordinates[0].toString()
-        );
+      if (filtersToApply.location) {
+        params.append("placeName", filtersToApply.location);
       }
   
       // Always filter for only available activities
