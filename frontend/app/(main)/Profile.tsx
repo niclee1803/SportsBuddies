@@ -176,7 +176,7 @@ const Profile = () => {
 
   return (
     <AuthLayout>
-      <View style={styles.container}>
+      <View style={[styles.container, {backgroundColor: colors.background }]}>
         {/* Notification Bell */}
         <TouchableOpacity 
           style={styles.notificationBell}
