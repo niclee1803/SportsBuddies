@@ -102,7 +102,14 @@ function AppStack() {
           title: "Alerts",
         }}
       />
+      <Stack.Screen
+        name="UserThreads"
+        options={{
+          title: "User Threads",
+        }}
+      />
     </Stack>
+
  
   );
 }

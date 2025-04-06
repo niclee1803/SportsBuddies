@@ -17,6 +17,7 @@ export default function ActivityLayout() {
       <Stack.Screen name="ActivityDetail" options={{ title: "Activity Details" }} />
       <Stack.Screen name="ManageActivity" options={{ title: "Manage Activity" }} />
       <Stack.Screen name="ManageParticipants" options={{ title: "Participants" }} />
+      <Stack.Screen name="ActivityThread" options={{ title: "Activity Thread" }} />
     </Stack>
   );
 }

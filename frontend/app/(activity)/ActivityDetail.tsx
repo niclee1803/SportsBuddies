@@ -399,6 +399,11 @@ export default function ActivityDetail() {
       );
     }
   
+    // Determine if user should have access to thread (creator or participant)
+    const hasThreadAccess = 
+      activity.creator_id === currentUserId || 
+      (activity.participants && activity.participants.includes(currentUserId));
+  
     // If current user is the creator
     if (activity.creator_id === currentUserId) {
       // If activity is cancelled, show cancelled message instead of action buttons
@@ -425,6 +430,7 @@ export default function ActivityDetail() {
             />
             <Text style={styles.creatorButtonText}>Update</Text>
           </TouchableOpacity>
+          
           <TouchableOpacity
             style={[styles.creatorButton, { backgroundColor: "#28a745" }]}
             onPress={handleManageParticipants}
@@ -437,6 +443,19 @@ export default function ActivityDetail() {
             />
             <Text style={styles.creatorButtonText}>Participants</Text>
           </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={[styles.creatorButton, { backgroundColor: "#42c8f5" }]}
+            onPress={() => router.push(`/ActivityThread?id=${activity.id}`)}
+          >
+            <Ionicons
+              name="chatbubbles-outline" 
+              size={16}
+              color="#fff"
+              style={styles.buttonIcon}
+            />
+            <Text style={styles.creatorButtonText}>Open Thread</Text>
+          </TouchableOpacity>
         </View>
       );
     }
@@ -444,15 +463,30 @@ export default function ActivityDetail() {
     // If user is already a participant
     if (activity.participants?.includes(currentUserId)) {
       return (
-        <TouchableOpacity
-          style={[styles.actionButton, { backgroundColor: "#d9534f" }]}
-          onPress={handleLeaveActivity}
-          disabled={isCancelled}
-        >
-          <Text style={styles.actionButtonText}>
-            {isCancelled ? "Activity Cancelled" : "Leave Activity"}
-          </Text>
-        </TouchableOpacity>
+        <View style={styles.creatorButtonsContainer}>
+          <TouchableOpacity
+            style={[styles.actionButton, { backgroundColor: "#d9534f" }]}
+            onPress={handleLeaveActivity}
+            disabled={isCancelled}
+          >
+            <Text style={styles.actionButtonText}>
+              {isCancelled ? "Activity Cancelled" : "Leave Activity"}
+            </Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={[styles.creatorButton, { backgroundColor: "#42c8f5", marginTop: 8 }]}
+            onPress={() => router.push(`/ActivityThread?id=${activity.id}`)}
+          >
+            <Ionicons
+              name="chatbubbles-outline" 
+              size={16}
+              color="#fff"
+              style={styles.buttonIcon}
+            />
+            <Text style={styles.creatorButtonText}>Open Thread</Text>
+          </TouchableOpacity>
+        </View>
       );
     }
   

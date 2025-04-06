@@ -9,14 +9,22 @@ from datetime import datetime
 
 
 
-# Change relative imports to absolute imports
 from activity.controllers.activity_controller import ActivityController
 from activity.schemas import ActivityCreate, ActivityUpdate
 from activity.models.activity import ActivityStatus, ActivityType, SkillLevel, Location
 from user.services.auth_service import AuthService
+from activity.repositories.message_repository import MessageRepository
+from activity.models.message import Message
+from user.services.alert_service import AlertService
+from activity.repositories.activity_repository import ActivityRepository
+from user.repositories.user_repository import UserRepository
 
 router = APIRouter()
 activity_controller = ActivityController()
+message_repository = MessageRepository()
+alert_service = AlertService()
+activity_repository = ActivityRepository()
+user_repository = UserRepository()
 
 # ================= Search & Filter =================
 @router.get("/search", summary="Search and filter activities", response_model=List[Dict])
@@ -288,6 +296,98 @@ async def get_my_pending_approvals(
     Returns all activities created by the user that have pending join requests.
     """
     return activity_controller.get_creator_pending_requests(current_user["uid"])
+
+
+# ============== Message Operations ==============
+
+
+@router.post("/{activity_id}/messages", summary="Send message to activity thread")
+async def send_message(
+    activity_id: str,
+    content: str = Body(..., embed=True),
+    current_user: dict = Depends(AuthService.get_current_user)
+):
+    """
+    Send a message to an activity's thread.
+    """
+    # Get activity to check if user is a participant
+    activity = activity_repository.get_by_id(activity_id)
+    if not activity:
+        raise HTTPException(status_code=404, detail="Activity not found")
+    
+    # Verify user is a participant or the creator
+    user_id = current_user["uid"]
+    if user_id != activity.creator_id and user_id not in activity.participants:
+        raise HTTPException(
+            status_code=403, 
+            detail="Only participants or the creator can send messages"
+        )
+    
+    # Get user info
+    user = user_repository.get_by_id(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Create new message
+    sender_name = f"{user.first_name} {user.last_name}"
+    message = Message(
+        activity_id=activity_id,
+        sender_id=user_id,
+        sender_name=sender_name,
+        sender_profile_pic=user.profile_pic_url,
+        content=content
+    )
+    
+    # Save message
+    message = message_repository.create(message)
+    
+    # Send alert to all participants except sender
+    recipients = activity.participants.copy()
+    if activity.creator_id != user_id:
+        recipients.append(activity.creator_id)
+    
+    # Remove sender from recipients
+    if user_id in recipients:
+        recipients.remove(user_id)
+    
+    # Create alerts
+    for recipient_id in recipients:
+        alert_service.create_new_message_alert(
+            user_id=recipient_id,
+            sender_id=user_id,
+            activity_id=activity_id,
+            activity_name=activity.activityName,
+            message_preview=content[:50] + ('...' if len(content) > 50 else '')
+        )
+    
+    return message.to_dict()
+
+@router.get("/{activity_id}/messages", summary="Get activity thread messages")
+async def get_messages(
+    activity_id: str,
+    limit: int = Query(50, description="Maximum number of messages to return"),
+    current_user: dict = Depends(AuthService.get_current_user)
+):
+    """
+    Get messages for an activity's thread.
+    """
+    # Get activity to check if user is a participant
+    activity = activity_repository.get_by_id(activity_id)
+    if not activity:
+        raise HTTPException(status_code=404, detail="Activity not found")
+    
+    # Verify user is a participant or the creator
+    user_id = current_user["uid"]
+    if user_id != activity.creator_id and user_id not in activity.participants:
+        raise HTTPException(
+            status_code=403,
+            detail="Only participants or the creator can view messages"
+        )
+    
+    # Get messages
+    messages = message_repository.get_by_activity(activity_id, limit=limit)
+    
+    return [message.to_dict() for message in messages]
 
 # ============== Admin Operations ==============
 

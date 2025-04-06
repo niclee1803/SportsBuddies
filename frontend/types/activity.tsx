@@ -27,4 +27,5 @@ export interface Location {
     joinRequests: string[];
     maxParticipants: number;
     status: string;
+    unread_messages?: number;
   }

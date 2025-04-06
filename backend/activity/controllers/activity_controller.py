@@ -7,7 +7,7 @@ from typing import Dict, List
 from fastapi import HTTPException, UploadFile
 from datetime import datetime
 
-from activity.repository.activity_repository import ActivityRepository, FirestoreError
+from activity.repositories.activity_repository import ActivityRepository, FirestoreError
 from activity.models.activity import ActivityStatus
 from user.services.image_service import ImageService
 

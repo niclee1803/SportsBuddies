@@ -114,10 +114,13 @@ const Alerts = () => {
 
       // Navigate based on alert type
       if (alert.activity_id) {
-        router.push(`/ActivityDetail?id=${alert.activity_id}`);
-      } else if (alert.sender_id && alert.type === "new_message") {
-        // Navigate to message thread when implemented
-        // router.push(`/Messages?userId=${alert.sender_id}`);
+        // For message alerts, navigate directly to the thread
+        if (alert.type === "new_message") {
+          router.push(`/ActivityThread?id=${alert.activity_id}`);
+        } else {
+          // For other types of alerts, go to activity details
+          router.push(`/ActivityDetail?id=${alert.activity_id}`);
+        }
       }
     } catch (err) {
       console.error("Error handling alert press:", err);
@@ -157,7 +160,7 @@ const Alerts = () => {
             try {
               const token = await AsyncStorage.getItem("token");
               if (!token) return;
-  
+
               await AlertService.deleteAllAlerts(token);
               setAlerts([]);
             } catch (err) {
@@ -173,36 +176,32 @@ const Alerts = () => {
 
   const handleDeleteAlert = async (alert: AlertType) => {
     // Show confirmation dialog
-    showAlert(
-      "Delete Alert",
-      "Are you sure you want to delete this alert?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            setIsProcessing(true);
-            try {
-              const token = await AsyncStorage.getItem("token");
-              if (!token) return;
-  
-              // Delete the alert from the database
-              await AlertService.deleteAlert(token, alert.id);
-              
-              // Remove the alert from the UI
-              setAlerts((currentAlerts) => 
-                currentAlerts.filter((a) => a.id !== alert.id)
-              );
-            } catch (err) {
-              console.error("Error deleting alert:", err);
-            } finally {
-              setIsProcessing(false);
-            }
-          },
+    showAlert("Delete Alert", "Are you sure you want to delete this alert?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          setIsProcessing(true);
+          try {
+            const token = await AsyncStorage.getItem("token");
+            if (!token) return;
+
+            // Delete the alert from the database
+            await AlertService.deleteAlert(token, alert.id);
+
+            // Remove the alert from the UI
+            setAlerts((currentAlerts) =>
+              currentAlerts.filter((a) => a.id !== alert.id)
+            );
+          } catch (err) {
+            console.error("Error deleting alert:", err);
+          } finally {
+            setIsProcessing(false);
+          }
         },
-      ]
-    );
+      },
+    ]);
   };
 
   const handleAcceptRequest = async (alert: AlertType) => {
@@ -318,103 +317,108 @@ const Alerts = () => {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-    <AuthLayout>
-      <View style={[styles.container, { backgroundColor: colors.background }]}>
-        {/* Global loading overlay */}
-        <LoadingOverlay visible={isProcessing} />
+      <AuthLayout>
+        <View
+          style={[styles.container, { backgroundColor: colors.background }]}
+        >
+          {/* Global loading overlay */}
+          <LoadingOverlay visible={isProcessing} />
 
-        {/* Header with back button */}
-        <View style={styles.headerWithBack}>
-          <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-            <Ionicons name="arrow-back" size={24} color={colors.text} />
-          </TouchableOpacity>
-          
-          <View style={styles.headerTitleContainer}>
-            <Text style={[styles.title, { color: colors.text }]}>
-              Alerts {unreadAlertsCount > 0 ? `(${unreadAlertsCount})` : ""}
-            </Text>
-          </View>
-          
-          <View style={styles.headerActions}>
-            {alerts.some((alert) => !alert.read) && (
-              <TouchableOpacity
-                style={styles.actionButton}
-                onPress={handleMarkAllAsRead}
-              >
-                <Text style={styles.actionButtonText}>Mark all read</Text>
-              </TouchableOpacity>
-            )}
-            
-            {alerts.length > 0 && (
-              <TouchableOpacity
-                style={[styles.clearAllButton, { borderColor: colors.border }]}
-                onPress={handleClearAllAlerts}
-              >
-                <Ionicons name="trash-outline" size={20} color="red" />
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
-
-        {loading && !refreshing ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#42c8f5" />
-          </View>
-        ) : error ? (
-          <View style={styles.errorContainer}>
-            <Ionicons name="alert-circle-outline" size={48} color="#F44336" />
-            <Text style={[styles.errorText, { color: colors.text }]}>
-              {error}
-            </Text>
-            <TouchableOpacity
-              style={styles.retryButton}
-              onPress={() => fetchAlerts()}
-            >
-              <Text style={styles.retryButtonText}>Retry</Text>
+          {/* Header with back button */}
+          <View style={styles.headerWithBack}>
+            <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+              <Ionicons name="arrow-back" size={24} color={colors.text} />
             </TouchableOpacity>
+
+            <View style={styles.headerTitleContainer}>
+              <Text style={[styles.title, { color: colors.text }]}>
+                Alerts {unreadAlertsCount > 0 ? `(${unreadAlertsCount})` : ""}
+              </Text>
+            </View>
+
+            <View style={styles.headerActions}>
+              {alerts.some((alert) => !alert.read) && (
+                <TouchableOpacity
+                  style={styles.actionButton}
+                  onPress={handleMarkAllAsRead}
+                >
+                  <Text style={styles.actionButtonText}>Mark all read</Text>
+                </TouchableOpacity>
+              )}
+
+              {alerts.length > 0 && (
+                <TouchableOpacity
+                  style={[
+                    styles.clearAllButton,
+                    { borderColor: colors.border },
+                  ]}
+                  onPress={handleClearAllAlerts}
+                >
+                  <Ionicons name="trash-outline" size={20} color="red" />
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
-        ) : (
-          <ScrollView
-            contentContainerStyle={styles.notificationsContainer}
-            refreshControl={
-              <RefreshControl
-                refreshing={refreshing}
-                onRefresh={() => fetchAlerts(true)}
-                colors={["#42c8f5"]}
-                tintColor="#42c8f5"
-              />
-            }
-          >
-            {alerts.length > 0 ? (
-              alerts.map((alert) => (
-                <AlertCard
-                  key={alert.id}
-                  alert={alert}
-                  onPress={handleAlertPress}
-                  onAccept={handleAcceptRequest}
-                  onReject={handleRejectRequest}
-                  onDelete={handleDeleteAlert}
-                  isProcessing={isProcessing}
-                  processingAlertId={processingAlertId}
-                  responseStatusMap={responseStatusMap}
+
+          {loading && !refreshing ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#42c8f5" />
+            </View>
+          ) : error ? (
+            <View style={styles.errorContainer}>
+              <Ionicons name="alert-circle-outline" size={48} color="#F44336" />
+              <Text style={[styles.errorText, { color: colors.text }]}>
+                {error}
+              </Text>
+              <TouchableOpacity
+                style={styles.retryButton}
+                onPress={() => fetchAlerts()}
+              >
+                <Text style={styles.retryButtonText}>Retry</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <ScrollView
+              contentContainerStyle={styles.notificationsContainer}
+              refreshControl={
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={() => fetchAlerts(true)}
+                  colors={["#42c8f5"]}
+                  tintColor="#42c8f5"
                 />
-              ))
-            ) : (
-              <View style={styles.emptyContainer}>
-                <Ionicons
-                  name="notifications-off-outline"
-                  size={64}
-                  color="#ccc"
-                />
-                <Text style={[styles.emptyText, { color: colors.text }]}>
-                  You have no notifications
-                </Text>
-              </View>
-            )}
-          </ScrollView>
-        )}
-      </View>
-    </AuthLayout>
+              }
+            >
+              {alerts.length > 0 ? (
+                alerts.map((alert) => (
+                  <AlertCard
+                    key={alert.id}
+                    alert={alert}
+                    onPress={handleAlertPress}
+                    onAccept={handleAcceptRequest}
+                    onReject={handleRejectRequest}
+                    onDelete={handleDeleteAlert}
+                    isProcessing={isProcessing}
+                    processingAlertId={processingAlertId}
+                    responseStatusMap={responseStatusMap}
+                  />
+                ))
+              ) : (
+                <View style={styles.emptyContainer}>
+                  <Ionicons
+                    name="notifications-off-outline"
+                    size={64}
+                    color="#ccc"
+                  />
+                  <Text style={[styles.emptyText, { color: colors.text }]}>
+                    You have no notifications
+                  </Text>
+                </View>
+              )}
+            </ScrollView>
+          )}
+        </View>
+      </AuthLayout>
     </GestureHandlerRootView>
   );
 };

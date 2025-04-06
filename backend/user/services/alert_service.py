@@ -236,3 +236,36 @@ class AlertService:
         )
         
         return self.repository.create(alert)
+    
+    def create_new_message_alert(
+        self,
+        user_id: str,
+        sender_id: str,
+        activity_id: str,
+        activity_name: str,
+        message_preview: str
+    ) -> Alert:
+        """
+        Create an alert when a new message is sent in an activity thread.
+        Sent TO all participants FROM the message sender.
+        """
+        sender = self.user_repository.get_by_id(sender_id)
+        if not sender:
+            raise ValueError(f"User {sender_id} not found")
+        
+        sender_name = f"{sender.first_name} {sender.last_name}"
+        
+        # Create alert for the recipient
+        alert = Alert(
+            user_id=user_id,
+            type=AlertType.NEW_MESSAGE,
+            message=f"{sender_name} sent a message in {activity_name}: \"{message_preview}\"",
+            activity_id=activity_id,
+            activity_name=activity_name,
+            sender_id=sender_id,
+            sender_name=sender_name,
+            sender_profile_pic=sender.profile_pic_url,
+            data={"message_preview": message_preview}
+        )
+        
+        return self.repository.create(alert)

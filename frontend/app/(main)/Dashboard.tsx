@@ -81,6 +81,13 @@ const Dashboard = () => {
       onPress: () => router.push('/Alerts')
     },
     {
+      id: 'messages',
+      label: 'Activity Threads',
+      description: 'View conversations in activities',
+      icon: <Ionicons name="chatbubbles-outline" size={32} color="#42c8f5" />,
+      onPress: () => router.push('/UserThreads')
+    },
+    {
       id: 'profile',
       label: 'Profile & Activities',
       description: 'Manage your profile and activities',
