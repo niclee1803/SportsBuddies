@@ -5,30 +5,56 @@ import { FontAwesome5, MaterialIcons, Ionicons } from '@expo/vector-icons';
 import AuthLayout from '@/components/AuthLayout';
 import { fetchCurrentUser } from '@/utils/GetUser';
 import { useTheme } from '@/hooks/ThemeContext';
+import { API_URL } from "@/config.json";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const Dashboard = () => {
   const { colors } = useTheme();
   const router = useRouter();
   const [userName, setUserName] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
+  const [unreadAlerts, setUnreadAlerts] = useState<number>(0);
 
-  // Fetch user data on component mount
+  // Fetch user data and unread alerts on component mount
   useEffect(() => {
-    const getUserData = async () => {
+    const fetchData = async () => {
       try {
+        // Fetch user data
         const userData = await fetchCurrentUser();
         if (userData) {
           setUserName(userData.firstName || '');
         }
+        
+        // Fetch unread alerts count
+        await fetchUnreadAlertsCount();
       } catch (error) {
-        console.error('Failed to fetch user data:', error);
+        console.error('Failed to fetch data:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    getUserData();
+    fetchData();
   }, []);
+
+  // Function to fetch unread alerts count
+  const fetchUnreadAlertsCount = async () => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) return;
+
+      const response = await fetch(`${API_URL}/user/alerts/count`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setUnreadAlerts(data.unread_count);
+      }
+    } catch (error) {
+      console.error('Failed to fetch unread alerts count:', error);
+    }
+  };
 
   const navigationOptions = [
     {
@@ -42,7 +68,16 @@ const Dashboard = () => {
       id: 'alerts',
       label: 'Alerts',
       description: 'View your notifications',
-      icon: <Ionicons name="notifications-outline" size={32} color="#42c8f5" />,
+      icon: <View style={styles.iconWithBadge}>
+        <Ionicons name="notifications-outline" size={32} color="#42c8f5" />
+        {unreadAlerts > 0 && (
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>
+              {unreadAlerts > 99 ? '99+' : unreadAlerts}
+            </Text>
+          </View>
+        )}
+      </View>,
       onPress: () => router.push('/Alerts')
     },
     {
@@ -51,6 +86,13 @@ const Dashboard = () => {
       description: 'Manage your profile and activities',
       icon: <FontAwesome5 name="user-circle" size={32} color="#42c8f5" />,
       onPress: () => router.push('/Profile')
+    },
+    {
+      id: 'create',
+      label: 'Create Activity',
+      description: 'Organise an event or coaching session',
+      icon: <MaterialIcons name="add-circle-outline" size={32} color="#42c8f5" />,
+      onPress: () => router.push('/Create')
     },
     {
       id: 'settings',
@@ -136,6 +178,7 @@ const styles = StyleSheet.create({
   },
   iconContainer: {
     marginBottom: 12,
+    position: 'relative',
   },
   optionLabel: {
     fontSize: 16,
@@ -147,6 +190,26 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
   },
+  iconWithBadge: {
+    position: 'relative',
+  },
+  badge: {
+    position: 'absolute',
+    top: -5,
+    right: -8,
+    backgroundColor: 'red',
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  badgeText: {
+    color: 'white',
+    fontSize: 10,
+    fontWeight: 'bold',
+    paddingHorizontal: 4,
+  }
 });
 
 export default Dashboard;

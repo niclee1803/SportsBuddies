@@ -14,7 +14,7 @@ import {
 import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
 import { Ionicons, FontAwesome5 } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { API_URL } from "../config.json";
+import { API_URL } from "../../config.json";
 import { Activity } from "@/types/activity";
 import { format } from "date-fns";
 import ConditionalMap from "@/components/map/ConditionalMap";

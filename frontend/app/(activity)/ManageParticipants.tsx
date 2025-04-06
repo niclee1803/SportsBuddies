@@ -13,9 +13,9 @@ import {
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { API_URL } from "../config.json";
-import { Activity } from "../types/activity";
-import { showAlert } from "../utils/alertUtils";
+import { API_URL } from "../../config.json";
+import { Activity } from "../../types/activity";
+import { showAlert } from "../../utils/alertUtils";
 import { AlertService } from "@/services/AlertService";
 import { useTheme } from "@/hooks/ThemeContext";
 

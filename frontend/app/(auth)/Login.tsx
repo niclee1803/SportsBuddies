@@ -12,9 +12,9 @@ import {
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { fetchCurrentUser } from "../utils/GetUser";
+import { fetchCurrentUser } from "@/utils/GetUser";
 import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
-import { API_URL } from "../config.json";
+import { API_URL } from "@/config.json";
 import { useTheme } from '@/hooks/ThemeContext';
 
 export default function Login() {

@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { getAuth, sendPasswordResetEmail } from "firebase/auth";
-import { app } from "../constants/firebaseConfig"; // Adjust path if needed
+import { app } from "@/constants/firebaseConfig"; // Adjust path if needed
 
 export default function ForgetPassword() {
   const auth = getAuth(app);

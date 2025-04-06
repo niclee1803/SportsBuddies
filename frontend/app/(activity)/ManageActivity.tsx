@@ -28,7 +28,7 @@ import {
 } from "@/utils/updateActivity";
 import { uploadBanner } from "@/utils/uploadBanner";
 import { useTheme } from "@/hooks/ThemeContext";
-import { API_URL } from "../config.json";
+import { API_URL } from "../../config.json";
 import { showAlert } from "@/utils/alertUtils";
 import { Activity, Location } from "@/types/activity";
 import Dropdown, {

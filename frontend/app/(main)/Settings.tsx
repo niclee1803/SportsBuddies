@@ -5,18 +5,39 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fetchCurrentUser } from '@/utils/GetUser';
 import AuthLayout from '@/components/AuthLayout';
 import { useTheme } from '@/hooks/ThemeContext';
-
+import { Ionicons } from '@expo/vector-icons';
+import { API_URL } from "@/config.json";
 
 
 const Settings = () => {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [unreadAlerts, setUnreadAlerts] = useState<number>(0);
   const router = useRouter();
   
 
   // Use the theme context
   const { isDarkMode, toggleTheme, colors } = useTheme();
+
+  // Fetch unread alerts count
+  const fetchUnreadAlertsCount = async () => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) return;
+
+      const response = await fetch(`${API_URL}/user/alerts/count`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setUnreadAlerts(data.unread_count);
+      }
+    } catch (error) {
+      console.error('Failed to fetch unread alerts count:', error);
+    }
+  };
 
   // Fetch user data from API
   const fetchUserData = async () => {
@@ -28,6 +49,9 @@ const Settings = () => {
       
       // Set user data from API response
       setUser(userData);
+      
+      // Fetch unread alerts count
+      await fetchUnreadAlertsCount();
     } catch (error) {
       console.error("Error fetching user data:", error);
       Alert.alert(
@@ -105,6 +129,23 @@ const Settings = () => {
   return (
     <AuthLayout>
       <View style={[styles.container, { backgroundColor: colors.background }]}>
+        {/* Notification Bell */}
+        <TouchableOpacity 
+          style={styles.notificationBell}
+          onPress={() => router.push('/Alerts')}
+        >
+          <View style={styles.iconWithBadge}>
+            <Ionicons name="notifications-outline" size={24} color={colors.text} />
+            {unreadAlerts > 0 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>
+                  {unreadAlerts > 99 ? '99+' : unreadAlerts}
+                </Text>
+              </View>
+            )}
+          </View>
+        </TouchableOpacity>
+
         {user && (
           <View style={styles.profileContainer}>
             <Image 
@@ -163,7 +204,6 @@ const Settings = () => {
 };
 
 const styles = StyleSheet.create({
-  // Keep your existing styles
   container: {
     flex: 1,
     padding: 20,
@@ -219,13 +259,38 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     marginTop: 20,
     alignItems: 'center',
-
   },
   logoutButtonText: {
     color: '#000',
     fontSize: 16,
     fontWeight: 'bold',
   },
+  notificationBell: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+    zIndex: 10,
+  },
+  iconWithBadge: {
+    position: 'relative',
+  },
+  badge: {
+    position: 'absolute',
+    top: -5,
+    right: -8,
+    backgroundColor: 'red',
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  badgeText: {
+    color: 'white',
+    fontSize: 10,
+    fontWeight: 'bold',
+    paddingHorizontal: 4,
+  }
 });
 
 export default Settings;

@@ -10,10 +10,10 @@ import {
   SafeAreaView 
 } from "react-native";
 import { useRouter } from "expo-router";
-import { fetchCurrentUser } from "../utils/GetUser";
-import { API_URL } from "../config.json";
+import { fetchCurrentUser } from "@/utils/GetUser";
+import { API_URL } from "@/config.json";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import SportsSkillsMenu, { SPORTS_LIST, SKILL_LEVELS, SportsSkill } from "../components/preferences/SportsSkillsMenu";
+import SportsSkillsMenu, { SPORTS_LIST, SKILL_LEVELS, SportsSkill } from "@/components/preferences/SportsSkillsMenu";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from '@/hooks/ThemeContext';
 

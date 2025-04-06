@@ -14,10 +14,10 @@ import {
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as ImagePicker from "expo-image-picker";
-import { API_URL } from "../config.json";
+import { API_URL } from "@/config.json";
 import { fetchCurrentUser } from "@/utils/GetUser";
 import { validateUsername, validateEmail, validatePhone } from "@/components/signup/ValidationUtils";
-import SportsSkillsMenu, { SportsSkill, SKILL_LEVELS } from "../components/preferences/SportsSkillsMenu";
+import SportsSkillsMenu, { SportsSkill, SKILL_LEVELS } from "@/components/preferences/SportsSkillsMenu";
 import { Ionicons } from "@expo/vector-icons";
 import { showAlert } from "@/utils/alertUtils";
 import { useTheme } from "@/hooks/ThemeContext";

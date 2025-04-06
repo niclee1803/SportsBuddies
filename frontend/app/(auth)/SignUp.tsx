@@ -1,18 +1,18 @@
 import React, { useState } from "react";
 import { View, Text, Alert, Platform, ActivityIndicator, Modal } from "react-native";
 import { useRouter } from "expo-router";
-import { StepIndicator } from "../components/signup/StepIndicator";
-import { Step1 } from "../components/signup/steps/Step1";
-import { Step2 } from "../components/signup/steps/Step2";
-import { Step3 } from "../components/signup/steps/Step3";
-import { Step4 } from "../components/signup/steps/Step4";
-import { Step5 } from "../components/signup/steps/Step5";
+import { StepIndicator } from "@/components/signup/StepIndicator";
+import { Step1 } from "@/components/signup/steps/Step1";
+import { Step2 } from "@/components/signup/steps/Step2";
+import { Step3 } from "@/components/signup/steps/Step3";
+import { Step4 } from "@/components/signup/steps/Step4";
+import { Step5 } from "@/components/signup/steps/Step5";
 import {
   validatePhone,
   validatePassword
-} from "../components/signup/ValidationUtils";
-import styles from "../components/signup/styles";
-import { API_URL } from "../config.json";
+} from "@/components/signup/ValidationUtils";
+import styles from "@/components/signup/styles";
+import { API_URL } from "@/config.json";
 import { useTheme } from '@/hooks/ThemeContext';
 
 // Import Firebase authentication

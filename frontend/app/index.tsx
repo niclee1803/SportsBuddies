@@ -28,14 +28,14 @@ export default function HomeScreen() {
           <View style={styles.buttonWrapper}>
             <TouchableOpacity 
               style={styles.button}
-              onPress={() => router.push("/SignUp")}
+              onPress={() => router.push("/(auth)/SignUp")}
             >
               <Text style={styles.buttonText}>Get started</Text>
             </TouchableOpacity>
           </View>
           <View style={styles.text}>
             <Text>Already have an account?</Text>
-            <Link href="/Login">
+            <Link href="/(auth)/Login">
               <Text style={{ color: "#0000ff" }}>Login</Text>
             </Link>
           </View>

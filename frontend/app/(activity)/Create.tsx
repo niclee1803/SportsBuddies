@@ -18,7 +18,7 @@ import BannerPicker from "@/components/activity/BannerPicker";
 import { pickImage, cancelUpload } from "@/utils/createactivityhelpers";
 import { handleSubmitActivity } from "@/utils/uploadactivity";
 import { useTheme } from "@/hooks/ThemeContext";
-import { API_URL } from "../config.json";
+import { API_URL } from "../../config.json";
 import { uploadBanner } from "@/utils/uploadBanner";
 import { showAlert } from "@/utils/alertUtils";
 import DateTimePickerModal from "react-native-modal-datetime-picker";

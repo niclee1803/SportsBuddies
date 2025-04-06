@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { API_URL } from "../config.json";
+import { API_URL } from "@/config.json";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/hooks/ThemeContext";
 import ActivityCard from "@/components/activity/ActivityCard";

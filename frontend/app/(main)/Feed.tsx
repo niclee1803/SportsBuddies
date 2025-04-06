@@ -13,7 +13,7 @@ import {
 } from "react-native";
 import AuthLayout from "@/components/AuthLayout";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { API_URL } from "../config.json";
+import { API_URL } from "@/config.json";
 import ActivityCard from "@/components/activity/ActivityCard";
 import { Activity } from "@/types/activity";
 import { Ionicons, FontAwesome5 } from "@expo/vector-icons";

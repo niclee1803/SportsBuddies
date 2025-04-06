@@ -2,11 +2,11 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, Alert, ActivityIndicator, RefreshControl } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { AntDesign, Feather } from '@expo/vector-icons';
+import { AntDesign, Feather, Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import * as Sharing from 'expo-sharing';
 import Toast from 'react-native-toast-message';
-import { API_URL } from '../config.json';
+import { API_URL } from '@/config.json';
 import { fetchCurrentUser } from '@/utils/GetUser';
 import ActivityCard from '@/components/activity/ActivityCard';
 import { Activity } from '@/types/activity';
@@ -33,11 +33,31 @@ const Profile = () => {
   const [joinedActivities, setJoinedActivities] = useState<Activity[]>([]);
   const [activitiesLoading, setActivitiesLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [unreadAlerts, setUnreadAlerts] = useState<number>(0);
+
+  // Fetch unread alerts count
+  const fetchUnreadAlertsCount = async () => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) return;
+
+      const response = await fetch(`${API_URL}/user/alerts/count`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setUnreadAlerts(data.unread_count);
+      }
+    } catch (error) {
+      console.error('Failed to fetch unread alerts count:', error);
+    }
+  };
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      await Promise.all([loadProfile(), loadActivities()]);
+      await Promise.all([loadProfile(), loadActivities(), fetchUnreadAlertsCount()]);
     } catch (error) {
       console.error("Error refreshing data:", error);
     } finally {
@@ -150,88 +170,113 @@ const Profile = () => {
     useCallback(() => {
       loadProfile();
       loadActivities();
+      fetchUnreadAlertsCount();
     }, [])
   );
 
   return (
     <AuthLayout>
-      <ScrollView 
-        style={[styles.container, {backgroundColor: colors.background }]}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={["#42c8f5"]}
-            tintColor="#42c8f5"
-          />
-        }
-      >
-        <View style={[styles.header, {backgroundColor: colors.background }]}>
-          <TouchableOpacity>
-            <Image source={{ uri: profilePic }} style={styles.profileImage} />
-          </TouchableOpacity>
-          <Text style={[styles.name, { color: colors.text}]}>{user.firstName} {user.lastName}</Text>
-          <Text style={[styles.username, { color: colors.text}]}>@{user.username || '...'}</Text>
-        </View>
+      <View style={styles.container}>
+        {/* Notification Bell */}
+        <TouchableOpacity 
+          style={styles.notificationBell}
+          onPress={() => router.push('/Alerts')}
+        >
+          <View style={styles.iconWithBadge}>
+            <Ionicons name="notifications-outline" size={24} color={colors.text} />
+            {unreadAlerts > 0 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>
+                  {unreadAlerts > 99 ? '99+' : unreadAlerts}
+                </Text>
+              </View>
+            )}
+          </View>
+        </TouchableOpacity>
 
-        <View style={[styles.buttonContainer, {backgroundColor: colors.background }]}>
-          <TouchableOpacity style={[styles.button, {backgroundColor: colors.profilebutton}]} onPress={shareProfile}>
-            <AntDesign name="sharealt" size={20} color={colors.text} />
-            <Text style={[styles.buttonText,, { color: colors.text}]}>Share</Text>
-          </TouchableOpacity>
+        <ScrollView 
+          style={[{backgroundColor: colors.background }]}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={["#42c8f5"]}
+              tintColor="#42c8f5"
+            />
+          }
+        >
+          <View style={[styles.header, {backgroundColor: colors.background }]}>
+            <TouchableOpacity>
+              <Image source={{ uri: profilePic }} style={styles.profileImage} />
+            </TouchableOpacity>
+            <Text style={[styles.name, { color: colors.text}]}>{user.firstName} {user.lastName}</Text>
+            <Text style={[styles.username, { color: colors.text}]}>@{user.username || '...'}</Text>
+          </View>
 
-          <TouchableOpacity style={[styles.button, {backgroundColor: colors.profilebutton}]} onPress={() => router.push('/ProfileSettings')}>
-            <Feather name="edit-3" size={20} color={colors.text}  />
-            <Text style={[styles.buttonText,, { color: colors.text}]}>Edit</Text>
-          </TouchableOpacity>
-        </View>
-        {/* Activity Tabs */}
-        <View style={[styles.tabContainer, {backgroundColor: colors.profilebutton }]}>
-          <TouchableOpacity 
-            style={[styles.tab, activeTab === 'created' && styles.activeTab && {backgroundColor: colors.background}]} 
-            onPress={() => setActiveTab('created')}
-          >
-            <Text style={[styles.tabText, {color: colors.smalltext}, activeTab === 'created' && styles.activeTabText ]}>
-              Created
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.tab, activeTab === 'joined' && styles.activeTab && {backgroundColor: colors.background}]} 
-            onPress={() => setActiveTab('joined')}
-          >
-            <Text style={[styles.tabText,{color: colors.smalltext}, activeTab === 'joined' && styles.activeTabText]}>
-              Joined
-            </Text>
-          </TouchableOpacity>
-        </View>
+          <View style={[styles.buttonContainer, {backgroundColor: colors.background }]}>
+            <TouchableOpacity style={[styles.button, {backgroundColor: colors.profilebutton}]} onPress={shareProfile}>
+              <AntDesign name="sharealt" size={20} color={colors.text} />
+              <Text style={[styles.buttonText, { color: colors.text}]}>Share</Text>
+            </TouchableOpacity>
 
-        {/* Activities List */}
-        <View style={styles.activitiesContainer}>
-          {activitiesLoading ? (
-            <ActivityIndicator size="small" color="#42c8f5" style={styles.activitiesLoader} />
-          ) : activeTab === 'created' ? (
-            createdActivities.length > 0 ? (
-              createdActivities.map((activity) => (
+            <TouchableOpacity style={[styles.button, {backgroundColor: colors.profilebutton}]} onPress={() => router.push('/ProfileSettings')}>
+              <Feather name="edit-3" size={20} color={colors.text}  />
+              <Text style={[styles.buttonText, { color: colors.text}]}>Edit</Text>
+            </TouchableOpacity>
+          </View>
+          {/* Activity Tabs */}
+          <View style={[styles.tabContainer, {backgroundColor: colors.profilebutton }]}>
+            <TouchableOpacity 
+              style={[styles.tab, activeTab === 'created' && styles.activeTab && {backgroundColor: colors.background}]} 
+              onPress={() => setActiveTab('created')}
+            >
+              <Text style={[styles.tabText, {color: colors.smalltext}, activeTab === 'created' && styles.activeTabText ]}>
+                Created
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.tab, activeTab === 'joined' && styles.activeTab && {backgroundColor: colors.background}]} 
+              onPress={() => setActiveTab('joined')}
+            >
+              <Text style={[styles.tabText,{color: colors.smalltext}, activeTab === 'joined' && styles.activeTabText]}>
+                Joined
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Activities List */}
+          <View style={styles.activitiesContainer}>
+            {activitiesLoading ? (
+              <ActivityIndicator size="small" color="#42c8f5" style={styles.activitiesLoader} />
+            ) : activeTab === 'created' ? (
+              createdActivities.length > 0 ? (
+                createdActivities.map((activity) => (
+                  <ActivityCard key={activity.id} activity={activity} />
+                ))
+              ) : (
+                <Text style={[styles.noActivityText,{color: colors.smalltext}]}>You haven't created any activities yet.</Text>
+              )
+            ) : joinedActivities.length > 0 ? (
+              joinedActivities.map((activity) => (
                 <ActivityCard key={activity.id} activity={activity} />
               ))
             ) : (
-              <Text style={[styles.noActivityText,{color: colors.smalltext}]}>You haven't created any activities yet.</Text>
-            )
-          ) : joinedActivities.length > 0 ? (
-            joinedActivities.map((activity) => (
-              <ActivityCard key={activity.id} activity={activity} />
-            ))
-          ) : (
-            <Text style={styles.noActivityText}>You haven't joined any activities yet.</Text>
-          )}
-        </View>
-      </ScrollView>
+              <Text style={styles.noActivityText}>You haven't joined any activities yet.</Text>
+            )}
+          </View>
+        </ScrollView>
+      </View>
     </AuthLayout>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f2f2f2', padding: 20 },
+  container: { 
+    flex: 1, 
+    backgroundColor: '#f2f2f2',
+    padding: 20,
+    position: 'relative',
+  },
   loadingContainer: {
     justifyContent: 'center',
     alignItems: 'center',
@@ -292,6 +337,32 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontStyle: 'italic'
   },
+  notificationBell: {
+    position: 'absolute',
+    top: 10,
+    right: 20,
+    zIndex: 10,
+  },
+  iconWithBadge: {
+    position: 'relative',
+  },
+  badge: {
+    position: 'absolute',
+    top: -5,
+    right: -8,
+    backgroundColor: 'red',
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  badgeText: {
+    color: 'white',
+    fontSize: 10,
+    fontWeight: 'bold',
+    paddingHorizontal: 4,
+  }
 });
 
 export default Profile;
