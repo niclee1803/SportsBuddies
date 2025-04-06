@@ -96,12 +96,8 @@ const AlertCard: React.FC<AlertCardProps> = ({
   
   // Handler for alert body click
   const handleAlertBodyClick = () => {
-    // For all alert types, allow navigating to the activity
-    if (alert.activity_id) {
-      router.push(`/ActivityDetail?id=${alert.activity_id}`);
-    } else if (alert.sender_id && alert.type === 'new_message') {
-      // Navigate to message thread when implemented
-      // router.push(`/Messages?userId=${alert.sender_id}`);
+    if (!isJoinRequest) {
+      onPress(alert);
     }
   };
   

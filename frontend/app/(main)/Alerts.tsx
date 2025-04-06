@@ -97,28 +97,24 @@ const Alerts = () => {
 
   // Mark an alert as read and navigate to relevant screen
   const handleAlertPress = async (alert: AlertType) => {
-    // Skip handling for join requests (we have separate buttons for those)
     if (alert.type === "join_request") return;
-
+    
     try {
       const token = await AsyncStorage.getItem("token");
       if (!token) return;
-
+  
       // Mark as read in the background
       AlertService.markAsRead(token, alert.id);
-
+  
       // Update UI immediately
       setAlerts((currentAlerts) =>
         currentAlerts.map((a) => (a.id === alert.id ? { ...a, read: true } : a))
       );
-
-      // Navigate based on alert type
+  
       if (alert.activity_id) {
-        // For message alerts, navigate directly to the thread
-        if (alert.type === "new_message") {
+        if (alert.type && alert.type.toLowerCase() === "new_message") {
           router.push(`/ActivityThread?id=${alert.activity_id}`);
         } else {
-          // For other types of alerts, go to activity details
           router.push(`/ActivityDetail?id=${alert.activity_id}`);
         }
       }
