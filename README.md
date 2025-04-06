@@ -1,4 +1,6 @@
-# Get started
+# SportsBuddies Mobile App
+  
+## How to Run it Locally
 Clone the project
 ```bash
 git clone https://github.com/niclee1803/SportsBuddies.git
@@ -47,7 +49,7 @@ Run the backend and frontend servers on different terminals.
    uvicorn main:app --host 0.0.0.0 --port 8000
    ```
 
-6. API endpoints will be hosted on port 8000 of your IP address.
+6. API endpoints will be hosted on port 8000 of your private IP address.
 
 
 ## How to run the frontend development server
