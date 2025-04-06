@@ -43,6 +43,10 @@ const ActivityThread = () => {
   const [error, setError] = useState<string | null>(null);
   const flatListRef = useRef<FlatList>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [lastMessageId, setLastMessageId] = useState<string | null>(null);
+  const [polling, setPolling] = useState<boolean>(true);
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const POLLING_INTERVAL = 3000;
 
   // Fetch user ID
   useEffect(() => {
@@ -67,12 +71,12 @@ const ActivityThread = () => {
   }, []);
 
   // Fetch messages
-  const fetchMessages = useCallback(async (isRefreshing = false) => {
+  const fetchMessages = useCallback(async (isRefreshing = false, silent = false) => {
     if (!activityId) return;
 
     if (isRefreshing) {
       setRefreshing(true);
-    } else {
+    } else if (!silent) {
       setLoading(true);
     }
 
@@ -83,17 +87,19 @@ const ActivityThread = () => {
         return;
       }
 
-      // Fetch activity details to get the name
-      const activityResponse = await fetch(`${API_URL}/activity/${activityId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      // Fetch activity details only on first load or refresh
+      if (!activityName || isRefreshing) {
+        const activityResponse = await fetch(`${API_URL}/activity/${activityId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
 
-      if (!activityResponse.ok) {
-        throw new Error('Failed to fetch activity details');
+        if (!activityResponse.ok) {
+          throw new Error('Failed to fetch activity details');
+        }
+        
+        const activityData = await activityResponse.json();
+        setActivityName(activityData.activityName || 'Activity Thread');
       }
-      
-      const activityData = await activityResponse.json();
-      setActivityName(activityData.activityName || 'Activity Thread');
 
       // Fetch messages for the activity
       const messagesResponse = await fetch(`${API_URL}/activity/${activityId}/messages`, {
@@ -106,23 +112,46 @@ const ActivityThread = () => {
       }
 
       const messagesData = await messagesResponse.json();
+      
+      // Save the messages and track the last message ID
       setMessages(messagesData);
+      if (messagesData.length > 0) {
+        setLastMessageId(messagesData[messagesData.length - 1].id);
+      }
+      
       setError(null);
 
     } catch (error) {
       console.error('Error fetching messages:', error);
-      setError(error instanceof Error ? error.message : 'Failed to load messages');
+      if (!silent) {
+        setError(error instanceof Error ? error.message : 'Failed to load messages');
+      }
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+      if (isRefreshing) {
+        setRefreshing(false);
+      } else if (!silent) {
+        setLoading(false);
+      }
     }
-  }, [activityId, router]);
+  }, [activityId, router, activityName]);
 
   useEffect(() => {
     if (activityId) {
       fetchMessages();
     }
-  }, [activityId, fetchMessages]);
+    
+    pollingIntervalRef.current = setInterval(() => {
+      if (polling && activityId) {
+        fetchMessages(false, true);
+      }
+    }, POLLING_INTERVAL);
+    
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
+    };
+  }, [activityId, fetchMessages, polling]);
 
   // Send message function
   const sendMessage = async () => {
