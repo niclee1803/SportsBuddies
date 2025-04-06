@@ -293,7 +293,7 @@ const UserThreads = () => {
             <Ionicons name="arrow-back" size={24} color={colors.text} />
           </TouchableOpacity>
           
-          <Text style={[styles.title, { color: colors.text }]}>Activity Chats</Text>
+          <Text style={[styles.title, { color: colors.text }]}>Activity Threads</Text>
           
           <View style={styles.placeholderButton} />
         </View>
