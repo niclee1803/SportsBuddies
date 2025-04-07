@@ -237,7 +237,7 @@ class ActivityController:
             # Find and update the join request alert
             # Get alerts for the current user that match this activity and sender
             alerts_query = self.alert_service.repository.collection.where("user_id", "==", current_user)\
-                                            .where("sender_id", "==", new_user_id)\
+                                            .where("sender_id", "==", user_id)\
                                             .where("activity_id", "==", activity_id)\
                                             .where("type", "==", "join_request")\
                                             .limit(1)
