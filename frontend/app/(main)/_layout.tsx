@@ -2,7 +2,7 @@ import React from "react";
 import { Stack } from "expo-router";
 import { useTheme } from "@/hooks/ThemeContext";
 
-export function MainLayout() {
+export default function MainLayout() {
   const { colors } = useTheme();
   return (
     <Stack
