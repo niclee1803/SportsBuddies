@@ -42,6 +42,19 @@ export function MainLayout() {
           title: "Alerts",
         }}
       />
+      <Stack.Screen
+        name="UserThreads"
+        options={{
+          title: "User Threads",
+        }}
+      />
+      <Stack.Screen
+        name="PublicProfile"
+        options={{
+          title: "Public Profile",
+        }}
+      />
     </Stack>
+
   );
 }
