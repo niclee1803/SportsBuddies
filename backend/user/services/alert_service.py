@@ -144,7 +144,6 @@ class AlertService:
         creator_id: str,
         activity_id: str,
         activity_name: str,
-        update_details: str
     ) -> Alert:
         """
         Create an alert when an activity is updated.
@@ -160,13 +159,12 @@ class AlertService:
         alert = Alert(
             user_id=participant_id,
             type=AlertType.ACTIVITY_UPDATED,
-            message=f"Activity '{activity_name}' has been updated: {update_details}",
+            message=f"Activity '{activity_name}' details has been updated.",
             activity_id=activity_id,
             activity_name=activity_name,
             sender_id=creator_id,
             sender_name=creator_name,
             sender_profile_pic=creator.profile_pic_url,
-            data={"update_details": update_details}
         )
         
         return self.repository.create(alert)

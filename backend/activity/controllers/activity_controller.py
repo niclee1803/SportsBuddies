@@ -75,6 +75,16 @@ class ActivityController:
         
         try:
             self.repo.update(activity_id, data)
+
+            for user_id in activity.participants:
+                if user_id != current_user:
+                    self.alert_service.create_activity_updated_alert(
+                        participant_id=user_id,
+                        creator_id=current_user,
+                        activity_id=activity_id,
+                        activity_name=activity.activityName
+                    )
+
             return {"message": "Activity updated successfully"}
         except FirestoreError as e:
             raise HTTPException(status_code=500, detail=str(e))    
