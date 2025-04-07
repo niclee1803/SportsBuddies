@@ -111,7 +111,7 @@ const SportsSkillsMenu = ({
         labelStyle={{ color: colors.text }}
         zIndex={5000 - (index * 20)} // Higher base z-index for sports
         zIndexInverse={1000 + (index * 20)}
-        listMode={Platform.OS === "ios" ? "SCROLLVIEW" : "FLATLIST"}
+        listMode="SCROLLVIEW"
         scrollViewProps={{
           nestedScrollEnabled: true,
         }}
@@ -135,7 +135,7 @@ const SportsSkillsMenu = ({
   
         zIndex={4000 - (index * 20)} // Lower base z-index for skills
         zIndexInverse={2000 + (index * 20)}
-        listMode={Platform.OS === "ios" ? "SCROLLVIEW" : "FLATLIST"}
+        listMode="SCROLLVIEW"  
         scrollViewProps={{
           nestedScrollEnabled: true,
         }}

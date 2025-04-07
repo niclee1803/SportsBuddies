@@ -603,7 +603,7 @@ const ProfileSettings: React.FC = () => {
     </View>
 
 
-    <ScrollView contentContainerStyle={[styles.container, { backgroundColor: colors.background }]}>
+    <ScrollView nestedScrollEnabled={true} contentContainerStyle={[styles.container, { backgroundColor: colors.background }]}>
 
         {/* Profile Picture Section */}
         <TouchableOpacity
