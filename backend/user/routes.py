@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Path
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Path, Body
 from typing import Dict
 
 from user.services.auth_service import AuthService
@@ -49,7 +49,7 @@ async def lookup_user(username: str = Query(..., description="The username to lo
     """
     Given a username, return the user's email (and possibly other fields).
     """
-    user_data = await user_controller.get_by_username(username)  # Ensure this is async-compatible
+    user_data = await user_controller.get_by_username(username) 
     if not user_data:
         raise HTTPException(status_code=404, detail="User not found")
 
@@ -203,3 +203,33 @@ async def delete_all_alerts(
     """
     count = alert_repository.delete_all_for_user(user_id=current_user["uid"])
     return {"message": f"{count} alerts deleted"}
+
+
+@router.post("/alerts/{alert_id}/respond", summary="Set alert response status")
+async def set_alert_response_status(
+    alert_id: str = Path(..., description="The alert ID to update"),
+    status: str = Body(..., embed=True),
+    current_user: dict = Depends(AuthService.get_current_user)
+):
+    """
+    Set the response status for an alert (accepted/rejected).
+    """
+    # First get the alert to verify it belongs to this user
+    alert = alert_repository.get_by_id(alert_id)
+    if not alert:
+        raise HTTPException(status_code=404, detail="Alert not found")
+    
+    if alert.user_id != current_user["uid"]:
+        raise HTTPException(status_code=403, detail="Not authorized to modify this alert")
+    
+    # Validate status value
+    if status not in ["accepted", "rejected"]:
+        raise HTTPException(status_code=400, detail="Status must be 'accepted' or 'rejected'")
+    
+    # Update the status
+    alert_repository.set_response_status(alert_id, status)
+    
+    # Also mark as read
+    alert_repository.mark_as_read(alert_id)
+    
+    return {"message": f"Alert response status set to {status}"}
