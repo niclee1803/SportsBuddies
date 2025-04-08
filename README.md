@@ -1,5 +1,6 @@
 # SportsBuddies Mobile App
-  
+  A mobile application designed to help users find and connect with sports buddies based on shared interests 
+  and availability!
 ## How to Run it Locally
 Clone the project
 ```bash
