@@ -132,13 +132,13 @@ export default function Feed() {
       if (filtersToApply.dateFrom) {
         const dateFrom = new Date(filtersToApply.dateFrom);
         dateFrom.setHours(0, 0, 0, 0);
-        params.append("dateFrom", dateFrom.toISOString().split('T')[0]);
+        params.append("dateFrom", dateFrom.toISOString());
       }
       
       if (filtersToApply.dateTo) {
         const dateTo = new Date(filtersToApply.dateTo);
         dateTo.setHours(23, 59, 59, 999);
-        params.append("dateTo", dateTo.toISOString().split('T')[0]);
+        params.append("dateTo", dateTo.toISOString());
       }
   
       if (filtersToApply.activityType) {
