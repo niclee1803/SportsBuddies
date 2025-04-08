@@ -60,7 +60,7 @@ Run the backend and frontend servers on different terminals.
 2. Navigate into the repository directory
 3. Create a new branch
    ```bash
-   git checkout -b feature
+   git checkout -b feature/your-feature-name
    ```
 4. Edit the code using code editor of your choice
 5. Stage your changes
