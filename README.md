@@ -74,7 +74,7 @@ Run the backend and frontend servers on different terminals.
    npm start
    ```
 
-4. Scan QR Code on mobile
+4. Scan the QR Code that appears on the terminal using your mobile phone camera.
 
 
 ## System Architecture
@@ -124,3 +124,13 @@ Run the backend and frontend servers on different terminals.
                        │   └───────────┘       │                                                            
                        └───────────────────────┘                                                            
 ```
+
+
+# Demo Video
+
+
+
+# External APIs and Datasets Used
+
+
+# Contributors
