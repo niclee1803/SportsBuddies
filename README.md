@@ -10,6 +10,7 @@ git clone https://github.com/niclee1803/SportsBuddies.git
 Run the backend and frontend servers on different terminals.
 
 ## How to run the backend server
+**Requirements:** Python 3.7 and above
 1. Navigate to backend directory
    ```bash
    cd SportsBuddies/backend
@@ -20,7 +21,8 @@ Run the backend and frontend servers on different terminals.
    python -m venv venv
    ```
 
-3. Activate the virtual environment  
+3. Activate the virtual environment
+   
    **For Windows**
    ```bash
    venv\Scripts\activate
@@ -33,8 +35,8 @@ Run the backend and frontend servers on different terminals.
    ```bash
    source venv\scripts\activate
    ```
-   
-
+      
+     
    If you get an error about not running scripts in the system being disabled, you can enable it for the current terminal process
    ```bash
    Set-ExecutionPolicy Unrestricted -Scope Process
@@ -53,8 +55,10 @@ Run the backend and frontend servers on different terminals.
 6. API endpoints will be hosted on port 8000 of your private IP address.
 
 
+
+     
 ## How to run the frontend development server
-Requirements: Expo Go app on your mobile, Node.js on PC
+**Requirements**: Expo Go app on your mobile, Node.js on PC
 1. Navigate to frontend directory
    ```bash
    cd SportsBuddies/frontend
