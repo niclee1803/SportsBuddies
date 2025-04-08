@@ -95,8 +95,8 @@ Run the backend and frontend servers on different terminals.
       │  │ Routes        │  │ Middleware   │  │ Validators   │  │    │ │  Firebase  │  │ Cloudinary   │    │
       │  └───────────────┘  └──────────────┘  └──────────────┘  │    │ │    Auth    │  │ Image Storage│    │
       └─────────────────────────▲──┬────────────────────────────┘    │ └────────────┘  └──────────────┘    │
-                          Model │  │Controller                       └────────────────────▲───┬────────────┘
-                        Objects │  │  calls                                      responses│   │             
+                       Validated│  │Controller                       └────────────────────▲───┬────────────┘
+                       Responses│  │  calls                                      Responses│   │             
  ┌──────────────────────────────┴──▼─────────────────────────────────────────────────┐    │   │             
  │                       SERVICE LAYER                                               │    │   │             
  │  ┌───────────────┐  ┌──────────────┐ ┌───────────┐ ┌──────────┐  ┌──────────────┐ │    │   │             
@@ -122,7 +122,7 @@ Run the backend and frontend servers on different terminals.
                        │   │ Firestore │       │                                                            
                        │   │    DB     │       │                                                            
                        │   └───────────┘       │                                                            
-                       └───────────────────────┘                                                            
+                       └───────────────────────┘                                                                                       
 ```
 
 
