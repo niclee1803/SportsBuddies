@@ -55,6 +55,29 @@ Run the backend and frontend servers on different terminals.
 6. API endpoints will be hosted on port 8000 of your private IP address.
 
 
+# Collaborating on the Repository
+1. Clone the Repository
+2. Navigate into the repository directory
+3. Create a new branch
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
+4. Edit the code using code editor of your choice
+5. Stage your changes
+   ```bash
+   git add .
+   ```
+6. Commit your changes
+   ```bash
+   git commit -m "Your commit message"
+   ```
+7. Push your changes
+   ```
+   git push origin feature/your-feature-name
+   ```
+8. Create a pull request for your branch on Github website
+9. Once approved, you can merge this pull request.
+
 
      
 ## How to run the frontend development server
@@ -95,8 +118,8 @@ Run the backend and frontend servers on different terminals.
       │  │ Routes        │  │ Middleware   │  │ Validators   │  │    │ │  Firebase  │  │ Cloudinary   │    │
       │  └───────────────┘  └──────────────┘  └──────────────┘  │    │ │    Auth    │  │ Image Storage│    │
       └─────────────────────────▲──┬────────────────────────────┘    │ └────────────┘  └──────────────┘    │
-                          Model │  │Controller                       └────────────────────▲───┬────────────┘
-                        Objects │  │  calls                                      responses│   │             
+                       Validated│  │Controller                       └────────────────────▲───┬────────────┘
+                       Responses│  │  calls                                      Responses│   │             
  ┌──────────────────────────────┴──▼─────────────────────────────────────────────────┐    │   │             
  │                       SERVICE LAYER                                               │    │   │             
  │  ┌───────────────┐  ┌──────────────┐ ┌───────────┐ ┌──────────┐  ┌──────────────┐ │    │   │             
@@ -122,7 +145,7 @@ Run the backend and frontend servers on different terminals.
                        │   │ Firestore │       │                                                            
                        │   │    DB     │       │                                                            
                        │   └───────────┘       │                                                            
-                       └───────────────────────┘                                                            
+                       └───────────────────────┘                                                                                       
 ```
 
 
