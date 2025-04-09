@@ -132,6 +132,8 @@ const Dropdown: React.FC<DropdownProps> = ({
       }}
       textStyle={{ color: colors.text }}
       labelStyle={{ color: colors.text }}
+      searchTextInputStyle={{ color: colors.smalltext }}
+      searchPlaceholderTextColor={colors.smalltext}
       listMode="SCROLLVIEW"
       scrollViewProps={{
         nestedScrollEnabled: true,
