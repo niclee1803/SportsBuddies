@@ -96,7 +96,7 @@ export default function Login() {
         </View>
 
         <TouchableOpacity style={styles.linkButton} onPress={() => router.push("/ForgetPassword")}>
-          <Text style={[styles.linkButtonText, { color: colors.text }]}>Forgot Password?</Text>
+          <Text style={[styles.linkButtonText]}>Forgot Password?</Text>
         </TouchableOpacity>
 
         <View style={[styles.signUpContainer, {backgroundColor: colors.background }]}>
