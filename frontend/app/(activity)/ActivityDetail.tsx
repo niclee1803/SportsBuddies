@@ -286,6 +286,8 @@ export default function ActivityDetail() {
                   setActivity(updatedActivity);
                 }
 
+                setJoinRequestSent(false);
+
                 showAlert("Success", "You have left this activity.");
               } else {
                 showAlert(
