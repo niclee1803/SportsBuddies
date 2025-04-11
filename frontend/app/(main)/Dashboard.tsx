@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router'; // Add useFocusEffect import
 import { FontAwesome5, MaterialIcons, Ionicons } from '@expo/vector-icons';
 import AuthLayout from '@/components/AuthLayout';
 import { fetchCurrentUser } from '@/utils/GetUser';
@@ -15,30 +15,8 @@ const Dashboard = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [unreadAlerts, setUnreadAlerts] = useState<number>(0);
 
-  // Fetch user data and unread alerts on component mount
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Fetch user data
-        const userData = await fetchCurrentUser();
-        if (userData) {
-          setUserName(userData.firstName || '');
-        }
-        
-        // Fetch unread alerts count
-        await fetchUnreadAlertsCount();
-      } catch (error) {
-        console.error('Failed to fetch data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
-
   // Function to fetch unread alerts count
-  const fetchUnreadAlertsCount = async () => {
+  const fetchUnreadAlertsCount = useCallback(async () => {
     try {
       const token = await AsyncStorage.getItem('token');
       if (!token) return;
@@ -54,7 +32,38 @@ const Dashboard = () => {
     } catch (error) {
       console.error('Failed to fetch unread alerts count:', error);
     }
-  };
+  }, []);
+
+  // Fetch data on initial mount
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Fetch user data
+        const userData = await fetchCurrentUser();
+        if (userData) {
+          setUserName(userData.firstName || '');
+        }
+        
+        setLoading(false);
+      } catch (error) {
+        console.error('Failed to fetch data:', error);
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // Refresh alert count whenever Dashboard comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      fetchUnreadAlertsCount();
+      
+      return () => {
+      };
+    }, [fetchUnreadAlertsCount])
+  );
+  
 
   const navigationOptions = [
     {
