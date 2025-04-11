@@ -351,6 +351,8 @@ export default function ActivityDetail() {
                   setActivity(updatedActivity);
                 }
 
+                setJoinRequestSent(false);
+
                 showAlert("Success", "Join request cancelled successfully.");
               } else {
                 showAlert(
