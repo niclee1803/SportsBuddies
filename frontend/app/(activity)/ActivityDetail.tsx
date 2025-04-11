@@ -465,7 +465,7 @@ export default function ActivityDetail() {
       return (
         <View style={styles.creatorButtonsContainer}>
           <TouchableOpacity
-            style={[styles.actionButton, { backgroundColor: "#d9534f" }]}
+            style={[styles.actionButton, { backgroundColor: "#FF3B30" }]}
             onPress={handleLeaveActivity}
             disabled={isCancelled}
           >
@@ -494,7 +494,7 @@ export default function ActivityDetail() {
     if (activity.joinRequests?.includes(currentUserId) || joinRequestSent) {
       return (
         <TouchableOpacity
-          style={[styles.actionButton, { backgroundColor: "#ff0000" }]}
+          style={[styles.actionButton, { backgroundColor: "#FF3B30" }]}
           onPress={handleCancelJoinRequest}
           disabled={isCancelled}
         >

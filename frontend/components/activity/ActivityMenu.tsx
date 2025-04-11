@@ -6,7 +6,6 @@ export const SKILL_LEVELS = [
   "Beginner",
   "Intermediate",
   "Advanced",
-  "Expert",
   "Professional"
 ];
 
