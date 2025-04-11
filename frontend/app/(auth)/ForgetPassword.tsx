@@ -10,10 +10,13 @@ import {
 import { useRouter } from "expo-router";
 import { getAuth, sendPasswordResetEmail } from "firebase/auth";
 import { app } from "@/constants/firebaseConfig"; // Adjust path if needed
+import { useTheme } from '@/hooks/ThemeContext';
+
 
 export default function ForgetPassword() {
   const auth = getAuth(app);
   const router = useRouter();
+    const { colors } = useTheme();
   const [email, setEmail] = useState("");
 
   const handlePasswordReset = async () => {
@@ -35,16 +38,16 @@ export default function ForgetPassword() {
   };
 
   return (
-    <View style={styles.view}>
-      <Text style={styles.heading}>Forgot Password</Text>
-      <Text style={styles.subHeading}>
+  <View style={[styles.view, {backgroundColor: colors.background }]}>
+      <Text style={[styles.heading, { color: colors.text }]}>Forgot Password</Text>
+      <Text style={[styles.subHeading, { color: colors.text }]}>
         Enter your email to receive a password reset link.
       </Text>
-      <View style={styles.formContainer}>
+         <View style={[styles.formContainer, {backgroundColor: colors.background }]}>
         {/* Email Input */}
-        <Text style={styles.label}>Email</Text>
+        <Text style={[styles.label, { color: colors.text }]}>Email</Text>
         <TextInput
-          style={styles.input}
+          style={[styles.input, { backgroundColor: colors.card, color: colors.text, borderColor: colors.border }]}
           value={email}
           placeholder="hello@example.com"
           placeholderTextColor="#888"
@@ -55,12 +58,12 @@ export default function ForgetPassword() {
 
         {/* Reset Password Button */}
         <TouchableOpacity style={styles.resetButton} onPress={handlePasswordReset}>
-          <Text style={styles.resetButtonText}>Send Reset Link</Text>
+          <Text style={[styles.resetButtonText, { color: colors.text }]}>Send Reset Link</Text>
         </TouchableOpacity>
 
         {/* Back to Login */}
         <View style={styles.backToLoginContainer}>
-          <Text style={styles.backToLoginText}>Remember your password? </Text>
+          <Text style={[styles.backToLoginText, { color: colors.text }]}>Remember your password? </Text>
           <TouchableOpacity onPress={() => router.push("/Login")}>
             <Text style={styles.linkText}>Login</Text>
           </TouchableOpacity>
@@ -93,7 +96,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#ccc",
     borderRadius: 10,
-    backgroundColor: "#f9f9f9",
     alignItems: "flex-start",
   },
   label: {
