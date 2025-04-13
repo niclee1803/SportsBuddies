@@ -197,6 +197,7 @@ Run the backend and frontend servers on different terminals.
 ```
 
 ## Frontend
+```text
 📁 frontend
 |-- 📁 app
     |-- 📁 (auth)
@@ -252,6 +253,7 @@ Run the backend and frontend servers on different terminals.
     |-- alertUtils.ts
     |-- validationUtils.ts
 |-- config.json
+```
 
 # Demo Video
 
