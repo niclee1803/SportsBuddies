@@ -260,6 +260,19 @@ Run the backend and frontend servers on different terminals.
 
 
 # External APIs and Datasets Used
+* Singapore Land Authority [OneMap API](https://www.onemap.gov.sg/apidocs/maps/#staticMap): for display of static map images
+* Cloudinary [Upload API](https://cloudinary.com/documentation/image_upload_api_reference): for storing of profile pictures and activity banners
+* Data.gov.sg [SportSG Sport Facilities API](https://data.gov.sg/collections/1631/view): for activity venues and locations
+* [Firebase Authentication](https://firebase.google.com/docs/auth)
 
 
 # Contributors
+
+| Name                             | GitHub Username       |
+|----------------------------------|------------------------|
+| Nichlos Lee Junze               | [@niclee1803](https://github.com/niclee1803)             |
+| Cai Jia Wei                     | [@caijiawei02](https://github.com/caijiawei02)           |
+| Rajadharshini Nedumaran         | [@dharshini-eight](https://github.com/dharshini-eight)   |
+| Trevyen Yezdi Darukhanawalla    | [@Skyphius88](https://github.com/Skyphius88)             |
+| Balasubramanian Roopashanthoshini | [@Roopashanthoshini](https://github.com/Roopashanthoshini) |
+
