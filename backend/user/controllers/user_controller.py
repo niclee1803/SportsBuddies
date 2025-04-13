@@ -14,7 +14,7 @@ class UserController:
         self.repository = UserRepository()
         self.image_service = ImageService()
         self.db = firestore.client()
-        self.users_collection = self.db.collection("users")  # ← this line is crucial
+        self.users_collection = self.db.collection("users")
 
     async def get_by_username(self, username: str):
       query = self.users_collection.where("username", "==", username).limit(1).stream()

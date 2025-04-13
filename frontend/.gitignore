@@ -41,6 +41,8 @@ config.json
 
 app-example
 
+constants/firebaseConfig.ts
+
 
 
 
