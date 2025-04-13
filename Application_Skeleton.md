@@ -10,9 +10,7 @@
 |   |-- 📁 repositories
 |   |   |-- activity_repository.py
 |   |   |-- message_repository.py
-|   |-- 📁 schemas
-|   |   |-- __init__.py
-|   |   |-- activity_schema.py
+|   |-- schemas.py
 |   |-- routes.py
 |   |-- __init__.py
 |
@@ -25,9 +23,7 @@
 |   |-- 📁 repositories
 |   |   |-- alert_repository.py
 |   |   |-- user_repository.py
-|   |-- 📁 schemas
-|   |   |-- __init__.py
-|   |   |-- user_schema.py
+|   |-- schemas.py
 |   |-- 📁 services
 |   |   |-- alert_service.py
 |   |   |-- auth_service.py
@@ -60,7 +56,6 @@
         |-- Create.tsx
         |-- Dashboard.tsx
         |-- Feed.tsx
-        |-- Groups.tsx
         |-- Profile.tsx
         |-- ProfileSettings.tsx
         |-- SetPreferences.tsx
@@ -78,7 +73,9 @@
         |-- ActivityCard.tsx
         |-- ActivityMenu.tsx
         |-- FilterModal.tsx
-        |-- LocationPicker.tsx
+        |-- BannerPicker.tsx
+        |-- DateTimeInput.tsx
+        |-- LocationInput.tsx
     |-- 📁 alert
         |-- AlertCard.tsx
     |-- 📁 preferences
