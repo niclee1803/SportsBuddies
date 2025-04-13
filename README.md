@@ -102,8 +102,8 @@ Add the `.env` file and `firebase_credentials.json` file to `backend` directory
 9. Once approved, you can merge this pull request.
 
 
-
-## Simplified System Architecture
+      
+# Simplified System Architecture
 ```text
       ┌─────────────────────────────────────────────────────────┐          Responses                        
       │                   FRONTEND LAYER                        ◄───────────────────────────┐               
