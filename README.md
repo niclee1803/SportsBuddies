@@ -1,19 +1,19 @@
 # SportsBuddies Mobile App
   A mobile application built with React Native (Expo), TypeScript, Firebase, and Node.js, designed to help users find and connect with sports buddies based on shared interests and 
   availability!
-## How to Run it Locally
-Clone the project
+# How to Run the Development Server
+1. Clone the project
 ```bash
 git clone https://github.com/niclee1803/SportsBuddies.git
 ```
     
-To get the environment variable files, contact us via email at trevsweproj@gmail.com
+2. To get the environment variable files, contact us via email at trevsweproj@gmail.com
 Add the `firebaseConfig.ts` file in `frontend/constants` directory
 Add the `.env` file and `firebase_credentials.json` file to `backend` directory
-
-Run the backend and frontend servers on different terminals.
-
-### How to run the backend server
+     
+3. Run the backend and frontend servers on different terminals based on the instructions provided below.
+    
+## How to run the backend development server
 **Requirements:** Python 3.7 and above
 1. Navigate to backend directory
    ```bash
@@ -58,6 +58,25 @@ Run the backend and frontend servers on different terminals.
 
 6. API endpoints will be hosted on port 8000 of your private IP address.
 
+     
+## How to run the frontend development server
+**Requirements**: Expo Go app on your mobile, Node.js on PC
+1. Navigate to frontend directory
+   ```bash
+   cd SportsBuddies/frontend
+   ```
+
+2. Install required node modules
+   ```
+   npm install
+   ```
+   
+3. Start development server with backend API calls directed to your IP address
+   ```bash
+   npm start
+   ```
+
+4. Scan the QR Code that appears on the terminal using your mobile phone camera.
 
 # Collaborating on the Repository
 1. Clone the Repository
@@ -82,26 +101,6 @@ Run the backend and frontend servers on different terminals.
 8. Create a pull request for your branch on Github website
 9. Once approved, you can merge this pull request.
 
-
-     
-## How to run the frontend development server
-**Requirements**: Expo Go app on your mobile, Node.js on PC
-1. Navigate to frontend directory
-   ```bash
-   cd SportsBuddies/frontend
-   ```
-
-2. Install required node modules
-   ```
-   npm install
-   ```
-   
-3. Start development server with backend API calls directed to your IP address
-   ```bash
-   npm start
-   ```
-
-4. Scan the QR Code that appears on the terminal using your mobile phone camera.
 
 
 ## Simplified System Architecture
