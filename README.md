@@ -6,10 +6,14 @@ Clone the project
 ```bash
 git clone https://github.com/niclee1803/SportsBuddies.git
 ```
+    
+To get the environment variable files, contact us via email at trevsweproj@gmail.com
+Add the `firebaseConfig.ts` file in `frontend/constants` directory
+Add the `.env` file and `firebase_credentials.json` file to `backend` directory
 
 Run the backend and frontend servers on different terminals.
 
-## How to run the backend server
+### How to run the backend server
 **Requirements:** Python 3.7 and above
 1. Navigate to backend directory
    ```bash
