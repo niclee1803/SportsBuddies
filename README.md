@@ -1,6 +1,7 @@
 # SportsBuddies Mobile App
-  A mobile application built with React Native (Expo), TypeScript, Firebase, and Node.js, designed to help users find and connect with sports buddies based on shared interests and 
-  availability!
+SportsBuddies is a mobile application that connects sports enthusiasts with compatible activity partners based on shared interests, skill levels, and availability.  
+
+  
 # How to Run the Development Server
 1. Clone the project
 ```bash
