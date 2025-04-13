@@ -258,16 +258,16 @@ Add the `.env` file and `firebase_credentials.json` file to `backend` directory
 
 # Technologies and Frameworks Used
 ## Frontend
-- ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white&style=flat)
-- ![React Native](https://img.shields.io/badge/React%20Native-20232A?logo=react&logoColor=61DAFB&style=flat)
-- ![Expo](https://img.shields.io/badge/Expo-000020?logo=expo&logoColor=white&style=flat)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white&style=flat)
+![React Native](https://img.shields.io/badge/React%20Native-20232A?logo=react&logoColor=61DAFB&style=flat)
+![Expo](https://img.shields.io/badge/Expo-000020?logo=expo&logoColor=white&style=flat)
 
 ## Backend
-- ![FastAPI](https://img.shields.io/badge/FastAPI-005571?logo=fastapi&logoColor=white&style=flat)
-- ![Python](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=white&style=flat)
+![FastAPI](https://img.shields.io/badge/FastAPI-005571?logo=fastapi&logoColor=white&style=flat)
+![Python](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=white&style=flat)
 
 ## Database
-- ![Firebase](https://img.shields.io/badge/Firebase-FFCA28?logo=firebase&logoColor=black&style=flat)
+![Firebase](https://img.shields.io/badge/Firebase-FFCA28?logo=firebase&logoColor=black&style=flat)
 
 
 # External APIs and Datasets Used
