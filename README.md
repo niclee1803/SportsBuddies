@@ -256,6 +256,7 @@ Add the `.env` file and `firebase_credentials.json` file to `backend` directory
 ```
 
 # Demo Video
+[![Watch the demo](https://img.youtube.com/vi/Tal3bO3Vrvc/0.jpg)](https://www.youtube.com/watch?v=Tal3bO3Vrvc)
 
 # Technologies and Frameworks Used
 ## Frontend
