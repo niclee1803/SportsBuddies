@@ -9,8 +9,8 @@ git clone https://github.com/niclee1803/SportsBuddies.git
 ```
     
 2. To get the environment variable files, contact us via email at trevsweproj@gmail.com
-Add the `firebaseConfig.ts` file in `frontend/constants` directory
-Add the `.env` file and `firebase_credentials.json` file to `backend` directory
+Add the `firebaseConfig.ts` file in `frontend/constants` directory.  
+Add the `.env` file and `firebase_credentials.json` file to `backend` directory.  
      
 3. Run the backend and frontend servers on different terminals based on the instructions provided below.
     
