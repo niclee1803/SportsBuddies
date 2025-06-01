@@ -8,7 +8,7 @@ SportsBuddies is a mobile application that connects sports enthusiasts with comp
 git clone https://github.com/niclee1803/SportsBuddies.git
 ```
     
-2. To get the environment variable files, contact us via email at trevsweproj@gmail.com
+2. To get the environment variable files, contact us via email at trevsweproj@gmail.com     
 Add the `firebaseConfig.ts` file in `frontend/constants` directory.  
 Add the `.env` file and `firebase_credentials.json` file to `backend` directory.  
      
